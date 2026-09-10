@@ -1,5 +1,4 @@
 # ViaFlux_Mobilidade
-=======
 <h1 align="center">ViaFlux Mobilidade</h1>
 <p align="center"><strong>Plataforma de Gerenciamento de Chamados</strong></p>
 
