@@ -1,0 +1,72 @@
+name: viaflux
+
+services:
+  web:
+    build:
+      context: ../apps/web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    container_name: viaflux-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      TZ: America/Recife
+    ports:
+      - "${WEB_PORT:-80}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  api:
+    build:
+      context: ../apps/api
+      dockerfile: Dockerfile
+    container_name: viaflux-api
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      VIAFLUX_JWT_SECRET: ${JWT_SECRET}
+      VIAFLUX_JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-PT15M}
+      VIAFLUX_JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-P7D}
+      VIAFLUX_ANEXO_DIR: /var/viaflux/anexos
+      TZ: America/Recife
+    ports:
+      - "${API_PORT:-8080}:8080"
+    volumes:
+      - anexos:/var/viaflux/anexos
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  db:
+    image: postgres:16-alpine
+    container_name: viaflux-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: America/Recife
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db-data:
+  anexos:
+  backups:
