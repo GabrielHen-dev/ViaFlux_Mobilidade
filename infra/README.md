@@ -4,10 +4,10 @@ Descrição dos ambientes e das variáveis. A justificativa da escolha está em 
 
 ## Ambientes
 
-| Arquivo | Ambiente | Serviços |
-|---|---|---|
-| `docker-compose.yml` | Desenvolvimento local | `db` (PostgreSQL) + `adminer` |
-| `docker-compose.prod.yml` | Servidor do squad | `web` + `api` + `db` |
+| Arquivo | Ambiente | Serviços | Situação |
+|---|---|---|---|
+| `docker-compose.yml` | Desenvolvimento local | `db` (PostgreSQL) + `adminer` | A criar |
+| `docker-compose.prod.yml` | Servidor do squad | `web` + `api` + `db` | No repositório |
 
 Em desenvolvimento, **só o banco sobe em contêiner**. Frontend e API rodam na máquina do integrante, com recarregamento rápido. Em produção, os três serviços sobem juntos pelo Compose: `web` e `api` publicam porta no host, e o `db` fica acessível apenas pela rede interna do Compose, sem alcance pela internet.
 
@@ -45,6 +45,8 @@ openssl rand -base64 48
 ```
 
 ## Rodando em desenvolvimento
+
+> O `docker-compose.yml` ainda não existe no repositório. O procedimento abaixo é o acordado e passa a valer quando ele for commitado.
 
 ```bash
 docker compose -f infra/docker-compose.yml --env-file infra/.env up -d
@@ -97,7 +99,10 @@ Duas coisas que o cron acima **não** faz e precisam ser resolvidas: copiar o du
 
 | Item | Situação |
 |---|---|
+| `infra/docker-compose.yml` | A criar. Sem ele, o passo de subir o banco em desenvolvimento não funciona |
+| Código de `apps/web` e `apps/api` | A criar. Sem `package.json` e `pom.xml`, o `docker-compose.prod.yml` não constrói as imagens |
 | `.github/workflows/deploy.yml` | A criar depois de confirmar se o servidor aceita SSH de entrada |
-| `spring-boot-starter-actuator` | Necessário para o `healthcheck` do serviço `api` responder em `/actuator/health` |
+| `spring-boot-starter-actuator` | Necessário para o `healthcheck` do serviço `api` responder em `/actuator/health`. Sem ele, o `web` nunca sobe, porque depende desse healthcheck |
 | Servidor e endereço público | A confirmar. Enquanto não houver TLS, a aplicação responde em HTTP |
 | Rotina de backup fora do servidor | A definir junto com o destino dos dumps e dos anexos |
+| Retenção e exclusão de dados pessoais | A definir com o cliente. O volume `anexos` guarda documento e foto de cliente sem prazo de descarte, o que a LGPD cobra |

@@ -1,4 +1,3 @@
-# ViaFlux_Mobilidade
 <h1 align="center">ViaFlux Mobilidade</h1>
 <p align="center"><strong>Plataforma de Gerenciamento de Chamados</strong></p>
 
@@ -21,7 +20,9 @@
 
 A ViaFlux Mobilidade é uma empresa fictícia que aluga veículos para pessoas físicas e cuida da frota de empresas. Tem 30 unidades de atendimento espalhadas por centros urbanos, rodoviárias e aeroportos, cerca de 1.800 veículos e uma rede externa de oficinas, guinchos, seguradoras e prestadores de assistência. A central de assistência funciona 24 horas; as outras áreas, não.
 
-Hoje as solicitações chegam por telefone, WhatsApp e e-mail, e algumas equipes mantêm planilhas próprias. Não existe um controle único entre tecnologia, assistência, manutenção e financeiro. Daí vêm os problemas que este projeto ataca:
+O atendimento passa por sete áreas: atendimento nas unidades, assistência, manutenção, tecnologia, financeiro, logística e contratos. Quatro delas aparecem nos relatos como destino de chamado e são as que o produto trata como **áreas atendentes** nesta fase: tecnologia, assistência, manutenção e financeiro. Logística e contratos estão no organograma, mas ninguém confirmou se recebem chamado direto ou só apoiam.
+
+Hoje as solicitações chegam por telefone, WhatsApp e e-mail, e algumas equipes mantêm planilhas próprias. Não existe um controle único entre essas áreas. Daí vêm os problemas que este projeto ataca:
 
 - **Não existe identificador único de chamado.** O mesmo problema é relatado por várias pessoas em canais diferentes, e ninguém sabe quantos casos estão realmente abertos.
 - **A informação se perde no repasse.** Quando um chamado é transferido, os dados não vão com ele, então o cliente repete o que já disse e reenvia fotos e documentos.
@@ -30,24 +31,88 @@ Hoje as solicitações chegam por telefone, WhatsApp e e-mail, e algumas equipes
 - **O fornecedor externo é um ponto cego.** Depois de encaminhar para uma oficina, guincho ou prestador, a empresa não consegue acompanhar o que acontece.
 - **Tudo é urgente.** Sem critério de impacto, a liderança não consegue dizer quantos clientes estão afetados nem quem está atuando em cada caso.
 
-> Numa noite de sexta-feira, um motorista ficou parado na estrada e o prestador de assistência recebeu o pedido sem a localização completa. O motorista foi transferido entre atendentes e repetiu seus dados três vezes. Ao mesmo tempo, uma unidade de aeroporto perdia o acesso ao sistema de entrega de veículos, e ninguém sabia qual dos dois casos afetava mais clientes.
+> Numa noite de sexta-feira, um motorista ficou parado na estrada e o prestador de assistência recebeu o pedido sem a localização completa. O motorista foi transferido entre atendentes e repetiu seus dados três vezes. Ao mesmo tempo, um gestor corporativo classificava como crítica uma dúvida de cobrança, e uma unidade de aeroporto perdia o acesso ao sistema de entrega de veículos. Ninguém sabia qual dos três casos afetava mais clientes, e a causa raiz só apareceu no dia seguinte.
 
 ## Objetivo do produto
 
-Centralizar o ciclo de vida do chamado, do registro ao encerramento:
+Centralizar o ciclo de vida do chamado, do registro ao encerramento. Nada aqui é compromisso de entrega fechado; a coluna **Fase** marca o recorte do MVP.
 
-| # | Objetivo |
-|:-:|---|
-| 1 | Canal único de abertura, para a unidade não precisar saber de antemão qual área vai atender |
-| 2 | Identificador único e rastreável por solicitação, para acabar com chamados duplicados |
-| 3 | Roteamento para a área responsável (tecnologia, assistência, manutenção, financeiro), com transferência que leva o histórico junto |
-| 4 | Histórico completo e contínuo por chamado, preservado na troca de turno e visível a todos os envolvidos |
-| 5 | Anexos no contexto do caso: fotos, documentos, placas, contratos e localização |
-| 6 | Priorização por impacto real, e não pela urgência que o solicitante declarou |
-| 7 | Acompanhamento por perfil, incluindo unidades, áreas internas, fornecedores e clientes corporativos |
-| 8 | Indicadores para a liderança: volume por unidade, problemas recorrentes, tempo de atendimento e impacto operacional |
+| # | Objetivo | Fase |
+|:-:|---|:---:|
+| 1 | Canal único de abertura, para a unidade não precisar saber de antemão qual área vai atender | MVP |
+| 2 | Registro em nome do cliente pelo atendente, para o que chega por telefone, WhatsApp ou e-mail | MVP |
+| 3 | Identificador único e rastreável por solicitação, para acabar com chamados duplicados | MVP |
+| 4 | Histórico completo e contínuo por chamado, preservado na troca de turno e visível a todos os envolvidos | MVP |
+| 5 | Anexos no contexto do caso: fotos, documentos, placas, contratos e localização | MVP |
+| 6 | Priorização por impacto real, e não pela urgência que o solicitante declarou | MVP |
+| 7 | Roteamento para a área responsável, com transferência que leva o histórico junto | MVP |
+| 8 | Controle de acesso por perfil: unidades, áreas internas, fornecedores e clientes corporativos | MVP |
+| 9 | Módulo de parceiros terceirizados, para a oficina e o guincho atualizarem status | Depois |
+| 10 | Indicadores para a liderança: volume por unidade, problemas recorrentes, tempo de atendimento e impacto operacional | Depois |
+| 11 | Retorno proativo ao cliente sobre o andamento do próprio chamado | Depois |
+| 12 | Pesquisa de satisfação pós-atendimento | Depois |
 
-Três restrições valem desde o início: a operação é 24/7, parte dos usuários está em deslocamento com conexão instável no celular pessoal, e é preciso proteger dados pessoais e contratuais (LGPD) sem deixar o atendente sem a informação de que precisa para continuar o caso.
+O objetivo 6 depende de o cliente definir o que conta como impacto, e o 9 depende de como o parceiro acessa a plataforma. Os dois estão em [Em aberto com o cliente](#em-aberto-com-o-cliente).
+
+**Controle de SLA não é objetivo desta fase.** Ele aparece em [`docs/stack.md`](docs/stack.md#backend) como regra prevista, mas está bloqueado pela pendência descrita em [O que o produto não resolve](#o-que-o-produto-não-resolve). Até lá a plataforma registra os tempos, sem cobrar prazo.
+
+### Premissas
+
+1. **Operação 24/7**, com acesso por navegador nas unidades e por celular nas equipes de campo e na assistência. Parte dos usuários está em deslocamento com conexão instável no celular pessoal — como tratar isso ainda é decisão em aberto, registrada como risco em [`docs/stack.md`](docs/stack.md#principais-riscos).
+2. Os canais atuais continuam existindo em paralelo durante a transição. A plataforma é o ponto único de **registro**, não de contato: ela é alimentada tanto pela abertura direta do cliente quanto pelo atendente que recebeu a solicitação por telefone.
+3. Usuários externos não dependem de conta no domínio corporativo da ViaFlux.
+4. O acesso a dados pessoais e contratuais fica restrito às partes diretamente envolvidas no chamado, seguindo a LGPD, sem deixar o atendente sem a informação de que precisa para continuar o caso. Retenção e exclusão ainda não foram definidas.
+
+## Quem usa
+
+| Perfil | Necessidade principal | Condição de acesso |
+|---|---|---|
+| Motoristas e clientes PF | Suporte rápido em emergência, retirada e devolução | Celular pessoal, conexão instável |
+| Gestores de frota corporativa | Relatórios, previsibilidade, prioridade | Computador corporativo |
+| Fornecedores terceirizados | Receber e atualizar ordem de serviço | Sistemas próprios, sem conta corporativa ViaFlux |
+| Atendentes das unidades | Abrir e acompanhar chamado, inclusive o que chegou por telefone | Computador corporativo, horário comercial |
+| Central de assistência 24h | Atendimento emergencial contínuo | Desktop e celular, regime de turnos |
+| Tecnologia, manutenção e financeiro | Atuação em segunda camada quando acionados | Computador corporativo, horário comercial |
+| Liderança operacional | Visão consolidada de volume, criticidade e status | Computador e celular |
+
+Logística e contratos ainda não têm perfil, pela pendência descrita no contexto. Os perfis técnicos correspondentes estão em [`docs/stack.md`](docs/stack.md#autenticação-e-permissões).
+
+## O que o produto não resolve
+
+Nem todo problema levantado se resolve com software. Estes dependem de decisão e de gestão da ViaFlux, e a plataforma não substitui nenhum deles:
+
+- **Divergência de escopo entre áreas.** Cada departamento tem uma leitura diferente do que deve atender. Exige acordo organizacional, tipo RACI, não uma feature.
+- **Política de SLA.** Não existem tempos-alvo formalizados. Automatizar SLA antes disso é automatizar o vazio.
+- **Quem comunica o cliente quando o chamado está com um terceiro.** Hoje ninguém assume. É governança.
+- **Adesão dos parceiros.** O objetivo 9 depende de a oficina e o guincho realmente atualizarem status. Isso é cláusula contratual; sem ela a funcionalidade existe e fica vazia.
+- **Cultura de planilhas paralelas.** Substituir a planilha é simples; fazer a equipe abandoná-la depende de treinamento e diretriz da liderança.
+- **Nível de acesso dos externos.** Definir quem vê o quê é decisão de política e compliance, não de configuração.
+
+## Como vamos medir o resultado
+
+Nenhuma linha de base foi medida ainda. Como o cenário atual está espalhado em planilhas sem integração, os valores de partida precisam ser levantados antes da implantação — sem isso não há comparação depois.
+
+| Critério | Linha de base | Como verificar |
+|---|---|---|
+| Repetição de informação pelo cliente | A levantar. O caso da sexta-feira teve 3 repetições, mas é relato isolado, não média apurada | Meta de coleta única por chamado, por amostragem de chamados transferidos |
+| Tempo médio de resolução | A levantar por tipo de chamado, a partir das planilhas | Comparar antes e depois da implantação |
+| Chamados com rastreabilidade completa | Zero, por ausência de sistema | % com registro em abertura, triagem, execução e fechamento |
+| Chamados duplicados identificados | A levantar | % apontado como duplicata sobre o total aberto |
+| Chamados com terceiros e status atualizado | Zero, por ausência de sistema | % dos encaminhados cujo parceiro atualizou o status |
+| Acurácia da triagem | A levantar | % que chegou ao setor correto na primeira tentativa |
+| Satisfação do cliente | Não existe pesquisa hoje | Depende do objetivo 12; sem ele o critério não é aferível |
+
+## Em aberto com o cliente
+
+| Pergunta | Trava o quê |
+|---|---|
+| Logística e contratos recebem chamado direto, ou só apoiam? | Áreas atendentes e perfis de acesso |
+| O que conta como impacto real: clientes afetados, veículo parado em via, unidade indisponível? Qual a ordem? | Objetivo 6, o motor de triagem |
+| Como o parceiro acessa sem conta corporativa: link por chamado, convite, credencial? | Objetivo 9 e a premissa 3 |
+| Por qual meio o cliente é notificado: e-mail, SMS, WhatsApp? Há contrato com provedor? | Objetivo 11 e o custo de infraestrutura |
+| Qual o prazo de retenção de dados e anexos, e como se dá a exclusão a pedido do titular? | Premissa 4 e conformidade com a LGPD |
+| Existe histórico consultável nas planilhas para levantar as linhas de base? | Todos os critérios de resultado |
+| Quem assume a comunicação com o cliente quando o chamado está com um terceiro? | Decisão de governança acima |
 
 ## Membros da Equipe
 
@@ -117,24 +182,28 @@ As justificativas completas, e os riscos que cada escolha carrega, estão em [`d
 
 Este é um monorepo. Frontend, backend, infraestrutura e documentação ficam no mesmo repositório e são versionados juntos.
 
+A árvore abaixo é a estrutura alvo. O que ainda **não** está no repositório está marcado com `‹a criar›`, e entra com a primeira entrega de código.
+
 ```
 ViaFlux_Mobilidade/
-├── .github/
+├── .github/                              ‹a criar›
 │   ├── ISSUE_TEMPLATE/         Modelos de issue (bug e feature)
 │   ├── pull_request_template.md
 │   └── workflows/ci.yml        Build e testes de web e api em cada PR
 ├── apps/
 │   ├── web/                    Frontend Next.js
 │   │   ├── Dockerfile          Build multi-stage, saída standalone
-│   │   ├── src/app/            Rotas (App Router)
-│   │   ├── src/components/ui/  Componentes de interface (shadcn/ui)
-│   │   ├── src/features/       Código por domínio (chamados, auth, ...)
-│   │   ├── src/lib/            Cliente HTTP, sessão, utilitários
-│   │   └── tests/              Vitest e Playwright
+│   │   ├── package.json                  ‹a criar›
+│   │   ├── src/app/            Rotas (App Router)               ‹a criar›
+│   │   ├── src/components/ui/  Componentes de interface (shadcn/ui)  ‹a criar›
+│   │   ├── src/features/       Código por domínio (chamados, auth, ...) ‹a criar›
+│   │   ├── src/lib/            Cliente HTTP, sessão, utilitários ‹a criar›
+│   │   └── tests/              Vitest e Playwright              ‹a criar›
 │   └── api/                    Backend Spring Boot
 │       ├── Dockerfile          Build com Maven, JAR sobre Temurin 21 JRE
-│       ├── pom.xml
-│       └── src/main/
+│       ├── pom.xml                       ‹a criar›
+│       ├── mvnw + .mvn/                  ‹a criar›
+│       └── src/main/                     ‹a criar›
 │           ├── java/br/com/viaflux/api/
 │           │   ├── chamado/    Núcleo do domínio
 │           │   ├── usuario/    Usuários, perfis e permissões
@@ -147,7 +216,7 @@ ViaFlux_Mobilidade/
 ├── docs/
 │   └── stack.md                Decisão de stack, justificativas e riscos
 ├── infra/
-│   ├── docker-compose.yml      Desenvolvimento: PostgreSQL e Adminer
+│   ├── docker-compose.yml      Desenvolvimento: PostgreSQL e Adminer  ‹a criar›
 │   ├── docker-compose.prod.yml Produção: web, api e banco
 │   ├── .env.example            Variáveis necessárias, sem valores reais
 │   └── README.md               Ambientes, variáveis e deploy
@@ -156,16 +225,18 @@ ViaFlux_Mobilidade/
 
 ## Como rodar localmente
 
+> **Estado atual.** O repositório contém, por enquanto, a documentação, os `Dockerfile` das duas aplicações e o Compose de produção. O código de `web` e `api`, o `infra/docker-compose.yml` de desenvolvimento e o `.github/` entram na primeira entrega de código. **Os passos abaixo são o procedimento acordado e só funcionam a partir dela** — hoje eles falham por falta de `pom.xml` e de `package.json`.
+
 ### Pré-requisitos
 
 | Ferramenta | Versão | Observação |
 |---|---|---|
 | Node.js | 22 LTS ou superior | |
-| JDK | 21 (LTS) | O `pom.xml` exige a 21. Quem tem JDK 17 precisa atualizar: [Temurin 21](https://adoptium.net/temurin/releases/?version=21) |
+| JDK | 21 (LTS) | O `pom.xml` vai exigir a 21. Quem tem JDK 17 precisa atualizar: [Temurin 21](https://adoptium.net/temurin/releases/?version=21) |
 | Docker e Docker Compose | qualquer versão recente | Usado pelo banco e pelos testes com Testcontainers |
 | Git | 2.40 ou superior | |
 
-Não precisa instalar o Maven. O repositório já inclui o Maven Wrapper (`./mvnw`), que baixa a versão certa na primeira execução.
+Não vai precisar instalar o Maven: o projeto usa o Maven Wrapper (`./mvnw`), que baixa a versão certa na primeira execução e será commitado junto com o `pom.xml`.
 
 ### 1. Clonar e configurar
 
@@ -203,7 +274,7 @@ cd apps/web && npm install && npm run dev
 
 A aplicação fica em <http://localhost:3000>.
 
-> **Estado atual.** Esta é a entrega de preparação de ambiente, não de funcionalidade. As duas aplicações compilam e sobem, mas ainda não têm telas nem endpoints de negócio: o frontend serve uma página só e a API sobe sem entidade nem controller. O que já está pronto e vale a partir de agora é a estrutura, a configuração, o build e a documentação.
+Vale lembrar o recorte da entrega: quando o código subir, as duas aplicações compilam e sobem, mas ainda sem telas nem endpoints de negócio — o frontend serve uma página só e a API sobe sem entidade nem controller. O que vale a partir de agora é a estrutura, a configuração, o build e a documentação.
 
 ## Publicação
 
@@ -224,4 +295,4 @@ Os ambientes, as variáveis, a rotina de backup e as pendências do primeiro dep
 - Variável de ambiente nova é registrada em `infra/.env.example` e documentada em `infra/README.md`.
 - A `main` é protegida e deve estar sempre publicável.
 
-Os modelos de issue e de pull request em [`.github/`](.github/) já trazem o checklist do que cada entrega precisa conter.
+Os modelos de issue e de pull request ficam em `.github/`, com o checklist do que cada entrega precisa conter. Ainda não foram criados — entram junto com o workflow de CI.
