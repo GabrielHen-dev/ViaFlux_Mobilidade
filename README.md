@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 # ViaFlux_Mobilidade
 =======
 <h1 align="center">ViaFlux Mobilidade</h1>
@@ -227,4 +226,3 @@ Os ambientes, as variáveis, a rotina de backup e as pendências do primeiro dep
 - A `main` é protegida e deve estar sempre publicável.
 
 Os modelos de issue e de pull request em [`.github/`](.github/) já trazem o checklist do que cada entrega precisa conter.
->>>>>>> Stashed changes
