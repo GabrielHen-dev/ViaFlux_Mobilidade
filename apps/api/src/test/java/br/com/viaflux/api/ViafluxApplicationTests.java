@@ -67,4 +67,12 @@ class ViafluxApplicationTests {
                         .contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.status").value(401));
     }
+
+    @Test
+    void openApiDocumentationIsPublic() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.info.title").value("ViaFlux Mobilidade API"))
+                .andExpect(jsonPath("$.info.version").value("v1"));
+    }
 }

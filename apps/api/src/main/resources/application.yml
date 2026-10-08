@@ -39,3 +39,9 @@ viaflux:
   cors:
     allowed-origins:
       - http://localhost:3000
+
+springdoc:
+  api-docs:
+    enabled: ${VIAFLUX_OPENAPI_ENABLED:true}
+  swagger-ui:
+    enabled: ${VIAFLUX_OPENAPI_ENABLED:true}
