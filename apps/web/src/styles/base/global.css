@@ -1,0 +1,15 @@
+* { box-sizing: border-box; }
+body { font-family: var(--font-inter), "Inter", sans-serif; background: var(--brand-light); color: var(--brand-dark); }
+h1, h2, h3, h4, h5 { font-family: var(--font-montserrat), "Montserrat", sans-serif; }
+button:not(:disabled), a { cursor: pointer; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--brand-blue);
+  outline-offset: 3px;
+}
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
