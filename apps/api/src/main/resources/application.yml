@@ -1,6 +1,9 @@
 spring:
   application:
     name: viaflux-api
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
   config:
     import: optional:file:${VIAFLUX_ENV_FILE:../../infra/.env}[.properties]
   datasource:
@@ -31,3 +34,8 @@ management:
   endpoint:
     health:
       show-details: never
+
+viaflux:
+  cors:
+    allowed-origins:
+      - http://localhost:3000
