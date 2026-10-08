@@ -201,22 +201,18 @@ ViaFlux_Mobilidade/
 │   │   └── tests/              Vitest e Playwright              ‹a criar›
 │   └── api/                    Backend Spring Boot
 │       ├── Dockerfile          Build com Maven, JAR sobre Temurin 21 JRE
-│       ├── pom.xml                       ‹a criar›
-│       ├── mvnw + .mvn/                  ‹a criar›
-│       └── src/main/                     ‹a criar›
-│           ├── java/br/com/viaflux/api/
-│           │   ├── chamado/    Núcleo do domínio
-│           │   ├── usuario/    Usuários, perfis e permissões
-│           │   ├── auth/       Login, JWT e refresh
-│           │   ├── anexo/      Fotos, documentos e contratos
-│           │   └── shared/     Configuração e tratamento de erro
-│           └── resources/
-│               ├── application.yml
-│               └── db/migration/   Migrações Flyway
+│       ├── pom.xml
+│       ├── mvnw, mvnw.cmd + .mvn/wrapper/
+│       └── src/
+│           ├── main/java/br/com/viaflux/api/ViafluxApplication.java
+│           ├── main/resources/
+│           │   ├── application.yml
+│           │   └── db/migration/V1__initialize_schema.sql
+│           └── test/java/br/com/viaflux/api/ViafluxApplicationTests.java
 ├── docs/
 │   └── stack.md                Decisão de stack, justificativas e riscos
 ├── infra/
-│   ├── docker-compose.yml      Desenvolvimento: PostgreSQL e Adminer  ‹a criar›
+│   ├── docker-compose.yml      Desenvolvimento: PostgreSQL e Adminer
 │   ├── docker-compose.prod.yml Produção: web, api e banco
 │   ├── .env.example            Variáveis necessárias, sem valores reais
 │   └── README.md               Ambientes, variáveis e deploy
@@ -225,7 +221,7 @@ ViaFlux_Mobilidade/
 
 ## Como rodar localmente
 
-> **Estado atual.** O repositório contém, por enquanto, a documentação, os `Dockerfile` das duas aplicações e o Compose de produção. O código de `web` e `api`, o `infra/docker-compose.yml` de desenvolvimento e o `.github/` entram na primeira entrega de código. **Os passos abaixo são o procedimento acordado e só funcionam a partir dela** — hoje eles falham por falta de `pom.xml` e de `package.json`.
+> **Estado desta etapa.** A API possui a fundação técnica Spring Boot, PostgreSQL e Flyway, além do Compose de desenvolvimento. Ainda não há `package.json` nem aplicação web; o frontend e o CI serão entregas posteriores.
 
 ### Pré-requisitos
 
@@ -264,17 +260,15 @@ Se der erro de porta já em uso, você já tem um PostgreSQL rodando na máquina
 cd apps/api && ./mvnw spring-boot:run
 ```
 
-A API sobe em <http://localhost:8080> e a documentação OpenAPI em <http://localhost:8080/swagger-ui.html>. Suba o banco antes, porque o Flyway e o JPA validam a conexão na inicialização.
+No Windows, use `.\mvnw.cmd spring-boot:run` no PowerShell ou `mvnw.cmd spring-boot:run` no Prompt de Comando. A API usa uma única configuração e carrega `infra/.env` quando é executada a partir de `apps/api`; na IDE, defina esse diretório de trabalho. Alternativamente, configure `VIAFLUX_ENV_FILE` com o caminho do arquivo `.env`.
 
-### 4. Subir o frontend
+A API sobe em <http://localhost:8080> e o healthcheck fica em <http://localhost:8080/health>. Suba o banco antes, porque Flyway e JPA validam a conexão na inicialização. Swagger/OpenAPI será adicionado em uma entrega posterior.
 
-```bash
-cd apps/web && npm install && npm run dev
-```
+### 4. Frontend
 
-A aplicação fica em <http://localhost:3000>.
+O frontend ainda não possui `package.json`; sua implementação será feita em uma entrega posterior.
 
-Vale lembrar o recorte da entrega: quando o código subir, as duas aplicações compilam e sobem, mas ainda sem telas nem endpoints de negócio — o frontend serve uma página só e a API sobe sem entidade nem controller. O que vale a partir de agora é a estrutura, a configuração, o build e a documentação.
+Esta etapa entrega a configuração executável da API e do banco, sem entidades ou endpoints de negócio. O endpoint `/health` é fornecido pelo Actuator.
 
 ## Publicação
 

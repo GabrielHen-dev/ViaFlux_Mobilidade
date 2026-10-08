@@ -6,10 +6,10 @@ Descrição dos ambientes e das variáveis. A justificativa da escolha está em 
 
 | Arquivo | Ambiente | Serviços | Situação |
 |---|---|---|---|
-| `docker-compose.yml` | Desenvolvimento local | `db` (PostgreSQL) + `adminer` | A criar |
+| `docker-compose.yml` | Desenvolvimento local | `db` (PostgreSQL) + `adminer` | No repositório |
 | `docker-compose.prod.yml` | Servidor do squad | `web` + `api` + `db` | No repositório |
 
-Em desenvolvimento, **só o banco sobe em contêiner**. Frontend e API rodam na máquina do integrante, com recarregamento rápido. Em produção, os três serviços sobem juntos pelo Compose: `web` e `api` publicam porta no host, e o `db` fica acessível apenas pela rede interna do Compose, sem alcance pela internet.
+Em desenvolvimento, PostgreSQL e Adminer sobem em contêiner. Frontend e API rodam na máquina do integrante, com recarregamento rápido. As portas do banco e do Adminer ficam vinculadas ao loopback. Em produção, os três serviços sobem juntos pelo Compose: `web` e `api` publicam porta no host, e o `db` fica acessível apenas pela rede interna do Compose, sem alcance pela internet.
 
 ## Variáveis de ambiente
 
@@ -25,8 +25,8 @@ cp infra/.env.example infra/.env
 |---|---|---|
 | `POSTGRES_DB` | Banco, API | Nome do banco. |
 | `POSTGRES_USER` | Banco, API | Usuário do banco. |
-| `POSTGRES_PASSWORD` | Banco, API | Senha do banco. **Obrigatória em produção**, sem valor padrão. |
-| `POSTGRES_PORT` | Banco (dev) | Porta exposta no host em desenvolvimento. Altere se a 5432 já estiver ocupada na sua máquina. |
+| `POSTGRES_PASSWORD` | Banco, API | Senha do banco. **Obrigatória para executar o Compose e a API**, sem valor padrão. |
+| `POSTGRES_PORT` | Banco e API | Porta exposta no host em desenvolvimento e usada pela API para conectar ao banco. Altere se a 5432 já estiver ocupada na sua máquina. |
 | `JWT_SECRET` | API | Chave de assinatura dos tokens. Precisa ter ao menos 32 bytes aleatórios; veja como gerar abaixo. |
 | `JWT_ACCESS_TTL` | API | Validade do *access token*, em formato ISO-8601 de duração. `PT15M` são 15 minutos. |
 | `JWT_REFRESH_TTL` | API | Validade do *refresh token*. `P7D` são 7 dias. |
@@ -46,8 +46,6 @@ openssl rand -base64 48
 
 ## Rodando em desenvolvimento
 
-> O `docker-compose.yml` ainda não existe no repositório. O procedimento abaixo é o acordado e passa a valer quando ele for commitado.
-
 ```bash
 docker compose -f infra/docker-compose.yml --env-file infra/.env up -d
 ```
@@ -57,13 +55,28 @@ docker compose -f infra/docker-compose.yml --env-file infra/.env up -d
 | PostgreSQL | `localhost:5432` |
 | Adminer | <http://localhost:8081> |
 
-> **Se a subida falhar com `port is already allocated`**, você já tem um PostgreSQL rodando na máquina. Não precisa desinstalar nada, só trocar a porta no seu `infra/.env`:
->
-> ```
-> POSTGRES_PORT=5433
-> ```
->
-> Depois ajuste `SPRING_DATASOURCE_URL` para a mesma porta ao rodar a API. Isso aconteceu na máquina do Tech Lead durante a validação do ambiente, então é provável que aconteça com mais alguém.
+No Adminer, use `db` como servidor, junto com `POSTGRES_DB` e `POSTGRES_USER` do arquivo `infra/.env`.
+
+Se a porta 5432 já estiver ocupada, altere `POSTGRES_PORT` no seu `infra/.env`:
+
+```
+POSTGRES_PORT=5433
+```
+
+O Compose de desenvolvimento e a API usam essa mesma variável.
+
+### API executada pela IDE ou Maven
+
+A API usa uma única configuração e importa `infra/.env` como arquivo de propriedades. Execute-a com o diretório de trabalho em `apps/api` para que o caminho relativo seja resolvido corretamente; na IDE, configure esse diretório. Como alternativa, defina `VIAFLUX_ENV_FILE` com o caminho do arquivo `.env`. O arquivo precisa conter os valores do banco preenchidos; o `.env.example` deixa a senha vazia de propósito.
+
+```bash
+cd apps/api
+./mvnw spring-boot:run
+```
+
+No Windows, use `.\mvnw.cmd spring-boot:run` no PowerShell ou `mvnw.cmd spring-boot:run` no Prompt de Comando. Em produção, o Compose injeta `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` e `SPRING_DATASOURCE_PASSWORD`; nenhum perfil Spring é necessário.
+
+A API disponibiliza o healthcheck em <http://localhost:8080/health>. Swagger/OpenAPI será adicionado em uma entrega posterior.
 
 Para parar sem perder dados:
 
@@ -83,7 +96,7 @@ docker compose -f infra/docker-compose.prod.yml --env-file infra/.env up -d --bu
 
 É esse o comando que o deploy do GitHub Actions vai executar por SSH depois de um merge na `main`.
 
-A ordem de subida é garantida pelos `healthcheck`: a `api` só inicia com o banco pronto, e a `web` só depois que a `api` responde em `/actuator/health`.
+A ordem de subida é garantida pelos `healthcheck`: a `api` só inicia com o banco pronto, e a `web` só depois que a `api` responde em `/health`.
 
 ## Backup
 
@@ -99,10 +112,8 @@ Duas coisas que o cron acima **não** faz e precisam ser resolvidas: copiar o du
 
 | Item | Situação |
 |---|---|
-| `infra/docker-compose.yml` | A criar. Sem ele, o passo de subir o banco em desenvolvimento não funciona |
-| Código de `apps/web` e `apps/api` | A criar. Sem `package.json` e `pom.xml`, o `docker-compose.prod.yml` não constrói as imagens |
+| Código de `apps/web` | A criar. Sem `package.json`, o serviço `web` do Compose de produção ainda não constrói |
 | `.github/workflows/deploy.yml` | A criar depois de confirmar se o servidor aceita SSH de entrada |
-| `spring-boot-starter-actuator` | Necessário para o `healthcheck` do serviço `api` responder em `/actuator/health`. Sem ele, o `web` nunca sobe, porque depende desse healthcheck |
 | Servidor e endereço público | A confirmar. Enquanto não houver TLS, a aplicação responde em HTTP |
 | Rotina de backup fora do servidor | A definir junto com o destino dos dumps e dos anexos |
 | Retenção e exclusão de dados pessoais | A definir com o cliente. O volume `anexos` guarda documento e foto de cliente sem prazo de descarte, o que a LGPD cobra |

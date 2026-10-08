@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: viaflux-api
+  config:
+    import: optional:file:${VIAFLUX_ENV_FILE:../../infra/.env}[.properties]
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:viaflux}}
+    username: ${SPRING_DATASOURCE_USERNAME:${POSTGRES_USER:viaflux}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD}}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: viaflux
+  flyway:
+    enabled: true
+    default-schema: public
+    locations: classpath:db/migration
+
+management:
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: health
+      path-mapping:
+        health: health
+  endpoint:
+    health:
+      show-details: never
