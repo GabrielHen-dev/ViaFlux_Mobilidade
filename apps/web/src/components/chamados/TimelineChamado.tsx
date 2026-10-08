@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { Chamado } from "@/types/chamado";
+import IconeDoEvento from "@/components/ui/IconeDoEvento";
 import { useChamados } from "@/store/ChamadosContext";
 export default function TimelineChamado({ chamado }: { chamado: Chamado }) {
   const { registrarAtualizacao } = useChamados();
@@ -8,7 +9,7 @@ export default function TimelineChamado({ chamado }: { chamado: Chamado }) {
   const [novaAtualizacao, setNovaAtualizacao] = useState("");
   const addUpdate = () => {
     if (!novaAtualizacao.trim()) return;
-    registrarAtualizacao(chamado.id, { acao: "Atualização", detalhe: novaAtualizacao.trim(), icon: "📝" });
+    registrarAtualizacao(chamado.id, { acao: "Atualização", detalhe: novaAtualizacao.trim(), icon: "atualizacao" });
     setNovaAtualizacao("");
   };
 
@@ -23,8 +24,8 @@ export default function TimelineChamado({ chamado }: { chamado: Chamado }) {
                 <div className="space-y-5">
                   {timeline.map((item, i) => (
                     <div key={i} className="flex gap-4 relative">
-                      <div className="w-8 h-8 rounded-full bg-white border-2 border-[#E2E8F0] flex items-center justify-center text-sm z-10 flex-shrink-0">
-                        {item.icon}
+                      <div className="w-8 h-8 rounded-full bg-white border-2 border-[#E2E8F0] flex items-center justify-center text-[#475569] z-10 flex-shrink-0">
+                        <IconeDoEvento icone={item.icon} size={14} />
                       </div>
                       <div className="flex-1 pb-1">
                         <div className="flex items-center gap-2 mb-0.5">

@@ -2,7 +2,8 @@
 @media (max-width: 767px) {
   .viaflux-sidebar { position: relative; width: 100%; height: auto; }
   .viaflux-sidebar nav { padding-block: 0.5rem; }
-  .viaflux-sidebar .sidebar-menu-label, .viaflux-sidebar .sidebar-user { display: none; }
+  .viaflux-sidebar .sidebar-menu-label { display: none; }
+  .viaflux-sidebar .sidebar-user { padding-block: 0.5rem; }
   .viaflux-sidebar .sidebar-links { display: flex; flex-wrap: wrap; gap: 0.25rem; }
   .viaflux-sidebar .sidebar-trash { border-top: 0; padding-top: 0; }
   .viaflux-shell { flex-direction: column; }

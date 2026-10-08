@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -76,6 +77,11 @@ public class ApiExceptionHandler {
                 "Um ou mais parâmetros são inválidos."
         );
         return ResponseEntity.badRequest().body(problem);
+    }
+
+    @ExceptionHandler(ErrorResponseException.class)
+    ResponseEntity<ProblemDetail> handleErrorResponse(ErrorResponseException exception) {
+        return ResponseEntity.status(exception.getStatusCode()).body(exception.getBody());
     }
 
     @ExceptionHandler(Exception.class)

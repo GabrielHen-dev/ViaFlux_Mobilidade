@@ -1,10 +1,10 @@
-import type { Chamado } from "@/types/chamado";
+import type { Chamado, TimelineItem } from "@/types/chamado";
 import { servicoInicial } from "@/mocks/servicos";
-export const timelineInicial = [
-  { hora: "07:42", acao: "Chamado aberto", detalhe: "Registrado por João Matos · Central ViaFlux", icon: "🟢" },
-  { hora: "07:58", acao: "Triagem realizada", detalhe: "Prioridade Crítica definida por Ana Silveira", icon: "🔵" },
-  { hora: "08:15", acao: "Encaminhado", detalhe: "Setor Assistência — responsável Carlos Mendes", icon: "🟡" },
-  { hora: "08:30", acao: "Atendimento iniciado", detalhe: "Carlos Mendes confirmou deslocamento", icon: "⚡" },
+export const timelineInicial: TimelineItem[] = [
+  { hora: "07:42", acao: "Chamado aberto", detalhe: "Registrado por João Matos · Central ViaFlux", icon: "aberto" },
+  { hora: "07:58", acao: "Triagem realizada", detalhe: "Prioridade Crítica definida por Ana Silveira", icon: "triagem" },
+  { hora: "08:15", acao: "Encaminhado", detalhe: "Setor Assistência — responsável Carlos Mendes", icon: "encaminhado" },
+  { hora: "08:30", acao: "Atendimento iniciado", detalhe: "Carlos Mendes confirmou deslocamento", icon: "atendimento" },
 ];
 
 const dadosOriginais: Omit<Chamado, "timeline" | "historico" | "servicoTerceiro" | "anexos">[] = [
@@ -92,6 +92,6 @@ const dadosOriginais: Omit<Chamado, "timeline" | "historico" | "servicoTerceiro"
 
 export const chamadosIniciais: Chamado[] = dadosOriginais.map((chamado) => ({
   ...chamado, timeline: chamado.id === "VF-1024" ? timelineInicial : [{
-    hora: chamado.abertura.split("às ")[1], acao: "Chamado aberto", detalhe: "Registrado por João Matos · Central ViaFlux", icon: "🟢",
+    hora: chamado.abertura.split("às ")[1], acao: "Chamado aberto", detalhe: "Registrado por João Matos · Central ViaFlux", icon: "aberto",
   }], historico: [], servicoTerceiro: chamado.id === "VF-1024" ? servicoInicial : null, anexos: [],
 }));

@@ -41,7 +41,7 @@ export function ChamadosProvider({ children }: { children: ReactNode }) {
     registrarAtualizacao: (id, evento) => dispatch({ type: "timeline", id, evento: { ...evento, hora: horaAtual() } }),
     vincularServico: (id, servico) => dispatch({ type: "servico", id, servico, evento: {
       hora: horaAtual(), acao: servico ? "Serviço terceirizado acionado" : "Serviço terceirizado removido",
-      detalhe: servico ? `${servico.parceiro} · ${servico.tipoServico}` : "Serviço desvinculado pela Central ViaFlux", icon: "🚛",
+      detalhe: servico ? `${servico.parceiro} · ${servico.tipoServico}` : "Serviço desvinculado pela Central ViaFlux", icon: "parceiro",
     } }),
     registrarObservacaoParceiro: (id, texto) => { if (texto.trim()) dispatch({ type: "observacaoParceiro", id, hora: horaAtual(), texto: texto.trim() }); },
     adicionarAnexos: (id, anexos) => dispatch({ type: "anexos", id, anexos }),

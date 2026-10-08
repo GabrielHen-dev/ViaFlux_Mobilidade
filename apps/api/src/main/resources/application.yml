@@ -1,3 +1,6 @@
+server:
+  port: 8281
+
 spring:
   application:
     name: viaflux-api
@@ -23,6 +26,17 @@ spring:
     default-schema: public
     locations: classpath:db/migration
 
+viaflux:
+  jwt:
+    secret: ${VIAFLUX_JWT_SECRET:${JWT_SECRET:}}
+    access-ttl: ${VIAFLUX_JWT_ACCESS_TTL:${JWT_ACCESS_TTL:PT15M}}
+    refresh-ttl: ${VIAFLUX_JWT_REFRESH_TTL:${JWT_REFRESH_TTL:P7D}}
+  cors:
+    allowed-origins: ${VIAFLUX_CORS_ALLOWED_ORIGINS:${CORS_ALLOWED_ORIGINS:http://localhost:5261}}
+  admin:
+    email: ${VIAFLUX_ADMIN_EMAIL:${ADMIN_EMAIL:}}
+    senha: ${VIAFLUX_ADMIN_PASSWORD:${ADMIN_PASSWORD:}}
+
 management:
   endpoints:
     web:
@@ -34,11 +48,6 @@ management:
   endpoint:
     health:
       show-details: never
-
-viaflux:
-  cors:
-    allowed-origins:
-      - http://localhost:3000
 
 springdoc:
   api-docs:

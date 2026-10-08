@@ -11,6 +11,6 @@ RUN addgroup -S spring && adduser -S spring -G spring
 COPY --from=builder /build/target/*.jar app.jar
 RUN mkdir -p /var/viaflux/anexos && chown -R spring:spring /app /var/viaflux
 USER spring
-EXPOSE 8080
+EXPOSE 8281
 ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseContainerSupport"
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]

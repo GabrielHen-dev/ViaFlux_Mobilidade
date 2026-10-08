@@ -262,7 +262,7 @@ cd apps/api && ./mvnw spring-boot:run
 
 No Windows, use `.\mvnw.cmd spring-boot:run` no PowerShell ou `mvnw.cmd spring-boot:run` no Prompt de Comando. A API usa uma única configuração e carrega `infra/.env` quando é executada a partir de `apps/api`; na IDE, defina esse diretório de trabalho. Alternativamente, configure `VIAFLUX_ENV_FILE` com o caminho do arquivo `.env`.
 
-A API sobe em <http://localhost:8080> e o healthcheck fica em <http://localhost:8080/health>. A documentação interativa está em <http://localhost:8080/swagger-ui/index.html> e a especificação OpenAPI em <http://localhost:8080/v3/api-docs>. Suba o banco antes, porque Flyway e JPA validam a conexão na inicialização.
+A API sobe em <http://localhost:8281> e o healthcheck fica em <http://localhost:8281/health>. A documentação interativa está em <http://localhost:8281/swagger-ui/index.html> e a especificação OpenAPI em <http://localhost:8281/v3/api-docs>. Suba o banco antes, porque Flyway e JPA validam a conexão na inicialização.
 
 ### 4. Frontend
 

@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { Check, ChevronLeft } from "lucide-react";
 import { setores, responsaveis, statuses, statusColor } from "@/mocks/opcoes";
 import { useChamados } from "@/store/ChamadosContext";
 import { horaAtual } from "@/utils/date";
@@ -22,7 +23,7 @@ function EncaminhamentoConteudo({ chamado }: { chamado: Chamado }) {
     if (!setor || !responsavel) return;
     const hora = horaAtual();
     const updated: Chamado = { ...chamado, setor, responsavel, status: "Em atendimento" };
-    onAtualizar(updated, { acao: "Encaminhado", detalhe: `${setor} · ${responsavel}${obs.trim() ? " · " + obs.trim() : ""}`, icon: "🟡" }, { hora, acao: "Encaminhado", de: chamado.setor || "—", para: setor + " · " + responsavel });
+    onAtualizar(updated, { acao: "Encaminhado", detalhe: `${setor} · ${responsavel}${obs.trim() ? " · " + obs.trim() : ""}`, icon: "encaminhado" }, { hora, acao: "Encaminhado", de: chamado.setor || "—", para: setor + " · " + responsavel });
     setStatus("Em atendimento");
     setEncaminhado(true);
   };
@@ -30,7 +31,7 @@ function EncaminhamentoConteudo({ chamado }: { chamado: Chamado }) {
   const handleAtualizarStatus = () => {
     const hora = horaAtual();
     const updated: Chamado = { ...chamado, setor, responsavel, status };
-    onAtualizar(updated, { acao: "Status atualizado", detalhe: status + (obs.trim() ? " · " + obs.trim() : ""), icon: "📝" }, { hora, acao: "Status atualizado", de: chamado.status, para: status + (obs.trim() ? " · " + obs.trim() : "") });
+    onAtualizar(updated, { acao: "Status atualizado", detalhe: status + (obs.trim() ? " · " + obs.trim() : ""), icon: "atualizacao" }, { hora, acao: "Status atualizado", de: chamado.status, para: status + (obs.trim() ? " · " + obs.trim() : "") });
     setObs("");
   };
 
@@ -42,9 +43,7 @@ function EncaminhamentoConteudo({ chamado }: { chamado: Chamado }) {
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">
             <Link aria-label="Voltar ao chamado" href={`/chamados/${chamado.id}`} className="w-9 h-9 rounded-xl border border-[#E2E8F0] flex items-center justify-center text-[#64748B] hover:bg-white transition-all">
-              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15,18 9,12 15,6" />
-              </svg>
+              <ChevronLeft size={16} />
             </Link>
             <div>
               <h1 className="text-2xl font-bold text-brand-navy" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>
@@ -87,7 +86,7 @@ function EncaminhamentoConteudo({ chamado }: { chamado: Chamado }) {
                         background: setor === s.id ? "#EFF6FF" : "white",
                       }}
                     >
-                      <div className="text-xl mb-1">{s.icon}</div>
+                      <s.icon className="mb-1.5" size={20} style={{ color: setor === s.id ? "#2563EB" : "#475569" }} />
                       <div className="font-semibold text-sm" style={{ color: setor === s.id ? "#2563EB" : "#1E293B" }}>
                         {s.id}
                       </div>
@@ -180,9 +179,7 @@ function EncaminhamentoConteudo({ chamado }: { chamado: Chamado }) {
 
               {encaminhado && (
                 <div className="rounded-2xl p-4 flex items-center gap-3" style={{ background: "#ECFDF5" }}>
-                  <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20,6 9,17 4,12" />
-                  </svg>
+                  <Check size={20} color="#10B981" strokeWidth={2.5} />
                   <span className="text-sm font-semibold text-[#059669]">
                     Chamado encaminhado para {responsavel} · {setor}
                   </span>

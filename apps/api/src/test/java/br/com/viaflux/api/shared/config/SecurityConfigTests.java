@@ -1,5 +1,6 @@
 package br.com.viaflux.api.shared.config;
 
+import br.com.viaflux.api.chamado.ChamadoController;
 import br.com.viaflux.api.chamado.ChamadoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest
+@WebMvcTest(ChamadoController.class)
 @Import(SecurityConfig.class)
 class SecurityConfigTests {
 

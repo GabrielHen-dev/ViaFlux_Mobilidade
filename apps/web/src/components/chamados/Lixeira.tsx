@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { ChevronLeft, CircleAlert, RotateCcw, Trash } from "lucide-react";
 import { useChamados } from "@/store/ChamadosContext";
 import { useState } from "react";
 import { StatusBadge, PrioridadeBadge } from "@/components/ui/StatusBadge";
@@ -19,9 +20,7 @@ export default function Lixeira() {
             <Link href="/" aria-label="Voltar ao Dashboard"
               className="w-9 h-9 rounded-xl border border-[#E2E8F0] flex items-center justify-center text-[#64748B] hover:bg-white transition-all"
             >
-              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15,18 9,12 15,6" />
-              </svg>
+              <ChevronLeft size={16} />
             </Link>
             <div>
               <h1 className="text-2xl font-bold text-brand-navy" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>
@@ -59,10 +58,7 @@ export default function Lixeira() {
                   onClick={() => setConfirmandoEsvaziar(true)}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#FECACA] text-sm font-semibold text-[#EF4444] hover:bg-[#FEF2F2] transition-all"
                 >
-                  <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="3,6 5,6 21,6" />
-                    <path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6" />
-                  </svg>
+                  <Trash size={14} />
                   Esvaziar lixeira
                 </button>
               )}
@@ -73,12 +69,7 @@ export default function Lixeira() {
         {chamados.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: "#F1F5F9" }}>
-              <svg aria-hidden="true" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3,6 5,6 21,6" />
-                <path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6" />
-                <path d="M10,11v6" /><path d="M14,11v6" />
-                <path d="M9,6V4a1,1,0,0,1,1-1h4a1,1,0,0,1,1,1V6" />
-              </svg>
+              <Trash size={36} color="#CBD5E1" strokeWidth={1.5} />
             </div>
             <h3 className="font-bold text-[#64748B] mb-1" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>
               Lixeira vazia
@@ -88,9 +79,7 @@ export default function Lixeira() {
         ) : (
           <div className="bg-white rounded-2xl border border-[#E2E8F0] overflow-hidden">
             <div className="px-6 py-4 border-b border-[#FEF2F2] flex items-center gap-2" style={{ background: "#FFF5F5" }}>
-              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
+              <CircleAlert size={14} color="#EF4444" />
               <span className="text-xs text-[#EF4444] font-medium">
                 Chamados excluídos ficam aqui. Você pode restaurá-los ou excluí-los permanentemente.
               </span>
@@ -126,9 +115,7 @@ export default function Lixeira() {
                           onClick={() => { onRestaurar(c.id); }}
                           className="flex items-center gap-1 text-xs font-semibold text-brand-blue hover:underline"
                         >
-                          <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="1,4 1,10 7,10" /><path d="M3.51,15a9,9,0,1,0,.49-3.54" />
-                          </svg>
+                          <RotateCcw size={12} />
                           Restaurar
                         </button>
                         <span className="text-[#E2E8F0]">|</span>

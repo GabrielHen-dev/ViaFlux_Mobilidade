@@ -1,5 +1,7 @@
 package br.com.viaflux.api.shared.config;
 
+import br.com.viaflux.api.usuario.PerfilRepository;
+import br.com.viaflux.api.usuario.UsuarioRepository;
 import br.com.viaflux.api.chamado.ChamadoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,12 @@ class OpenApiDisabledEndpointTests {
 
     @MockitoBean
     private ChamadoService chamadoService;
+
+    @MockitoBean
+    private UsuarioRepository usuarioRepository;
+
+    @MockitoBean
+    private PerfilRepository perfilRepository;
 
     @Test
     void doesNotExposeDocumentationWhenDisabled() throws Exception {

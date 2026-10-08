@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { Check, ChevronLeft } from "lucide-react";
 import { tipos, gravidades } from "@/mocks/opcoes";
 import { useChamados } from "@/store/ChamadosContext";
 import { useChamado } from "@/hooks/useChamado";
@@ -25,7 +26,7 @@ function TriagemConteudo({ chamado }: { chamado: Chamado }) {
       status: "Em triagem",
       sla: gravSel.sla + " restantes",
     };
-    onAtualizar(updated, { acao: "Triagem realizada", detalhe: `Prioridade ${gravidade} · ${tipo}${justificativa.trim() ? " · " + justificativa.trim() : ""}`, icon: "🔵" });
+    onAtualizar(updated, { acao: "Triagem realizada", detalhe: `Prioridade ${gravidade} · ${tipo}${justificativa.trim() ? " · " + justificativa.trim() : ""}`, icon: "triagem" });
     setConfirmado(true);
   };
 
@@ -35,9 +36,7 @@ function TriagemConteudo({ chamado }: { chamado: Chamado }) {
         <main id="conteudo" className="min-h-[70vh] md:min-h-screen flex items-center justify-center p-4 md:p-8">
           <div className="max-w-md w-full bg-white rounded-2xl border border-[#E2E8F0] p-10 text-center shadow-sm">
             <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ background: "#ECFDF5" }}>
-              <svg aria-hidden="true" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20,6 9,17 4,12" />
-              </svg>
+              <Check size={32} color="#10B981" strokeWidth={2.5} />
             </div>
             <h2 className="text-xl font-bold text-brand-navy mb-2" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>Triagem confirmada!</h2>
             <p className="text-[#64748B] text-sm mb-1">Chamado <span className="font-bold text-brand-blue">#{chamado.id}</span></p>
@@ -66,9 +65,7 @@ function TriagemConteudo({ chamado }: { chamado: Chamado }) {
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">
             <Link aria-label="Voltar ao chamado" href={`/chamados/${chamado.id}`} className="w-9 h-9 rounded-xl border border-[#E2E8F0] flex items-center justify-center text-[#64748B] hover:bg-white transition-all">
-              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15,18 9,12 15,6" />
-              </svg>
+              <ChevronLeft size={16} />
             </Link>
             <div>
               <h1 className="text-2xl font-bold text-brand-navy" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>

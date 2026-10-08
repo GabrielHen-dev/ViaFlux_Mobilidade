@@ -2,7 +2,8 @@ export type Status = "Aberto" | "Em triagem" | "Em atendimento" | "Aguardando" |
 export type Prioridade = "Baixa" | "Média" | "Alta" | "Crítica";
 export type StatusServico = "solicitado" | "acionado" | "aceito" | "a_caminho" | "recolhido" | "concluido";
 
-export interface TimelineItem { hora: string; acao: string; detalhe: string; icon: string; }
+export type IconeEvento = "aberto" | "triagem" | "encaminhado" | "atendimento" | "atualizacao" | "parceiro";
+export interface TimelineItem { hora: string; acao: string; detalhe: string; icon: IconeEvento; }
 export interface HistoricoItem { hora: string; acao: string; de: string; para: string; }
 export interface EventoTimeline {
   hora: string; titulo: string; detalhe: string; status: StatusServico;

@@ -43,7 +43,7 @@ export function chamadosReducer(state: ChamadosState, action: ChamadosAction): C
     case "observacaoParceiro": return { ...state, chamados: state.chamados.map((c) => c.id !== action.id || !c.servicoTerceiro ? c : {
       ...c,
       servicoTerceiro: { ...c.servicoTerceiro, atualizacoes: [{ hora: action.hora, texto: action.texto }, ...c.servicoTerceiro.atualizacoes] },
-      timeline: [...c.timeline, { hora: action.hora, acao: "Atualização do parceiro", detalhe: action.texto, icon: "🚛" }],
+      timeline: [...c.timeline, { hora: action.hora, acao: "Atualização do parceiro", detalhe: action.texto, icon: "parceiro" }],
     }) };
     case "anexos": return { ...state, chamados: state.chamados.map((c) => c.id !== action.id ? c : { ...c, anexos: [...c.anexos, ...action.anexos] }) };
   }

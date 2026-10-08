@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { Check, ChevronRight, CircleAlert, CirclePlus, Truck, X } from "lucide-react";
 import type { Chamado, ServicoTerceiro } from "@/types/chamado";
 import { parceirosCredenciados, tiposServico } from "@/mocks/opcoes";
 import { eventosServicoMock } from "@/mocks/servicos";
@@ -50,9 +51,7 @@ export default function ServicoTerceiroForm({ chamado }: { chamado: Chamado }) {
             {!servicoRegistrado && !mostrarFormTerceiro && (
               <div className="rounded-2xl border-2 border-dashed border-[#CBD5E1] p-6 flex flex-col items-center text-center gap-3">
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "#F1F5F9" }}>
-                  <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
-                  </svg>
+                  <Truck size={22} color="#94A3B8" />
                 </div>
                 <div>
                   <div className="font-semibold text-[#475569] text-sm">Nenhum serviço terceirizado vinculado</div>
@@ -63,9 +62,7 @@ export default function ServicoTerceiroForm({ chamado }: { chamado: Chamado }) {
                   className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-semibold hover:opacity-90 transition-opacity"
                   style={{ background: "var(--brand-blue)" }}
                 >
-                  <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-                  </svg>
+                  <CirclePlus size={14} strokeWidth={2.5} />
                   Incluir Serviço Terceirizado
                 </button>
               </div>
@@ -76,9 +73,7 @@ export default function ServicoTerceiroForm({ chamado }: { chamado: Chamado }) {
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--brand-blue)" }}>
-                      <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
-                      </svg>
+                      <Truck size={15} color="white" strokeWidth={2.5} />
                     </div>
                     <h3 className="font-bold text-brand-navy text-sm" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>
                       Incluir Serviço Terceirizado
@@ -88,9 +83,7 @@ export default function ServicoTerceiroForm({ chamado }: { chamado: Chamado }) {
                     onClick={() => { setMostrarFormTerceiro(false); setErroForm(""); }}
                     aria-label="Fechar formulário do parceiro" className="text-[#94A3B8] hover:text-[#475569] transition-colors"
                   >
-                    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
+                    <X size={16} />
                   </button>
                 </div>
 
@@ -124,9 +117,7 @@ export default function ServicoTerceiroForm({ chamado }: { chamado: Chamado }) {
                             {p.tipo && <div className="text-xs text-[#94A3B8]">{p.tipo}{p.telefone ? ` · ${p.telefone}` : ""}</div>}
                           </div>
                           {formTerceiro.parceiroSelecionado === p.nome && (
-                            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="20,6 9,17 4,12"/>
-                            </svg>
+                            <Check size={16} color="#2563EB" strokeWidth={2.5} />
                           )}
                         </button>
                       ))}
@@ -202,9 +193,7 @@ export default function ServicoTerceiroForm({ chamado }: { chamado: Chamado }) {
 
                   {erroForm && (
                     <div role="alert" className="flex items-center gap-2 text-xs font-semibold text-[#DC2626]">
-                      <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                      </svg>
+                      <CircleAlert size={12} strokeWidth={2.5} />
                       {erroForm}
                     </div>
                   )}
@@ -233,9 +222,7 @@ export default function ServicoTerceiroForm({ chamado }: { chamado: Chamado }) {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--brand-blue)" }}>
-                      <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
-                      </svg>
+                      <Truck size={15} color="white" strokeWidth={2.5} />
                     </div>
                     <h3 className="font-bold text-brand-navy text-sm" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>
                       Serviço Terceirizado
@@ -251,9 +238,7 @@ export default function ServicoTerceiroForm({ chamado }: { chamado: Chamado }) {
                       className="text-xs text-[#94A3B8] hover:text-[#EF4444] transition-colors px-1"
                       title="Remover serviço"
                     >
-                      <svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                      </svg>
+                      <X size={13} />
                     </button>
                   </div>
                 </div>
@@ -284,9 +269,7 @@ export default function ServicoTerceiroForm({ chamado }: { chamado: Chamado }) {
                   style={{ background: "var(--brand-blue)" }}
                 >
                   Ver acompanhamento completo
-                  <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="9,18 15,12 9,6" />
-                  </svg>
+                  <ChevronRight size={14} strokeWidth={2.5} />
                 </Link>
               </div>
             )}

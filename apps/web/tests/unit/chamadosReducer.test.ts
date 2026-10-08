@@ -36,7 +36,7 @@ describe("estado temporário de chamados", () => {
   it("registra atualização e histórico atomicamente sem alterar outros chamados", () => {
     const state = inicial();
     const atualizado = chamadosReducer(state, { type: "atualizar", chamado: { ...state.chamados[0], status: "Resolvido" },
-      evento: { hora: "10:30", acao: "Status atualizado", detalhe: "Resolvido", icon: "📝" },
+      evento: { hora: "10:30", acao: "Status atualizado", detalhe: "Resolvido", icon: "atualizacao" },
       historico: { hora: "10:30", acao: "Status atualizado", de: "Em atendimento", para: "Resolvido" },
     });
     expect(atualizado.chamados[0].status).toBe("Resolvido");

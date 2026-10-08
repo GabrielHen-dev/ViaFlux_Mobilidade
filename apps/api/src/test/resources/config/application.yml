@@ -1,0 +1,8 @@
+viaflux:
+  jwt:
+    secret: segredo-dos-testes-com-mais-de-32-bytes-para-hs256
+  cors:
+    allowed-origins: http://localhost:3000
+  admin:
+    email: ""
+    senha: ""

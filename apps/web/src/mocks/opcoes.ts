@@ -1,3 +1,5 @@
+import { Factory, Monitor, Wallet, Wrench } from "lucide-react";
+
 // Valores demonstrativos do Figma; não representam regras oficiais do domínio.
 export const parceirosCredenciados = [
   { nome: "Guincho ViaRápido", telefone: "(11) 98000-1234", tipo: "Guincho / Remoção" },
@@ -25,10 +27,10 @@ export const gravidades = [
 ] as const;
 
 export const setores = [
-  { id: "Assistência", icon: "🔧", desc: "Suporte mecânico em campo" },
-  { id: "TI", icon: "💻", desc: "Sistemas e telemetria" },
-  { id: "Manutenção", icon: "🏭", desc: "Reparo em oficina" },
-  { id: "Financeiro", icon: "💰", desc: "Reembolsos e custos" },
+  { id: "Assistência", icon: Wrench, desc: "Suporte mecânico em campo" },
+  { id: "TI", icon: Monitor, desc: "Sistemas e telemetria" },
+  { id: "Manutenção", icon: Factory, desc: "Reparo em oficina" },
+  { id: "Financeiro", icon: Wallet, desc: "Reembolsos e custos" },
 ];
 
 export const responsaveis: Record<string, string[]> = {

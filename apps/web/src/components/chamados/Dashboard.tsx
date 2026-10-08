@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { CirclePlus, ClipboardList, Hourglass, Search, Trash, TriangleAlert, Zap } from "lucide-react";
 import { useChamados } from "@/store/ChamadosContext";
 import { statuses } from "@/mocks/opcoes";
 import { useState } from "react";
@@ -59,9 +60,7 @@ export default function Dashboard() {
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-semibold shadow-sm transition-all hover:opacity-90 active:scale-95"
             style={{ background: "var(--brand-green)" }}
           >
-            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" />
-            </svg>
+            <CirclePlus size={16} strokeWidth={2.5} />
             Novo Chamado
           </Link>
         </div>
@@ -69,16 +68,16 @@ export default function Dashboard() {
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
           {[
-            { label: "Total de chamados", value: total, icon: "📋", color: "#0F2C59", bg: "#EFF6FF" },
-            { label: "Críticos", value: criticos, icon: "🔴", color: "#DC2626", bg: "#FEF2F2" },
-            { label: "Em atendimento", value: emAtendimento, icon: "⚡", color: "#059669", bg: "#ECFDF5" },
-            { label: "Aguardando", value: aguardando, icon: "⏳", color: "#7C3AED", bg: "#F5F3FF" },
+            { label: "Total de chamados", value: total, icon: ClipboardList, color: "#0F2C59", bg: "#EFF6FF" },
+            { label: "Críticos", value: criticos, icon: TriangleAlert, color: "#DC2626", bg: "#FEF2F2" },
+            { label: "Em atendimento", value: emAtendimento, icon: Zap, color: "#059669", bg: "#ECFDF5" },
+            { label: "Aguardando", value: aguardando, icon: Hourglass, color: "#7C3AED", bg: "#F5F3FF" },
           ].map((stat) => (
             <div key={stat.label} className="rounded-2xl p-5 border border-[#E2E8F0] bg-white">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm text-[#64748B] font-medium">{stat.label}</span>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg" style={{ background: stat.bg }}>
-                  {stat.icon}
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: stat.bg, color: stat.color }}>
+                  <stat.icon size={18} />
                 </div>
               </div>
               <div className="text-3xl font-bold" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif", color: stat.color }}>
@@ -92,9 +91,7 @@ export default function Dashboard() {
         <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5 mb-5">
           <div className="flex flex-wrap items-center gap-4">
             <div className="relative flex-1 min-w-48">
-              <svg aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={16} />
               <input
                 type="text"
                 aria-label="Buscar chamados"
@@ -202,12 +199,7 @@ export default function Dashboard() {
                           className="text-[#CBD5E1] hover:text-[#EF4444] transition-colors"
                           title="Excluir chamado" aria-label={`Excluir chamado ${c.id}`}
                         >
-                          <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3,6 5,6 21,6" />
-                            <path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6" />
-                            <path d="M10,11v6" /><path d="M14,11v6" />
-                            <path d="M9,6V4a1,1,0,0,1,1-1h4a1,1,0,0,1,1,1V6" />
-                          </svg>
+                          <Trash size={14} />
                         </button>
                       )}
                     </div>

@@ -2,6 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Check, ChevronLeft, CircleX, MapPin, MessageSquare, Phone, Star } from "lucide-react";
 import type { ServicoTerceiro } from "@/types/chamado";
 import { statusConfig } from "@/components/ui/StatusServico";
 import { useChamados } from "@/store/ChamadosContext";
@@ -46,9 +47,7 @@ function AcompanhamentoConteudo({ chamado, servico }: { chamado: Chamado; servic
             <Link aria-label="Voltar ao chamado" href={`/chamados/${chamado.id}`}
               className="w-9 h-9 rounded-xl border border-[#E2E8F0] flex items-center justify-center text-[#64748B] hover:bg-white transition-all bg-white"
             >
-              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15,18 9,12 15,6"/>
-              </svg>
+              <ChevronLeft size={16} />
             </Link>
             <div>
               <div className="flex items-center gap-2 mb-1">
@@ -114,7 +113,9 @@ function AcompanhamentoConteudo({ chamado, servico }: { chamado: Chamado; servic
                   <div className="font-bold text-brand-dark">{servico.parceiro}</div>
                   <div className="text-sm text-[#64748B] mt-0.5">Parceiro credenciado · Assistência 24h</div>
                   <div className="flex flex-wrap items-center gap-3 mt-1.5">
-                    <span className="text-xs text-[#94A3B8]">{parceiroInfo?.avaliacao ?? "Parceiro vinculado"}</span>
+                    {parceiroInfo
+                      ? <span className="inline-flex items-center gap-1 text-xs text-[#94A3B8]"><Star size={12} className="fill-amber-400 text-amber-400" />{parceiroInfo.avaliacao}</span>
+                      : <span className="text-xs text-[#94A3B8]">Parceiro vinculado</span>}
                     <span className="text-xs text-[#94A3B8]">·</span>
                     <span className="text-xs text-[#94A3B8]">{parceiroInfo?.documento ?? "Dados a confirmar"}</span>
                   </div>
@@ -124,9 +125,7 @@ function AcompanhamentoConteudo({ chamado, servico }: { chamado: Chamado; servic
                   className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white hover:opacity-90 transition-opacity"
                   style={{ background: "var(--brand-green)" }}
                 >
-                  <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.68 2.81a2 2 0 0 1-.45 2.11L7.91 8a16 16 0 0 0 6 6l.38-.38a2 2 0 0 1 2.11-.45c.91.32 1.85.55 2.81.68A2 2 0 0 1 21 16z"/>
-                  </svg>
+                  <Phone size={12} strokeWidth={2.5} />
                   Ligar
                 </a>
               </div>
@@ -191,9 +190,7 @@ function AcompanhamentoConteudo({ chamado, servico }: { chamado: Chamado; servic
                           }}
                         >
                           {evento.concluido ? (
-                            <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="20,6 9,17 4,12"/>
-                            </svg>
+                            <Check size={14} color="white" strokeWidth={3} />
                           ) : isAtual ? (
                             <span style={{ color: "white" }}>{cfg.icone}</span>
                           ) : (
@@ -296,9 +293,7 @@ function AcompanhamentoConteudo({ chamado, servico }: { chamado: Chamado; servic
               </div>
               {salvo && (
                 <div className="mt-3 flex items-center gap-2 text-xs font-semibold" style={{ color: "#059669" }}>
-                  <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20,6 9,17 4,12"/>
-                  </svg>
+                  <Check size={12} strokeWidth={3} />
                   Observação registrada com sucesso
                 </div>
               )}
@@ -323,9 +318,7 @@ function AcompanhamentoConteudo({ chamado, servico }: { chamado: Chamado; servic
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="bg-white rounded-xl px-3 py-2 shadow-lg flex items-center gap-2">
                     <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "#EF4444" }}>
-                      <svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="white">
-                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                      </svg>
+                      <MapPin size={10} color="white" strokeWidth={3} />
                     </div>
                     <span className="text-xs font-semibold text-brand-dark">{servico.local.split(",").slice(0, 2).join(",")}</span>
                   </div>
@@ -335,9 +328,7 @@ function AcompanhamentoConteudo({ chamado, servico }: { chamado: Chamado; servic
                 <div className="text-sm font-semibold text-brand-dark">{servico.local.split(",").slice(0, 2).join(",")}</div>
                 <div className="text-xs text-[#64748B] mt-0.5">{servico.local.split(",").slice(2).join(",").trim()}</div>
                 <div className="flex items-center gap-1.5 mt-2 text-xs text-brand-blue font-medium">
-                  <svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-                  </svg>
+                  <MapPin size={11} strokeWidth={2.5} />
                   Ver no mapa
                 </div>
               </div>
@@ -364,9 +355,7 @@ function AcompanhamentoConteudo({ chamado, servico }: { chamado: Chamado; servic
             {/* Integração com histórico do chamado */}
             <div className="rounded-2xl p-4" style={{ background: "#F0FDF4", border: "1.5px solid #BBF7D0" }}>
               <div className="flex items-start gap-2">
-                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
-                  <polyline points="20,6 9,17 4,12"/>
-                </svg>
+                <Check size={14} color="#059669" strokeWidth={2.5} className="flex-shrink-0 mt-0.5" />
                 <div>
                   <div className="text-xs font-semibold text-[#065F46] mb-0.5">Integrado ao histórico</div>
                   <p className="text-xs text-[#047857] leading-relaxed">
@@ -383,21 +372,15 @@ function AcompanhamentoConteudo({ chamado, servico }: { chamado: Chamado; servic
               </h3>
               <div className="space-y-2">
                 <button onClick={() => registrarObservacaoParceiro(chamado.id, "Contato telefônico com o parceiro solicitado pela Central ViaFlux.")} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-brand-dark hover:bg-brand-light transition-colors border border-[#E2E8F0] text-left">
-                  <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.68 2.81a2 2 0 0 1-.45 2.11L7.91 8a16 16 0 0 0 6 6l.38-.38a2 2 0 0 1 2.11-.45c.91.32 1.85.55 2.81.68A2 2 0 0 1 21 16z"/>
-                  </svg>
+                  <Phone size={14} color="#2563EB" strokeWidth={2.5} />
                   Ligar para o parceiro
                 </button>
                 <button onClick={() => registrarObservacaoParceiro(chamado.id, "Atualização solicitada ao parceiro pela Central ViaFlux.")} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-brand-dark hover:bg-brand-light transition-colors border border-[#E2E8F0] text-left">
-                  <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                  </svg>
+                  <MessageSquare size={14} color="#7C3AED" strokeWidth={2.5} />
                   Solicitar atualização
                 </button>
                 <button onClick={() => { vincularServico(chamado.id, null); router.push(`/chamados/${chamado.id}`); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-[#EF4444] hover:bg-[#FEF2F2] transition-colors border border-[#FECACA] text-left">
-                  <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
-                  </svg>
+                  <CircleX size={14} color="#EF4444" strokeWidth={2.5} />
                   Cancelar serviço
                 </button>
               </div>
@@ -407,9 +390,7 @@ function AcompanhamentoConteudo({ chamado, servico }: { chamado: Chamado; servic
             <Link aria-label="Voltar ao chamado" href={`/chamados/${chamado.id}`}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-[#E2E8F0] text-sm font-semibold text-[#475569] hover:bg-white hover:border-[#CBD5E1] transition-all"
             >
-              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15,18 9,12 15,6"/>
-              </svg>
+              <ChevronLeft size={14} />
               Voltar ao chamado
             </Link>
           </div>

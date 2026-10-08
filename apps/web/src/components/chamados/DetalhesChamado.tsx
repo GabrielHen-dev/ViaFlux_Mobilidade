@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
+import { ChevronLeft, Clock, Trash } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useChamados } from "@/store/ChamadosContext";
 import { useChamado } from "@/hooks/useChamado";
@@ -31,9 +32,7 @@ function DetalhesConteudo({ chamado }: { chamado: Chamado }) {
             <Link href="/" aria-label="Voltar ao Dashboard"
               className="w-9 h-9 rounded-xl border border-[#E2E8F0] flex items-center justify-center text-[#64748B] hover:bg-white transition-all"
             >
-              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15,18 9,12 15,6" />
-              </svg>
+              <ChevronLeft size={16} />
             </Link>
             <div>
               <div className="flex items-center gap-3 mb-1">
@@ -55,12 +54,7 @@ function DetalhesConteudo({ chamado }: { chamado: Chamado }) {
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#FECACA] text-sm font-semibold text-[#EF4444] hover:bg-[#FEF2F2] transition-all"
               title="Mover para lixeira"
             >
-              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3,6 5,6 21,6" />
-                <path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6" />
-                <path d="M10,11v6" /><path d="M14,11v6" />
-                <path d="M9,6V4a1,1,0,0,1,1-1h4a1,1,0,0,1,1,1V6" />
-              </svg>
+              <Trash size={14} />
               Excluir
             </button>
             <Link href={`/chamados/${chamado.id}/triagem`}
@@ -138,9 +132,7 @@ function DetalhesConteudo({ chamado }: { chamado: Chamado }) {
               style={{ background: chamado.sla.includes("restante") ? "#FFF7ED" : "#ECFDF5" }}
             >
               <div className="flex items-center gap-2 mb-2">
-                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={chamado.sla.includes("restante") ? "#EA580C" : "#059669"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" /><polyline points="12,6 12,12 16,14" />
-                </svg>
+                <Clock size={14} color={chamado.sla.includes("restante") ? "#EA580C" : "#059669"} />
                 <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: chamado.sla.includes("restante") ? "#EA580C" : "#059669" }}>
                   SLA
                 </span>

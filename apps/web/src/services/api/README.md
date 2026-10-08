@@ -1,3 +1,8 @@
-# Integração futura
+# Integração com a API
 
-Reservado ao cliente HTTP e aos contratos da API Spring Boot. O protótipo atual usa exclusivamente `mocks/` e `store/`; não há endpoints, fetches ou serviços simulando um backend. TanStack Query está disponível para a integração futura e não é usado para dados locais.
+Cliente HTTP e contratos da API Spring Boot. A URL base vem de `NEXT_PUBLIC_API_URL` e, sem ela, usa `http://localhost:8281`.
+
+- `cliente.ts`: `requisitarApi`, que monta a URL, envia JSON e converte respostas de erro (ProblemDetail) em `ErroApi`.
+- `auth.ts`: login e renovação de sessão.
+
+A autenticação já usa a API. Os chamados continuam vindo de `mocks/` e `store/` até que os endpoints correspondentes existam no backend. TanStack Query está disponível para essa próxima etapa.

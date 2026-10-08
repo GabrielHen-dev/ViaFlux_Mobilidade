@@ -28,7 +28,7 @@ export const parceirosDetalhesMock: Record<string, {
   modalidade: string; chegada: string; distancia: string;
 }> = {
   "Guincho ViaRápido": {
-    motorista: "José Augusto", veiculo: "Guincho · GHI-4R21", avaliacao: "⭐ 4.8 · 1.247 atendimentos",
+    motorista: "José Augusto", veiculo: "Guincho · GHI-4R21", avaliacao: "4.8 · 1.247 atendimentos",
     documento: "CNPJ 12.345.678/0001-90", modalidade: "Guincho plataforma", chegada: "23:00", distancia: "~18 km · ~29 min",
   },
 };

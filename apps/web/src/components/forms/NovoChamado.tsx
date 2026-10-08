@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { Check, ChevronLeft } from "lucide-react";
 import type { Anexo } from "@/types/chamado";
 import { useChamados } from "@/store/ChamadosContext";
 import { dataHoraAtual, horaAtual } from "@/utils/date";
@@ -44,7 +45,7 @@ export default function NovoChamado() {
       responsavel: "",
       abertura: dataStr,
       sla: "8h restantes",
-      timeline: [{ hora: horaAtual(), acao: "Chamado aberto", detalhe: "Registrado por João Matos · Central ViaFlux", icon: "🟢" }], historico: [], servicoTerceiro: null, anexos,
+      timeline: [{ hora: horaAtual(), acao: "Chamado aberto", detalhe: "Registrado por João Matos · Central ViaFlux", icon: "aberto" }], historico: [], servicoTerceiro: null, anexos,
     };
     onCriar(novo);
     setNovoChamadoId(novoId);
@@ -64,9 +65,7 @@ export default function NovoChamado() {
               className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
               style={{ background: "#ECFDF5" }}
             >
-              <svg aria-hidden="true" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20,6 9,17 4,12" />
-              </svg>
+              <Check size={32} color="#10B981" strokeWidth={2.5} />
             </div>
             <h2 className="text-xl font-bold text-brand-navy mb-2" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>
               Chamado aberto!
@@ -108,9 +107,7 @@ export default function NovoChamado() {
             <Link href="/" aria-label="Voltar ao Dashboard"
               className="w-9 h-9 rounded-xl border border-[#E2E8F0] flex items-center justify-center text-[#64748B] hover:bg-white hover:border-[#CBD5E1] transition-all"
             >
-              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15,18 9,12 15,6" />
-              </svg>
+              <ChevronLeft size={16} />
             </Link>
             <div>
               <div className="text-xs text-[#94A3B8] font-medium mb-0.5">Nº do chamado</div>

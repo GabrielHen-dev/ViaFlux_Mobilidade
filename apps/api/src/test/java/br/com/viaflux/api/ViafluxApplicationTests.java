@@ -39,7 +39,7 @@ class ViafluxApplicationTests {
     }
 
     @Test
-    void connectsToPostgresAndAppliesInitialMigration() {
+    void connectsToPostgresAndAppliesMigrations() {
         Boolean schemaExists = jdbcTemplate.queryForObject(
                 "SELECT EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'viaflux')",
                 Boolean.class
@@ -50,7 +50,7 @@ class ViafluxApplicationTests {
         );
 
         assertThat(schemaExists).isTrue();
-        assertThat(successfulMigrations).isEqualTo(1);
+        assertThat(successfulMigrations).isEqualTo(4);
     }
 
     @Test
