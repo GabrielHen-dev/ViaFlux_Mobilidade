@@ -16,6 +16,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -55,5 +56,36 @@ class ChamadoControllerTests {
                         .content("{\"solicitante\":\"\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors.solicitante").value("O solicitante é obrigatório."));
+    }
+
+    @Test
+    void retrievesTicketWithoutAuthentication() throws Exception {
+        UUID id = UUID.randomUUID();
+        OffsetDateTime abertoEm = OffsetDateTime.of(2026, 10, 8, 16, 0, 0, 0, ZoneOffset.UTC);
+        given(chamadoService.consultar(id))
+                .willReturn(new ChamadoResponse(id, "Maria Silva", StatusChamado.ABERTO, abertoEm));
+
+        mockMvc.perform(get("/api/chamados/{id}", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id.toString()))
+                .andExpect(jsonPath("$.solicitante").value("Maria Silva"))
+                .andExpect(jsonPath("$.status").value("ABERTO"));
+    }
+
+    @Test
+    void returnsNotFoundWhenTicketDoesNotExist() throws Exception {
+        UUID id = UUID.randomUUID();
+        given(chamadoService.consultar(id)).willThrow(new ChamadoNaoEncontradoException(id));
+
+        mockMvc.perform(get("/api/chamados/{id}", id))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.detail").value("Chamado não encontrado."));
+    }
+
+    @Test
+    void rejectsInvalidTicketIdentifier() throws Exception {
+        mockMvc.perform(get("/api/chamados/identificador-invalido"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Um ou mais parâmetros são inválidos."));
     }
 }

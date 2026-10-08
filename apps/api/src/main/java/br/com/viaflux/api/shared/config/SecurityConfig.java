@@ -49,6 +49,7 @@ public class SecurityConfig {
                         .requestMatchers("/health").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/chamados").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/chamados/*").permitAll()
                         .anyRequest().denyAll())
                 .build();
     }
