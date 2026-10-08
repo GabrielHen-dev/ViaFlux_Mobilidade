@@ -1,0 +1,17 @@
+@theme inline {
+  --color-brand-navy: #0F2C59;
+  --color-brand-green: #10B981;
+  --color-brand-blue: #2563EB;
+  --color-brand-light: #F8FAFC;
+  --color-brand-dark: #1E293B;
+  --font-display: var(--font-montserrat), "Montserrat", sans-serif;
+  --font-body: var(--font-inter), "Inter", sans-serif;
+}
+
+:root {
+  --brand-navy: #0F2C59;
+  --brand-green: #10B981;
+  --brand-blue: #2563EB;
+  --brand-light: #F8FAFC;
+  --brand-dark: #1E293B;
+}
