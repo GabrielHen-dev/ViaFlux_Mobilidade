@@ -28,7 +28,7 @@ public record ChamadoResponse(
                 chamado.getPrioridade(),
                 chamado.getDescricao(),
                 chamado.getLocalizacao(),
-                "Aberto",
+                chamado.getStatus().getRotulo(),
                 chamado.getAbertoEm(),
                 timeline
         );

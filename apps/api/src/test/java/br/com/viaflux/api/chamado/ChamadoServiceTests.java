@@ -2,6 +2,9 @@ package br.com.viaflux.api.chamado;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -16,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class ChamadoServiceTests {
@@ -105,5 +109,46 @@ class ChamadoServiceTests {
         assertThat(response.timeline()).hasSize(1);
         assertThat(response.timeline().getFirst().hora()).isEqualTo("09:00");
         assertThat(response.timeline().getFirst().ocorridoEm()).isEqualTo(ocorridoEm);
+    }
+
+    @Test
+    void listsTicketsUsingNormalizedFiltersAndNewestFirstOrdering() {
+        OffsetDateTime abertura = OffsetDateTime.of(2026, 10, 13, 12, 0, 0, 0, ZoneOffset.UTC);
+        Chamado chamado = new Chamado("VF-0000", new AbrirChamadoRequest(
+                "Maria Silva", null, "Volvo FH 460", "ABC-1D23", "Mecânico", null, "BR-116"
+        ), abertura);
+        given(chamadoRepository.buscar(any(), any(), any(), any()))
+                .willReturn(new PageImpl<>(List.of(chamado), PageRequest.of(1, 5), 6));
+
+        ChamadosPageResponse response = chamadoService.listar(" Volvo ", " aBeRtO ", "mÉdIa", 1, 5);
+
+        assertThat(response.content()).hasSize(1);
+        assertThat(response.content().getFirst().id()).isEqualTo("VF-0000");
+        assertThat(response.content().getFirst().status()).isEqualTo("Aberto");
+        assertThat(response.page()).isEqualTo(1);
+        assertThat(response.size()).isEqualTo(5);
+        assertThat(response.totalElements()).isEqualTo(6);
+        assertThat(response.totalPages()).isEqualTo(2);
+
+        verify(chamadoRepository).buscar(
+                org.mockito.ArgumentMatchers.eq("%volvo%"),
+                org.mockito.ArgumentMatchers.eq(StatusChamado.ABERTO),
+                org.mockito.ArgumentMatchers.eq("Média"),
+                org.mockito.ArgumentMatchers.argThat(pageable ->
+                        pageable.getPageNumber() == 1
+                                && pageable.getPageSize() == 5
+                                && pageable.getSort().equals(Sort.by(
+                                Sort.Order.desc("abertoEm"), Sort.Order.desc("codigo")
+                        )))
+        );
+        verifyNoMoreInteractions(chamadoRepository);
+    }
+
+    @Test
+    void rejectsUnsupportedPriorityFilter() {
+        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+                        chamadoService.listar(null, null, "Urgente", 0, 20))
+                .isInstanceOf(FiltroChamadoInvalidoException.class)
+                .hasMessage("A prioridade informada não é válida.");
     }
 }

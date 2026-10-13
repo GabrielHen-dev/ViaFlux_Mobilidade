@@ -1,6 +1,7 @@
 package br.com.viaflux.api.shared.error;
 
 import br.com.viaflux.api.chamado.ChamadoNaoEncontradoException;
+import br.com.viaflux.api.chamado.FiltroChamadoInvalidoException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -68,6 +69,12 @@ public class ApiExceptionHandler {
                 "Chamado não encontrado."
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
+    }
+
+    @ExceptionHandler(FiltroChamadoInvalidoException.class)
+    ResponseEntity<ProblemDetail> handleInvalidChamadoFilter(FiltroChamadoInvalidoException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
+        return ResponseEntity.badRequest().body(problem);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)

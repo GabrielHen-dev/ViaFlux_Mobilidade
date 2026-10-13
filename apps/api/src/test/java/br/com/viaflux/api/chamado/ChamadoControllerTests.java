@@ -15,6 +15,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -91,6 +92,48 @@ class ChamadoControllerTests {
                 .andExpect(jsonPath("$.id").value(id))
                 .andExpect(jsonPath("$.cliente").value("Maria Silva"))
                 .andExpect(jsonPath("$.status").value("Aberto"));
+    }
+
+    @Test
+    void listsTicketsWithFiltersAndPaginationWithoutAuthentication() throws Exception {
+        OffsetDateTime abertura = OffsetDateTime.of(2026, 10, 13, 12, 0, 0, 0, ZoneOffset.UTC);
+        given(chamadoService.listar("Volvo", "Aberto", "Média", 0, 10))
+                .willReturn(new ChamadosPageResponse(
+                        List.of(new ChamadoListaItemResponse("VF-0000", "Maria Silva", "Volvo FH 460",
+                                "ABC-1D23", "Mecânico", "BR-116", "Aberto", "Média", abertura)),
+                        0, 10, 1, 1
+                ));
+
+        mockMvc.perform(get("/api/chamados")
+                        .queryParam("busca", "Volvo")
+                        .queryParam("status", "Aberto")
+                        .queryParam("prioridade", "Média")
+                        .queryParam("page", "0")
+                        .queryParam("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value("VF-0000"))
+                .andExpect(jsonPath("$.content[0].cliente").value("Maria Silva"))
+                .andExpect(jsonPath("$.content[0].status").value("Aberto"))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1));
+    }
+
+    @Test
+    void rejectsPageSizesOverOneHundred() throws Exception {
+        mockMvc.perform(get("/api/chamados").queryParam("size", "101"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void rejectsUnknownStatusFilter() throws Exception {
+        given(chamadoService.listar(null, "Inválido", null, 0, 20))
+                .willThrow(new FiltroChamadoInvalidoException("O status informado não é válido."));
+
+        mockMvc.perform(get("/api/chamados").queryParam("status", "Inválido"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("O status informado não é válido."));
     }
 
     @Test
