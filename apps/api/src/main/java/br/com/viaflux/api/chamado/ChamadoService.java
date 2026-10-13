@@ -4,7 +4,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.UUID;
 
 @Service
 public class ChamadoService {
@@ -16,13 +15,14 @@ public class ChamadoService {
     }
 
     ChamadoResponse abrir(AbrirChamadoRequest request) {
-        Chamado chamado = new Chamado(request.solicitante(), OffsetDateTime.now(ZoneOffset.UTC));
+        String codigo = "VF-" + chamadoRepository.proximoNumero();
+        Chamado chamado = new Chamado(codigo, request, OffsetDateTime.now(ZoneOffset.UTC));
         return ChamadoResponse.from(chamadoRepository.save(chamado));
     }
 
-    ChamadoResponse consultar(UUID id) {
-        return chamadoRepository.findById(id)
+    ChamadoResponse consultar(String codigo) {
+        return chamadoRepository.findByCodigo(codigo)
                 .map(ChamadoResponse::from)
-                .orElseThrow(() -> new ChamadoNaoEncontradoException(id));
+                .orElseThrow(() -> new ChamadoNaoEncontradoException(codigo));
     }
 }

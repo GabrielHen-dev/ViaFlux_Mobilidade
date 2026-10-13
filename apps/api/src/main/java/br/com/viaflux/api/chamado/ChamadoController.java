@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/chamados")
@@ -29,7 +28,7 @@ public class ChamadoController {
     }
 
     @PostMapping
-    @Operation(summary = "Abrir chamado", description = "Registra um novo chamado com status inicial ABERTO.")
+    @Operation(summary = "Abrir chamado", description = "Registra um novo chamado com status inicial Aberto e prioridade Média.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Chamado aberto com sucesso"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos")
@@ -43,13 +42,13 @@ public class ChamadoController {
         return ResponseEntity.created(location).body(chamado);
     }
 
-    @GetMapping("/{id}")
-    @Operation(summary = "Consultar chamado", description = "Retorna os dados de um chamado pelo seu identificador.")
+    @GetMapping("/{codigo}")
+    @Operation(summary = "Consultar chamado", description = "Retorna os dados de um chamado pelo código público.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Chamado encontrado"),
             @ApiResponse(responseCode = "404", description = "Chamado não encontrado")
     })
-    public ChamadoResponse consultar(@PathVariable UUID id) {
-        return chamadoService.consultar(id);
+    public ChamadoResponse consultar(@PathVariable("codigo") String codigo) {
+        return chamadoService.consultar(codigo);
     }
 }
