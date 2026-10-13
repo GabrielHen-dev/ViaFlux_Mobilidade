@@ -70,7 +70,11 @@ class ChamadoServiceTests {
         assertThat(response.timeline().getFirst().acao()).isEqualTo("Chamado aberto");
         assertThat(response.timeline().getFirst().detalhe()).isEqualTo("Chamado registrado pelo portal ViaFlux.");
         assertThat(response.timeline().getFirst().icon()).isEqualTo("aberto");
-        assertThat(response.timeline().getFirst().ocorridoEm()).isEqualTo(salvo.getAbertoEm());
+        OffsetDateTime aberturaEmSaoPaulo = salvo.getAbertoEm()
+                .atZoneSameInstant(java.time.ZoneId.of("America/Sao_Paulo"))
+                .toOffsetDateTime();
+        assertThat(response.abertura()).isEqualTo(aberturaEmSaoPaulo);
+        assertThat(response.timeline().getFirst().ocorridoEm()).isEqualTo(aberturaEmSaoPaulo);
     }
 
     @Test
@@ -108,7 +112,8 @@ class ChamadoServiceTests {
 
         assertThat(response.timeline()).hasSize(1);
         assertThat(response.timeline().getFirst().hora()).isEqualTo("09:00");
-        assertThat(response.timeline().getFirst().ocorridoEm()).isEqualTo(ocorridoEm);
+        assertThat(response.timeline().getFirst().ocorridoEm())
+                .isEqualTo(ocorridoEm.atZoneSameInstant(java.time.ZoneId.of("America/Sao_Paulo")).toOffsetDateTime());
     }
 
     @Test

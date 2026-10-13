@@ -1,6 +1,7 @@
 package br.com.viaflux.api.chamado;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 
 public record ChamadoListaItemResponse(
         String id,
@@ -13,6 +14,8 @@ public record ChamadoListaItemResponse(
         String prioridade,
         OffsetDateTime abertura
 ) {
+    private static final ZoneId FUSO_HORARIO_VIAFLUX = ZoneId.of("America/Sao_Paulo");
+
     static ChamadoListaItemResponse from(Chamado chamado) {
         return new ChamadoListaItemResponse(
                 chamado.getCodigo(),
@@ -23,7 +26,7 @@ public record ChamadoListaItemResponse(
                 chamado.getLocalizacao(),
                 chamado.getStatus().getRotulo(),
                 chamado.getPrioridade(),
-                chamado.getAbertoEm()
+                chamado.getAbertoEm().atZoneSameInstant(FUSO_HORARIO_VIAFLUX).toOffsetDateTime()
         );
     }
 }

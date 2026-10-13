@@ -16,15 +16,16 @@ public record TimelineItemResponse(
     private static final DateTimeFormatter FORMATO_HORA = DateTimeFormatter.ofPattern("HH:mm");
 
     static TimelineItemResponse from(ChamadoEvento evento) {
-        String horaLocal = evento.getOcorridoEm()
+        OffsetDateTime ocorridoEmLocal = evento.getOcorridoEm()
                 .atZoneSameInstant(FUSO_HORARIO_VIAFLUX)
-                .format(FORMATO_HORA);
+                .toOffsetDateTime();
+        String horaLocal = ocorridoEmLocal.format(FORMATO_HORA);
         return new TimelineItemResponse(
                 horaLocal,
                 evento.getAcao(),
                 evento.getDetalhe(),
                 evento.getIcone(),
-                evento.getOcorridoEm()
+                ocorridoEmLocal
         );
     }
 }
