@@ -56,6 +56,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.GET, "/auth/me").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/chamados").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/chamados").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/chamados/*").permitAll()
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(resourceServer -> resourceServer
