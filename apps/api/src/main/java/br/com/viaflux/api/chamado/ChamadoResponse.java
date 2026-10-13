@@ -1,6 +1,8 @@
 package br.com.viaflux.api.chamado;
 
 import java.time.OffsetDateTime;
+import java.util.List;
+
 public record ChamadoResponse(
         String id,
         String cliente,
@@ -12,9 +14,10 @@ public record ChamadoResponse(
         String descricao,
         String localizacao,
         String status,
-        OffsetDateTime abertura
+        OffsetDateTime abertura,
+        List<TimelineItemResponse> timeline
 ) {
-    static ChamadoResponse from(Chamado chamado) {
+    static ChamadoResponse from(Chamado chamado, List<TimelineItemResponse> timeline) {
         return new ChamadoResponse(
                 chamado.getCodigo(),
                 chamado.getCliente(),
@@ -26,7 +29,8 @@ public record ChamadoResponse(
                 chamado.getDescricao(),
                 chamado.getLocalizacao(),
                 "Aberto",
-                chamado.getAbertoEm()
+                chamado.getAbertoEm(),
+                timeline
         );
     }
 }

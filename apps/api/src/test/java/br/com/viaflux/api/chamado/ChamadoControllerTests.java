@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -37,7 +38,9 @@ class ChamadoControllerTests {
         OffsetDateTime abertoEm = OffsetDateTime.of(2026, 10, 8, 16, 0, 0, 0, ZoneOffset.UTC);
         given(chamadoService.abrir(any(AbrirChamadoRequest.class)))
                 .willReturn(new ChamadoResponse(id, "Maria Silva", "(11) 99999-0000", "Volvo FH 460",
-                        "ABC-1D23", "Mecânico", "Média", "Motor não liga", "BR-116, km 312", "Aberto", abertoEm));
+                        "ABC-1D23", "Mecânico", "Média", "Motor não liga", "BR-116, km 312", "Aberto", abertoEm,
+                        List.of(new TimelineItemResponse("09:00", "Chamado aberto",
+                                "Chamado registrado pelo portal ViaFlux.", "aberto", abertoEm))));
 
         mockMvc.perform(post("/api/chamados")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -59,7 +62,9 @@ class ChamadoControllerTests {
                 .andExpect(jsonPath("$.modelo").value("Volvo FH 460"))
                 .andExpect(jsonPath("$.placa").value("ABC-1D23"))
                 .andExpect(jsonPath("$.prioridade").value("Média"))
-                .andExpect(jsonPath("$.status").value("Aberto"));
+                .andExpect(jsonPath("$.status").value("Aberto"))
+                .andExpect(jsonPath("$.timeline[0].acao").value("Chamado aberto"))
+                .andExpect(jsonPath("$.timeline[0].icon").value("aberto"));
     }
 
     @Test
@@ -79,7 +84,7 @@ class ChamadoControllerTests {
         OffsetDateTime abertoEm = OffsetDateTime.of(2026, 10, 8, 16, 0, 0, 0, ZoneOffset.UTC);
         given(chamadoService.consultar(id))
                 .willReturn(new ChamadoResponse(id, "Maria Silva", "", "Volvo FH 460",
-                        "", "Mecânico", "Média", "", "", "Aberto", abertoEm));
+                        "", "Mecânico", "Média", "", "", "Aberto", abertoEm, List.of()));
 
         mockMvc.perform(get("/api/chamados/{id}", id))
                 .andExpect(status().isOk())
