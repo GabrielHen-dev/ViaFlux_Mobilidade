@@ -33,7 +33,7 @@ class ChamadoControllerTests {
 
     @Test
     void opensTicketWithoutAuthentication() throws Exception {
-        String id = "VF-1025";
+        String id = "VF-0000";
         OffsetDateTime abertoEm = OffsetDateTime.of(2026, 10, 8, 16, 0, 0, 0, ZoneOffset.UTC);
         given(chamadoService.abrir(any(AbrirChamadoRequest.class)))
                 .willReturn(new ChamadoResponse(id, "Maria Silva", "(11) 99999-0000", "Volvo FH 460",
@@ -75,7 +75,7 @@ class ChamadoControllerTests {
 
     @Test
     void retrievesTicketWithoutAuthentication() throws Exception {
-        String id = "VF-1025";
+        String id = "VF-0000";
         OffsetDateTime abertoEm = OffsetDateTime.of(2026, 10, 8, 16, 0, 0, 0, ZoneOffset.UTC);
         given(chamadoService.consultar(id))
                 .willReturn(new ChamadoResponse(id, "Maria Silva", "", "Volvo FH 460",

@@ -23,7 +23,7 @@ class ChamadoServiceTests {
 
     @Test
     void createsTicketWithPublicCodeAndFrontendFields() {
-        given(chamadoRepository.proximoNumero()).willReturn(1025L);
+        given(chamadoRepository.proximoNumero()).willReturn(0L);
         given(chamadoRepository.save(any(Chamado.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
 
@@ -39,7 +39,7 @@ class ChamadoServiceTests {
         Chamado salvo = chamadoCaptor.getValue();
 
         assertThat(salvo.getId()).isNotNull();
-        assertThat(salvo.getCodigo()).isEqualTo("VF-1025");
+        assertThat(salvo.getCodigo()).isEqualTo("VF-0000");
         assertThat(salvo.getCliente()).isEqualTo("Maria Silva");
         assertThat(salvo.getTelefone()).isEqualTo("(11) 99999-0000");
         assertThat(salvo.getModelo()).isEqualTo("Volvo FH 460");
@@ -50,13 +50,13 @@ class ChamadoServiceTests {
         assertThat(salvo.getLocalizacao()).isEqualTo("BR-116, km 312");
         assertThat(salvo.getStatus()).isEqualTo(StatusChamado.ABERTO);
         assertThat(salvo.getAbertoEm()).isNotNull();
-        assertThat(response.id()).isEqualTo("VF-1025");
+        assertThat(response.id()).isEqualTo("VF-0000");
         assertThat(response.status()).isEqualTo("Aberto");
     }
 
     @Test
     void usesEmptyStringsForOptionalFieldsNotSentByTheForm() {
-        given(chamadoRepository.proximoNumero()).willReturn(1025L);
+        given(chamadoRepository.proximoNumero()).willReturn(0L);
         given(chamadoRepository.save(any(Chamado.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
 

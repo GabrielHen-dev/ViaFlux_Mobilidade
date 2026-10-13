@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Locale;
 
 @Service
 public class ChamadoService {
@@ -15,7 +16,7 @@ public class ChamadoService {
     }
 
     ChamadoResponse abrir(AbrirChamadoRequest request) {
-        String codigo = "VF-" + chamadoRepository.proximoNumero();
+        String codigo = String.format(Locale.ROOT, "VF-%04d", chamadoRepository.proximoNumero());
         Chamado chamado = new Chamado(codigo, request, OffsetDateTime.now(ZoneOffset.UTC));
         return ChamadoResponse.from(chamadoRepository.save(chamado));
     }
