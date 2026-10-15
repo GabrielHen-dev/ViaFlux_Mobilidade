@@ -6,7 +6,7 @@ public enum StatusChamado {
     EM_ATENDIMENTO("Em atendimento"),
     AGUARDANDO("Aguardando"),
     RESOLVIDO("Resolvido"),
-    ENCERRADO("Encerrado");
+    FECHADO("Fechado");
 
     private final String rotulo;
 

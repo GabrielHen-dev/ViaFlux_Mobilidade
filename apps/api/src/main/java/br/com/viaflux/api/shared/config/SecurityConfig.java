@@ -17,6 +17,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -38,7 +39,8 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             AuthenticationEntryPoint authenticationEntryPoint,
-            AccessDeniedHandler accessDeniedHandler
+            AccessDeniedHandler accessDeniedHandler,
+            JwtAuthenticationConverter perfisComoAutoridades
     ) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -55,13 +57,17 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.GET, "/auth/me").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/chamados").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/chamados").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/chamados/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/chamados/resumo")
+                        .hasAnyRole("ADMIN", "ATENDENTE", "LIDER_OPERACIONAL")
+                        .requestMatchers(HttpMethod.POST, "/api/chamados")
+                        .hasAnyRole("CLIENTE", "GESTOR_FROTA")
+                        .requestMatchers(HttpMethod.GET, "/api/chamados", "/api/chamados/*")
+                        .hasAnyRole("ADMIN", "ATENDENTE", "LIDER_OPERACIONAL", "CLIENTE", "GESTOR_FROTA")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .authenticationEntryPoint(authenticationEntryPoint)
-                        .jwt(Customizer.withDefaults()))
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(perfisComoAutoridades)))
                 .build();
     }
 

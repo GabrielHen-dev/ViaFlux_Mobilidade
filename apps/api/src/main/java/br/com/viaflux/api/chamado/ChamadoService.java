@@ -1,5 +1,7 @@
 package br.com.viaflux.api.chamado;
 
+import br.com.viaflux.api.usuario.Usuario;
+import br.com.viaflux.api.usuario.UsuarioRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -11,6 +13,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class ChamadoService {
@@ -20,17 +23,27 @@ public class ChamadoService {
 
     private final ChamadoRepository chamadoRepository;
     private final ChamadoEventoRepository chamadoEventoRepository;
+    private final UsuarioRepository usuarioRepository;
 
-    ChamadoService(ChamadoRepository chamadoRepository, ChamadoEventoRepository chamadoEventoRepository) {
+    ChamadoService(
+            ChamadoRepository chamadoRepository,
+            ChamadoEventoRepository chamadoEventoRepository,
+            UsuarioRepository usuarioRepository
+    ) {
         this.chamadoRepository = chamadoRepository;
         this.chamadoEventoRepository = chamadoEventoRepository;
+        this.usuarioRepository = usuarioRepository;
     }
 
     @Transactional
-    ChamadoResponse abrir(AbrirChamadoRequest request) {
+    ChamadoResponse abrir(AbrirChamadoRequest request, UUID solicitanteId) {
         String codigo = String.format(Locale.ROOT, "VF-%04d", chamadoRepository.proximoNumero());
         OffsetDateTime agora = OffsetDateTime.now(ZoneOffset.UTC);
-        Chamado chamado = chamadoRepository.save(new Chamado(codigo, request, agora));
+        Usuario solicitante = solicitanteId == null
+                ? null
+                : usuarioRepository.findById(solicitanteId).orElseThrow(() ->
+                        new IllegalStateException("O usuário autenticado não foi encontrado."));
+        Chamado chamado = chamadoRepository.save(new Chamado(codigo, request, agora, solicitante));
         ChamadoEvento abertura = chamadoEventoRepository.save(new ChamadoEvento(
                 chamado,
                 "Chamado aberto",
@@ -41,8 +54,11 @@ public class ChamadoService {
         return ChamadoResponse.from(chamado, List.of(TimelineItemResponse.from(abertura)));
     }
 
-    ChamadoResponse consultar(String codigo) {
-        return chamadoRepository.findByCodigo(codigo)
+    ChamadoResponse consultar(String codigo, UUID solicitanteId, boolean acessoGlobal) {
+        var chamadoEncontrado = acessoGlobal
+                ? chamadoRepository.findByCodigo(codigo)
+                : chamadoRepository.findByCodigoAndSolicitante_Id(codigo, solicitanteId);
+        return chamadoEncontrado
                 .map(chamado -> ChamadoResponse.from(
                         chamado,
                         chamadoEventoRepository.findByChamadoCodigoOrderByOcorridoEmAscIdAsc(codigo).stream()
@@ -52,7 +68,24 @@ public class ChamadoService {
                 .orElseThrow(() -> new ChamadoNaoEncontradoException(codigo));
     }
 
-    ChamadosPageResponse listar(String busca, String statusRotulo, String prioridade, int page, int size) {
+    ChamadosResumoResponse resumir() {
+        return new ChamadosResumoResponse(
+                chamadoRepository.count(),
+                chamadoRepository.countByPrioridade("Crítica"),
+                chamadoRepository.countByStatus(StatusChamado.EM_ATENDIMENTO),
+                chamadoRepository.countByStatus(StatusChamado.AGUARDANDO)
+        );
+    }
+
+    ChamadosPageResponse listar(
+            String busca,
+            String statusRotulo,
+            String prioridade,
+            int page,
+            int size,
+            UUID solicitanteId,
+            boolean acessoGlobal
+    ) {
         if (size > TAMANHO_MAXIMO_PAGINA) {
             throw new FiltroChamadoInvalidoException("O tamanho máximo da página é 100.");
         }
@@ -67,6 +100,8 @@ public class ChamadoService {
                 buscaNormalizada,
                 status,
                 prioridadeNormalizada,
+                solicitanteId,
+                acessoGlobal,
                 PageRequest.of(page, size, Sort.by(
                         Sort.Order.desc("abertoEm"),
                         Sort.Order.desc("codigo")
