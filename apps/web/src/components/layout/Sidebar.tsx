@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CirclePlus, LayoutGrid, LogOut, Trash } from "lucide-react";
+import { CirclePlus, LayoutGrid, LogOut, Trash, Users } from "lucide-react";
 import MarcaViaFlux from "@/components/ui/MarcaViaFlux";
 import { useChamados } from "@/store/ChamadosContext";
 import { useAuth, useUsuarioAutenticado } from "@/store/AuthContext";
@@ -17,6 +17,7 @@ export default function Sidebar() {
   const { sair } = useAuth();
   const usuario = useUsuarioAutenticado();
   const perfis = usuario.perfis.map((perfil) => perfil.descricao).join(" · ");
+  const ehAdmin = usuario.perfis.some((perfil) => perfil.codigo === "ADMIN");
   const lixeiraCount = lixeira.length;
   const navItems = [
     {
@@ -29,6 +30,11 @@ export default function Sidebar() {
       label: "Novo Chamado",
       icon: <CirclePlus size={18} />,
     },
+    ...(ehAdmin ? [{
+      id: "usuarios", href: "/usuarios",
+      label: "Usuários",
+      icon: <Users size={18} />,
+    }] : []),
   ];
 
   return (
@@ -55,7 +61,7 @@ export default function Sidebar() {
         </div>
         <div className="sidebar-links space-y-1">
           {navItems.map((item) => {
-            const isActive = item.id === "novo" ? pathname === item.href : pathname === "/" || (pathname.startsWith("/chamados/") && pathname !== "/chamados/novo");
+            const isActive = item.id === "novo" ? pathname === item.href : item.id === "usuarios" ? pathname.startsWith("/usuarios") : pathname === "/" || (pathname.startsWith("/chamados/") && pathname !== "/chamados/novo");
             return (
               <Link
                 key={item.id}
