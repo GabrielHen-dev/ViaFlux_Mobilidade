@@ -41,7 +41,9 @@ class OpenApiEndpointTests {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.info.title").value("ViaFlux Mobilidade API"))
-                .andExpect(jsonPath("$.info.version").value("v1"));
+                .andExpect(jsonPath("$.info.version").value("v1"))
+                .andExpect(jsonPath("$.components.securitySchemes.bearerAuth.scheme").value("bearer"))
+                .andExpect(jsonPath("$.paths['/api/chamados'].post.security[0].bearerAuth").exists());
     }
 
     @Test

@@ -4,8 +4,12 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import br.com.viaflux.api.usuario.Usuario;
 
 import java.time.OffsetDateTime;
 import java.util.Locale;
@@ -52,10 +56,18 @@ class Chamado {
     @Column(name = "aberto_em", nullable = false, updatable = false)
     private OffsetDateTime abertoEm;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "solicitante_id")
+    private Usuario solicitante;
+
     protected Chamado() {
     }
 
     Chamado(String codigo, AbrirChamadoRequest request, OffsetDateTime abertoEm) {
+        this(codigo, request, abertoEm, null);
+    }
+
+    Chamado(String codigo, AbrirChamadoRequest request, OffsetDateTime abertoEm, Usuario solicitante) {
         this.id = UUID.randomUUID();
         this.codigo = codigo;
         this.cliente = request.cliente().trim();
@@ -68,6 +80,7 @@ class Chamado {
         this.localizacao = valorOuVazio(request.localizacao());
         this.status = StatusChamado.ABERTO;
         this.abertoEm = abertoEm;
+        this.solicitante = solicitante;
     }
 
     private static String valorOuVazio(String valor) {
@@ -120,5 +133,9 @@ class Chamado {
 
     OffsetDateTime getAbertoEm() {
         return abertoEm;
+    }
+
+    Usuario getSolicitante() {
+        return solicitante;
     }
 }
