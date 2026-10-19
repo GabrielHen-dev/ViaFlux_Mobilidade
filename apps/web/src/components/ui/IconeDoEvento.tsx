@@ -1,16 +1,25 @@
-import { CirclePlus, ClipboardCheck, Forward, NotebookPen, Truck, Zap, type LucideIcon, type LucideProps } from "lucide-react";
-import type { IconeEvento } from "@/types/chamado";
+import {
+  ArrowRightLeft, Bell, CirclePlus, ClipboardCheck, Clock, Forward, MapPin, NotebookPen, Paperclip, Scale, Truck, Zap, type LucideIcon, type LucideProps,
+} from "lucide-react";
+import type { TipoEvento } from "@/types/chamado";
 
-const iconesPorEvento: Record<IconeEvento, LucideIcon> = {
-  aberto: CirclePlus,
-  triagem: ClipboardCheck,
-  encaminhado: Forward,
-  atendimento: Zap,
-  atualizacao: NotebookPen,
-  parceiro: Truck,
+const ICONE_POR_TIPO: Record<TipoEvento, LucideIcon> = {
+  ABERTURA: CirclePlus,
+  CLASSIFICACAO: ClipboardCheck,
+  RECLASSIFICACAO: ClipboardCheck,
+  OVERRIDE: Scale,
+  ROTEAMENTO: Forward,
+  TRANSFERENCIA: ArrowRightLeft,
+  STATUS: Zap,
+  ATUALIZACAO: NotebookPen,
+  ANEXO: Paperclip,
+  LOCALIZACAO: MapPin,
+  SLA: Clock,
+  FORNECEDOR: Truck,
+  NOTIFICACAO: Bell,
 };
 
-export default function IconeDoEvento({ icone, ...props }: { icone: IconeEvento } & LucideProps) {
-  const Icone = iconesPorEvento[icone];
-  return <Icone {...props} />;
+export default function IconeDoEvento({ tipo, ...props }: { tipo: TipoEvento } & LucideProps) {
+  const Icone = ICONE_POR_TIPO[tipo];
+  return <Icone aria-hidden {...props} />;
 }

@@ -1,8 +1,9 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { entrar as entrarNaApi, renovarSessao } from "@/services/api/auth";
-import { ErroApi } from "@/services/api/cliente";
+import { ErroApi, requisitarApi, requisitarArquivo } from "@/services/api/cliente";
+import type { ClienteApi } from "@/services/api/chamados";
 import type { Sessao, UsuarioAutenticado } from "@/types/auth";
 
 type EstadoAuth =
@@ -14,9 +15,18 @@ interface AuthContextValue {
   estado: EstadoAuth;
   entrar: (email: string, senha: string) => Promise<void>;
   sair: () => void;
+  api: ClienteApi;
+}
+
+interface TokensDaSessao {
+  accessToken: string;
+  refreshToken: string;
+  expiraEm: number;
 }
 
 const CHAVE_REFRESH_TOKEN = "viaflux.refreshToken";
+const ANTECEDENCIA_DA_RENOVACAO_MS = 60_000;
+const VALIDADE_MINIMA_PARA_USO_MS = 10_000;
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -32,51 +42,106 @@ function removerRefreshToken() {
   try { window.localStorage.removeItem(CHAVE_REFRESH_TOKEN); } catch { }
 }
 
-async function restaurarSessao(): Promise<Sessao | null> {
-  const refreshToken = lerRefreshToken();
-  if (!refreshToken) return null;
-  try {
-    return await renovarSessao(refreshToken);
-  } catch (erro) {
-    if (erro instanceof ErroApi && erro.status === 401) removerRefreshToken();
-    return null;
-  }
+function comAutorizacao(init: RequestInit, accessToken: string | null): RequestInit {
+  const headers = new Headers(init.headers);
+  if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+  return { ...init, headers };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [estado, setEstado] = useState<EstadoAuth>({ status: "verificando" });
+  const tokens = useRef<TokensDaSessao | null>(null);
+  const renovacaoEmCurso = useRef<Promise<string | null> | null>(null);
 
   const aplicarSessao = useCallback((sessao: Sessao) => {
     gravarRefreshToken(sessao.refreshToken);
+    tokens.current = { accessToken: sessao.accessToken, refreshToken: sessao.refreshToken, expiraEm: Date.now() + sessao.expiresIn * 1000 };
     setEstado({ status: "autenticado", usuario: sessao.usuario, accessToken: sessao.accessToken });
   }, []);
 
+  const sair = useCallback(() => {
+    removerRefreshToken();
+    tokens.current = null;
+    setEstado({ status: "anonimo" });
+  }, []);
+
+  const renovar = useCallback((): Promise<string | null> => {
+    if (renovacaoEmCurso.current) return renovacaoEmCurso.current;
+    const refreshToken = tokens.current?.refreshToken ?? lerRefreshToken();
+    if (!refreshToken) return Promise.resolve(null);
+    const renovacao = renovarSessao(refreshToken)
+      .then((sessao) => {
+        aplicarSessao(sessao);
+        return sessao.accessToken;
+      })
+      .catch((erro: unknown) => {
+        if (erro instanceof ErroApi && erro.status === 401) sair();
+        return null;
+      })
+      .finally(() => { renovacaoEmCurso.current = null; });
+    renovacaoEmCurso.current = renovacao;
+    return renovacao;
+  }, [aplicarSessao, sair]);
+
   useEffect(() => {
     let montado = true;
-    restaurarSessao().then((sessao) => {
-      if (!montado) return;
-      if (sessao) aplicarSessao(sessao);
-      else setEstado({ status: "anonimo" });
+    if (!lerRefreshToken()) {
+      queueMicrotask(() => { if (montado) setEstado({ status: "anonimo" }); });
+      return () => { montado = false; };
+    }
+    renovar().then((accessToken) => {
+      if (montado && !accessToken) setEstado({ status: "anonimo" });
     });
     return () => { montado = false; };
-  }, [aplicarSessao]);
+  }, [renovar]);
+
+  useEffect(() => {
+    if (estado.status !== "autenticado" || !tokens.current) return;
+    const espera = Math.max(0, tokens.current.expiraEm - Date.now() - ANTECEDENCIA_DA_RENOVACAO_MS);
+    const agendamento = setTimeout(() => { void renovar(); }, espera);
+    return () => clearTimeout(agendamento);
+  }, [estado, renovar]);
+
+  const tokenValido = useCallback(async () => {
+    const atuais = tokens.current;
+    if (!atuais) return null;
+    if (atuais.expiraEm - Date.now() > VALIDADE_MINIMA_PARA_USO_MS) return atuais.accessToken;
+    return renovar();
+  }, [renovar]);
+
+  const api = useMemo<ClienteApi>(() => {
+    async function autenticado<T>(executar: (init: RequestInit) => Promise<T>, init: RequestInit) {
+      const accessToken = await tokenValido();
+      try {
+        return await executar(comAutorizacao(init, accessToken));
+      } catch (erro) {
+        if (!(erro instanceof ErroApi && erro.status === 401)) throw erro;
+        const renovado = await renovar();
+        if (!renovado) throw erro;
+        return executar(comAutorizacao(init, renovado));
+      }
+    }
+    return {
+      requisitar: <T,>(caminho: string, init: RequestInit = {}) => autenticado((comToken) => requisitarApi<T>(caminho, comToken), init),
+      baixar: (caminho: string, init: RequestInit = {}) => autenticado((comToken) => requisitarArquivo(caminho, comToken), init),
+    };
+  }, [tokenValido, renovar]);
 
   const entrar = useCallback(async (email: string, senha: string) => {
     aplicarSessao(await entrarNaApi(email, senha));
   }, [aplicarSessao]);
 
-  const sair = useCallback(() => {
-    removerRefreshToken();
-    setEstado({ status: "anonimo" });
-  }, []);
-
-  return <AuthContext.Provider value={{ estado, entrar, sair }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ estado, entrar, sair, api }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) throw new Error("useAuth precisa de AuthProvider");
   return context;
+}
+
+export function useApi() {
+  return useAuth().api;
 }
 
 export function useUsuarioAutenticado() {

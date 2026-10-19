@@ -9,3 +9,9 @@
   .viaflux-shell { flex-direction: column; }
   .viaflux-content { margin-left: 0; }
 }
+@media (max-width: 767px), (pointer: coarse) {
+  .alvo-toque { min-height: 44px; min-width: 44px; }
+}
+@media (max-width: 400px) {
+  .viaflux-sidebar .sidebar-links a { padding-inline: 0.5rem; font-size: 0.8125rem; }
+}

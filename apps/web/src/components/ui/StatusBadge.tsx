@@ -1,41 +1,52 @@
-import type { Status, Prioridade } from "@/types/chamado";
-const statusColors: Record<Status, { bg: string; text: string; dot: string }> = {
-  "Aberto": { bg: "#EFF6FF", text: "#2563EB", dot: "#2563EB" },
-  "Em triagem": { bg: "#FFF7ED", text: "#EA580C", dot: "#EA580C" },
-  "Em atendimento": { bg: "#ECFDF5", text: "#059669", dot: "#10B981" },
-  "Aguardando": { bg: "#F5F3FF", text: "#7C3AED", dot: "#7C3AED" },
-  "Resolvido": { bg: "#F0FDF4", text: "#16A34A", dot: "#16A34A" },
-  "Encerrado": { bg: "#F8FAFC", text: "#64748B", dot: "#94A3B8" },
+import { ArrowDown, ChevronsUp, CircleCheck, CircleDot, ClipboardList, Equal, Lock, Pause, Siren, Zap, type LucideIcon } from "lucide-react";
+import type { CodigoPrioridade, Status } from "@/types/chamado";
+import { ROTULO_PRIORIDADE } from "@/utils/prioridade";
+import { cn } from "@/utils/cn";
+
+interface Aparencia {
+  fundo: string;
+  texto: string;
+  Icone: LucideIcon;
+}
+
+export const APARENCIA_DO_STATUS: Record<Status, Aparencia> = {
+  "Aberto": { fundo: "#FEFCE8", texto: "#A16207", Icone: CircleDot },
+  "Em triagem": { fundo: "#FEFCE8", texto: "#A16207", Icone: ClipboardList },
+  "Em atendimento": { fundo: "#EFF6FF", texto: "#1D4ED8", Icone: Zap },
+  "Aguardando": { fundo: "#F5F3FF", texto: "#6D28D9", Icone: Pause },
+  "Resolvido": { fundo: "#F0FDF4", texto: "#15803D", Icone: CircleCheck },
+  "Fechado": { fundo: "#F1F5F9", texto: "#475569", Icone: Lock },
 };
 
-const prioridadeColors: Record<Prioridade, { bg: string; text: string }> = {
-  "Crítica": { bg: "#FEF2F2", text: "#DC2626" },
-  "Alta": { bg: "#FFF7ED", text: "#EA580C" },
-  "Média": { bg: "#FEFCE8", text: "#CA8A04" },
-  "Baixa": { bg: "#F0FDF4", text: "#16A34A" },
+export const APARENCIA_DA_PRIORIDADE: Record<CodigoPrioridade, Aparencia> = {
+  P1: { fundo: "#FEF2F2", texto: "#B91C1C", Icone: Siren },
+  P2: { fundo: "#FFF7ED", texto: "#C2410C", Icone: ChevronsUp },
+  P3: { fundo: "#FEFCE8", texto: "#A16207", Icone: Equal },
+  P4: { fundo: "#F1F5F9", texto: "#475569", Icone: ArrowDown },
 };
 
 export function StatusBadge({ status }: { status: Status }) {
-  const c = statusColors[status];
+  const { fundo, texto, Icone } = APARENCIA_DO_STATUS[status];
   return (
-    <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
-      style={{ background: c.bg, color: c.text }}
-    >
-      <span className="w-1.5 h-1.5 rounded-full" style={{ background: c.dot }} />
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: fundo, color: texto }}>
+      <Icone size={12} strokeWidth={2.5} aria-hidden />
       {status}
     </span>
   );
 }
 
-export function PrioridadeBadge({ prioridade }: { prioridade: Prioridade }) {
-  const c = prioridadeColors[prioridade];
+export function PrioridadeIndicador({ prioridade, score, className }: { prioridade: CodigoPrioridade; score?: number; className?: string }) {
+  const { fundo, texto, Icone } = APARENCIA_DA_PRIORIDADE[prioridade];
+  const rotulo = `${prioridade} · ${ROTULO_PRIORIDADE[prioridade]}`;
   return (
     <span
-      className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide"
-      style={{ background: c.bg, color: c.text }}
+      className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold", className)}
+      style={{ background: fundo, color: texto }}
+      title={score === undefined ? rotulo : `${rotulo} · score ${score}`}
     >
-      {prioridade}
+      <Icone size={12} strokeWidth={2.75} aria-hidden />
+      {rotulo}
+      {score !== undefined && <span className="font-semibold opacity-80">· {score}</span>}
     </span>
   );
 }

@@ -1,278 +1,135 @@
 "use client";
-import { useState } from "react";
+
 import Link from "next/link";
-import { Check, ChevronRight, CircleAlert, CirclePlus, Truck, X } from "lucide-react";
-import type { Chamado, ServicoTerceiro } from "@/types/chamado";
-import { parceirosCredenciados, tiposServico } from "@/mocks/opcoes";
-import { eventosServicoMock } from "@/mocks/servicos";
-import { useChamados } from "@/store/ChamadosContext";
-import { horaAtual } from "@/utils/date";
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ChevronRight, CirclePlus, Truck, X } from "lucide-react";
+import type { Chamado } from "@/types/chamado";
+import type { DadosVinculoServico } from "@/services/api/contratos";
+import { cancelarServico, vincularServico } from "@/services/api/operacao";
+import { useApi } from "@/store/AuthContext";
+import { chaves, invalidarListas, useAcaoNoChamado, useFornecedores } from "@/hooks/consultas";
+import { StatusServicoBadge } from "@/components/ui/StatusServico";
+import { AvisoDeErro } from "@/components/feedback/EstadoDaConsulta";
+import { formatarDataHora } from "@/utils/date";
+import { cn } from "@/utils/cn";
+
+const TIPOS_DE_SERVICO = ["Remoção do veículo", "Reparo mecânico", "Reparo elétrico", "Troca de pneu", "Abastecimento", "Chaveiro", "Outro"];
+const labelClass = "block text-xs font-semibold text-[#475569] uppercase tracking-wide mb-1.5";
+const inputClass = "w-full px-3.5 py-2.5 rounded-lg border border-[#E2E8F0] bg-white text-sm outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10";
+
+function FormularioDeVinculo({ chamado, aoFechar }: { chamado: Chamado; aoFechar: () => void }) {
+  const fornecedores = useFornecedores();
+  const [dados, setDados] = useState<DadosVinculoServico>({ fornecedorId: "", tipoServico: "", local: chamado.localizacao, observacao: "" });
+  const vinculo = useAcaoNoChamado(chamado.id, (api, variaveis: DadosVinculoServico) => vincularServico(api, chamado.id, variaveis));
+  const completo = dados.fornecedorId !== "" && dados.tipoServico !== "";
+
+  return (
+    <div className="rounded-2xl border border-[#E2E8F0] bg-white p-5 md:p-6">
+      <div className="mb-5 flex items-center justify-between">
+        <h3 className="flex items-center gap-2 font-display text-sm font-bold text-brand-navy"><Truck size={16} aria-hidden /> Acionar serviço terceirizado</h3>
+        <button type="button" onClick={aoFechar} aria-label="Fechar formulário do fornecedor" className="alvo-toque flex items-center justify-center text-[#94A3B8] hover:text-[#475569]"><X size={16} /></button>
+      </div>
+      <div className="space-y-4">
+        <div>
+          <label htmlFor={`fornecedor-${chamado.id}`} className={labelClass}>Fornecedor credenciado *</label>
+          <select id={`fornecedor-${chamado.id}`} className={inputClass} value={dados.fornecedorId} onChange={(evento) => setDados({ ...dados, fornecedorId: evento.target.value })} disabled={fornecedores.isPending}>
+            <option value="">{fornecedores.isPending ? "Carregando fornecedores…" : "Selecione"}</option>
+            {fornecedores.data?.map((fornecedor) => <option key={fornecedor.id} value={fornecedor.id}>{fornecedor.nome} · {fornecedor.especialidade}</option>)}
+          </select>
+        </div>
+        <fieldset>
+          <legend className={labelClass}>Tipo de serviço *</legend>
+          <div className="flex flex-wrap gap-2">
+            {TIPOS_DE_SERVICO.map((tipo) => (
+              <button key={tipo} type="button" aria-pressed={dados.tipoServico === tipo} onClick={() => setDados({ ...dados, tipoServico: tipo })} className={cn("alvo-toque rounded-lg border-2 px-3.5 py-1.5 text-xs font-semibold transition-all", dados.tipoServico === tipo ? "border-brand-blue bg-blue-50 text-blue-700" : "border-[#E2E8F0] text-[#475569]")}>
+                {tipo}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <div>
+          <label htmlFor={`servico-local-${chamado.id}`} className={labelClass}>Local do atendimento</label>
+          <input id={`servico-local-${chamado.id}`} className={inputClass} value={dados.local} onChange={(evento) => setDados({ ...dados, local: evento.target.value })} />
+        </div>
+        <div>
+          <label htmlFor={`servico-obs-${chamado.id}`} className={labelClass}>Instruções ao fornecedor</label>
+          <textarea id={`servico-obs-${chamado.id}`} className={`${inputClass} resize-none`} rows={2} value={dados.observacao} onChange={(evento) => setDados({ ...dados, observacao: evento.target.value })} placeholder="Sem dados pessoais do cliente: o fornecedor vê só o necessário para o serviço." />
+        </div>
+        {vinculo.isError && <AvisoDeErro erro={vinculo.error} />}
+        <div className="flex gap-3">
+          <button type="button" onClick={aoFechar} className="alvo-toque flex-1 rounded-xl border border-[#E2E8F0] py-2.5 text-sm font-semibold text-[#475569] hover:bg-brand-light">Cancelar</button>
+          <button type="button" disabled={!completo || vinculo.isPending} onClick={() => vinculo.mutate(dados, { onSuccess: aoFechar })} className="alvo-toque flex-1 rounded-xl bg-brand-green py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-40">
+            {vinculo.isPending ? "Acionando…" : "Acionar fornecedor"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ServicoTerceiroForm({ chamado }: { chamado: Chamado }) {
-  // Serviço terceirizado
-  const { vincularServico } = useChamados();
-  const servicoRegistrado = chamado.servicoTerceiro;
-  const [mostrarFormTerceiro, setMostrarFormTerceiro] = useState(false);
-  const [formTerceiro, setFormTerceiro] = useState({
-    parceiroSelecionado: "",
-    parceiroManual: "",
-    telefoneManual: "",
-    tipoServico: "",
-    local: chamado.localizacao,
-    observacao: "",
+  const api = useApi();
+  const clienteDeConsultas = useQueryClient();
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const servico = chamado.servico;
+  const cancelamento = useMutation({
+    mutationFn: (servicoId: string) => cancelarServico(api, chamado.id, servicoId),
+    onSuccess: () => {
+      void clienteDeConsultas.invalidateQueries({ queryKey: chaves.detalhe(chamado.id) });
+      void invalidarListas(clienteDeConsultas);
+    },
   });
-  const [erroForm, setErroForm] = useState("");
 
-  const parceiroAtual = parceirosCredenciados.find((p) => p.nome === formTerceiro.parceiroSelecionado);
-  const isManual = formTerceiro.parceiroSelecionado === "Outro (inserir manualmente)";
+  if (!servico) {
+    if (mostrarFormulario) return <FormularioDeVinculo chamado={chamado} aoFechar={() => setMostrarFormulario(false)} />;
+    return (
+      <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-[#CBD5E1] p-6 text-center">
+        <Truck size={22} className="text-[#94A3B8]" aria-hidden />
+        <div>
+          <div className="text-sm font-semibold text-[#475569]">Nenhum serviço terceirizado vinculado</div>
+          <div className="mt-0.5 text-xs text-[#94A3B8]">Acione um fornecedor para guincho, mecânica, elétrica ou outro serviço externo.</div>
+        </div>
+        <button type="button" onClick={() => setMostrarFormulario(true)} className="alvo-toque flex items-center gap-2 rounded-xl bg-brand-blue px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90">
+          <CirclePlus size={14} strokeWidth={2.5} aria-hidden /> Incluir serviço terceirizado
+        </button>
+      </div>
+    );
+  }
 
-  const handleRegistrarTerceiro = () => {
-    const nomeParceiro = (isManual ? formTerceiro.parceiroManual : formTerceiro.parceiroSelecionado).trim();
-    if (!nomeParceiro || !formTerceiro.tipoServico) {
-      setErroForm("Preencha o parceiro e o tipo de serviço.");
-      return;
-    }
-    setErroForm("");
-    const hora = horaAtual();
-    const novo: ServicoTerceiro = {
-      parceiro: nomeParceiro,
-      telefone: isManual ? formTerceiro.telefoneManual : (parceiroAtual?.telefone || ""),
-      tipoServico: formTerceiro.tipoServico,
-      local: formTerceiro.local,
-      observacao: formTerceiro.observacao,
-      horaSolicitacao: hora, status: "solicitado", eventos: eventosServicoMock(hora, nomeParceiro), atualizacoes: [],
-    };
-    vincularServico(chamado.id, novo);
-    setMostrarFormTerceiro(false);
-  };
-
-
-  return <>
-            {/* Serviço Terceirizado */}
-            {!servicoRegistrado && !mostrarFormTerceiro && (
-              <div className="rounded-2xl border-2 border-dashed border-[#CBD5E1] p-6 flex flex-col items-center text-center gap-3">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "#F1F5F9" }}>
-                  <Truck size={22} color="#94A3B8" />
-                </div>
-                <div>
-                  <div className="font-semibold text-[#475569] text-sm">Nenhum serviço terceirizado vinculado</div>
-                  <div className="text-xs text-[#94A3B8] mt-0.5">Acione um parceiro para guincho, mecânica, elétrico ou outro serviço externo.</div>
-                </div>
-                <button
-                  onClick={() => setMostrarFormTerceiro(true)}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-semibold hover:opacity-90 transition-opacity"
-                  style={{ background: "var(--brand-blue)" }}
-                >
-                  <CirclePlus size={14} strokeWidth={2.5} />
-                  Incluir Serviço Terceirizado
-                </button>
-              </div>
-            )}
-
-            {!servicoRegistrado && mostrarFormTerceiro && (
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
-                <div className="flex items-center justify-between mb-5">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--brand-blue)" }}>
-                      <Truck size={15} color="white" strokeWidth={2.5} />
-                    </div>
-                    <h3 className="font-bold text-brand-navy text-sm" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>
-                      Incluir Serviço Terceirizado
-                    </h3>
-                  </div>
-                  <button
-                    onClick={() => { setMostrarFormTerceiro(false); setErroForm(""); }}
-                    aria-label="Fechar formulário do parceiro" className="text-[#94A3B8] hover:text-[#475569] transition-colors"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  {/* Seleção de parceiro */}
-                  <div>
-                    <p className="block text-xs font-semibold text-[#475569] uppercase tracking-wide mb-2">
-                      Parceiro credenciado *
-                    </p>
-                    <div className="grid grid-cols-1 gap-2">
-                      {parceirosCredenciados.map((p) => (
-                        <button
-                          key={p.nome}
-                          onClick={() => setFormTerceiro((f) => ({ ...f, parceiroSelecionado: p.nome, telefoneManual: "", parceiroManual: "" }))}
-                          className="flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all"
-                          style={{
-                            borderColor: formTerceiro.parceiroSelecionado === p.nome ? "#2563EB" : "#E2E8F0",
-                            background: formTerceiro.parceiroSelecionado === p.nome ? "#EFF6FF" : "white",
-                          }}
-                        >
-                          <div
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                            style={{ background: formTerceiro.parceiroSelecionado === p.nome ? "#2563EB" : "#CBD5E1" }}
-                          >
-                            {p.nome[0]}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-semibold truncate" style={{ color: formTerceiro.parceiroSelecionado === p.nome ? "#1D4ED8" : "#1E293B" }}>
-                              {p.nome}
-                            </div>
-                            {p.tipo && <div className="text-xs text-[#94A3B8]">{p.tipo}{p.telefone ? ` · ${p.telefone}` : ""}</div>}
-                          </div>
-                          {formTerceiro.parceiroSelecionado === p.nome && (
-                            <Check size={16} color="#2563EB" strokeWidth={2.5} />
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Campos manuais se "Outro" selecionado */}
-                  {isManual && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl" style={{ background: "var(--brand-light)" }}>
-                      <div>
-                        <label htmlFor="servico-campo-1" className="block text-xs font-semibold text-[#475569] uppercase tracking-wide mb-1.5">Nome do parceiro *</label>
-                        <input id="servico-campo-1"
-                          className="w-full px-3 py-2.5 rounded-lg border border-[#E2E8F0] text-sm outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all"
-                          placeholder="Nome da empresa"
-                          value={formTerceiro.parceiroManual}
-                          onChange={(e) => setFormTerceiro((f) => ({ ...f, parceiroManual: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="servico-campo-2" className="block text-xs font-semibold text-[#475569] uppercase tracking-wide mb-1.5">Telefone</label>
-                        <input id="servico-campo-2"
-                          className="w-full px-3 py-2.5 rounded-lg border border-[#E2E8F0] text-sm outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all"
-                          placeholder="(00) 00000-0000"
-                          value={formTerceiro.telefoneManual}
-                          onChange={(e) => setFormTerceiro((f) => ({ ...f, telefoneManual: e.target.value }))}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Tipo de serviço */}
-                  <div>
-                    <p className="block text-xs font-semibold text-[#475569] uppercase tracking-wide mb-2">Tipo de serviço *</p>
-                    <div className="flex flex-wrap gap-2">
-                      {tiposServico.map((t) => (
-                        <button
-                          key={t}
-                          onClick={() => setFormTerceiro((f) => ({ ...f, tipoServico: t }))}
-                          className="px-3.5 py-1.5 rounded-lg border-2 text-xs font-semibold transition-all"
-                          style={{
-                            borderColor: formTerceiro.tipoServico === t ? "#2563EB" : "#E2E8F0",
-                            background: formTerceiro.tipoServico === t ? "#EFF6FF" : "white",
-                            color: formTerceiro.tipoServico === t ? "#1D4ED8" : "#475569",
-                          }}
-                        >
-                          {t}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Local */}
-                  <div>
-                    <label htmlFor="servico-campo-3" className="block text-xs font-semibold text-[#475569] uppercase tracking-wide mb-1.5">Local do atendimento</label>
-                    <input id="servico-campo-3"
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-[#E2E8F0] text-sm outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all"
-                      value={formTerceiro.local}
-                      onChange={(e) => setFormTerceiro((f) => ({ ...f, local: e.target.value }))}
-                    />
-                  </div>
-
-                  {/* Observação */}
-                  <div>
-                    <label htmlFor="servico-campo-4" className="block text-xs font-semibold text-[#475569] uppercase tracking-wide mb-1.5">Observação (opcional)</label>
-                    <textarea id="servico-campo-4"
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-[#E2E8F0] text-sm outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 resize-none transition-all"
-                      rows={2}
-                      placeholder="Instruções adicionais para o parceiro..."
-                      value={formTerceiro.observacao}
-                      onChange={(e) => setFormTerceiro((f) => ({ ...f, observacao: e.target.value }))}
-                    />
-                  </div>
-
-                  {erroForm && (
-                    <div role="alert" className="flex items-center gap-2 text-xs font-semibold text-[#DC2626]">
-                      <CircleAlert size={12} strokeWidth={2.5} />
-                      {erroForm}
-                    </div>
-                  )}
-
-                  <div className="flex gap-3 pt-1">
-                    <button
-                      onClick={() => { setMostrarFormTerceiro(false); setErroForm(""); }}
-                      className="flex-1 py-2.5 rounded-xl border border-[#E2E8F0] text-sm font-semibold text-[#475569] hover:bg-brand-light transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      onClick={handleRegistrarTerceiro}
-                      className="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold hover:opacity-90 transition-opacity"
-                      style={{ background: "var(--brand-green)" }}
-                    >
-                      Acionar Parceiro
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {servicoRegistrado && (
-              <div className="rounded-2xl border-2 border-brand-blue/20 p-6" style={{ background: "linear-gradient(135deg, #EFF6FF 0%, #F0FDF4 100%)" }}>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--brand-blue)" }}>
-                      <Truck size={15} color="white" strokeWidth={2.5} />
-                    </div>
-                    <h3 className="font-bold text-brand-navy text-sm" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>
-                      Serviço Terceirizado
-                    </h3>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: "#DBEAFE", color: "#1D4ED8" }}>
-                      <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--brand-blue)" }} />
-                      {servicoRegistrado.status === "concluido" ? "Concluído" : "Em andamento"}
-                    </span>
-                    <button
-                      onClick={() => vincularServico(chamado.id, null)}
-                      className="text-xs text-[#94A3B8] hover:text-[#EF4444] transition-colors px-1"
-                      title="Remover serviço"
-                    >
-                      <X size={13} />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                  <div className="bg-white/70 rounded-xl p-3.5">
-                    <div className="text-xs text-[#94A3B8] font-medium uppercase tracking-wide mb-1">Parceiro</div>
-                    <div className="font-bold text-brand-dark text-sm">{servicoRegistrado.parceiro}</div>
-                    {servicoRegistrado.telefone && <div className="text-xs text-[#64748B] mt-0.5">{servicoRegistrado.telefone}</div>}
-                  </div>
-                  <div className="bg-white/70 rounded-xl p-3.5">
-                    <div className="text-xs text-[#94A3B8] font-medium uppercase tracking-wide mb-1">Serviço</div>
-                    <div className="font-bold text-brand-dark text-sm">{servicoRegistrado.tipoServico}</div>
-                    <div className="text-xs text-[#64748B] mt-0.5">Solicitado às {servicoRegistrado.horaSolicitacao}</div>
-                  </div>
-                  <div className="bg-white/70 rounded-xl p-3.5">
-                    <div className="text-xs text-[#94A3B8] font-medium uppercase tracking-wide mb-1">Local</div>
-                    <div className="font-bold text-brand-dark text-sm truncate">{servicoRegistrado.local}</div>
-                  </div>
-                  <div className="bg-white/70 rounded-xl p-3.5">
-                    <div className="text-xs text-[#94A3B8] font-medium uppercase tracking-wide mb-1">Última atualização</div>
-                    <div className="font-bold text-brand-dark text-sm">{servicoRegistrado.horaSolicitacao} · recém acionado</div>
-                  </div>
-                </div>
-
-                <Link href={`/chamados/${chamado.id}/acompanhamento`}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-sm font-semibold hover:opacity-90 transition-opacity"
-                  style={{ background: "var(--brand-blue)" }}
-                >
-                  Ver acompanhamento completo
-                  <ChevronRight size={14} strokeWidth={2.5} />
-                </Link>
-              </div>
-            )}
-
-  </>;
+  const ultima = servico.historico[servico.historico.length - 1];
+  return (
+    <div className="rounded-2xl border-2 border-brand-blue/20 bg-gradient-to-br from-blue-50 to-emerald-50 p-5 md:p-6">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="flex items-center gap-2 font-display text-sm font-bold text-brand-navy"><Truck size={16} aria-hidden /> Serviço terceirizado</h3>
+        <div className="flex items-center gap-2">
+          <StatusServicoBadge status={servico.status} />
+          <button type="button" disabled={cancelamento.isPending} onClick={() => cancelamento.mutate(servico.id)} title="Cancelar serviço" aria-label="Cancelar serviço terceirizado" className="alvo-toque flex items-center justify-center px-1 text-xs text-[#94A3B8] hover:text-[#EF4444]">
+            <X size={13} />
+          </button>
+        </div>
+      </div>
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="rounded-xl bg-white/70 p-3.5">
+          <div className="mb-1 text-xs font-medium uppercase tracking-wide text-[#94A3B8]">Fornecedor</div>
+          <div className="text-sm font-bold text-brand-dark">{servico.fornecedor.nome}</div>
+          <div className="mt-0.5 text-xs text-[#64748B]">{servico.fornecedor.especialidade}</div>
+        </div>
+        <div className="rounded-xl bg-white/70 p-3.5">
+          <div className="mb-1 text-xs font-medium uppercase tracking-wide text-[#94A3B8]">Serviço</div>
+          <div className="text-sm font-bold text-brand-dark">{servico.tipoServico}</div>
+          <div className="mt-0.5 break-words text-xs text-[#64748B]">{servico.local || "Local não informado"}</div>
+        </div>
+        <div className="rounded-xl bg-white/70 p-3.5 sm:col-span-2">
+          <div className="mb-1 text-xs font-medium uppercase tracking-wide text-[#94A3B8]">Última atualização do fornecedor</div>
+          <div className="text-sm font-bold text-brand-dark">{formatarDataHora(servico.atualizadoEm)}</div>
+          {ultima?.observacao && <div className="mt-0.5 text-xs text-[#64748B]">“{ultima.observacao}”</div>}
+        </div>
+      </div>
+      {cancelamento.isError && <div className="mb-3"><AvisoDeErro erro={cancelamento.error} /></div>}
+      <Link href={`/chamados/${chamado.id}/acompanhamento`} className="alvo-toque flex w-full items-center justify-center gap-2 rounded-xl bg-brand-blue py-2.5 text-sm font-semibold text-white hover:opacity-90">
+        Ver histórico do serviço <ChevronRight size={14} strokeWidth={2.5} aria-hidden />
+      </Link>
+    </div>
+  );
 }

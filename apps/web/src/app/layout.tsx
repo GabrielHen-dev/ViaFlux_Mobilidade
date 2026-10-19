@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Montserrat } from "next/font/google";
-import { AuthProvider } from "@/store/AuthContext";
+import Provedores from "@/components/providers/Provedores";
 import "@/styles/globals.css";
 
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-inter", display: "swap" });
@@ -11,6 +11,6 @@ export const metadata: Metadata = { title: "ViaFlux Mobilidade · Central de Cha
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return <html lang="pt-BR"><body className={`${inter.variable} ${montserrat.variable}`}>
     <a href="#conteudo" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:p-3">Pular para o conteúdo</a>
-    <AuthProvider>{children}</AuthProvider>
+    <Provedores>{children}</Provedores>
   </body></html>;
 }
