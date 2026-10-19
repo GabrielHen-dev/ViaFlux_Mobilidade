@@ -19,6 +19,7 @@ import java.util.UUID;
 public class ChamadoService {
 
     private static final Set<String> PRIORIDADES = Set.of("Baixa", "Média", "Alta", "Crítica");
+    static final Set<String> PERFIS_DE_SOLICITANTE = Set.of("CLIENTE", "GESTOR_FROTA");
     private static final int TAMANHO_MAXIMO_PAGINA = 100;
 
     private final ChamadoRepository chamadoRepository;
@@ -37,17 +38,31 @@ public class ChamadoService {
 
     @Transactional
     ChamadoResponse abrir(AbrirChamadoRequest request, UUID solicitanteId) {
-        String codigo = String.format(Locale.ROOT, "VF-%04d", chamadoRepository.proximoNumero());
-        OffsetDateTime agora = OffsetDateTime.now(ZoneOffset.UTC);
         Usuario solicitante = solicitanteId == null
                 ? null
                 : usuarioRepository.findById(solicitanteId).orElseThrow(() ->
                         new IllegalStateException("O usuário autenticado não foi encontrado."));
+        return registrar(request, solicitante, "Chamado registrado pelo portal ViaFlux.");
+    }
+
+    @Transactional
+    ChamadoResponse abrirEmNomeDoCliente(AbrirChamadoRequest request, UUID solicitanteId, UUID atendenteId) {
+        Usuario solicitante = usuarioRepository.findById(solicitanteId)
+                .filter(Usuario::isAtivo)
+                .filter(usuario -> usuario.getPerfis().stream().anyMatch(perfil -> PERFIS_DE_SOLICITANTE.contains(perfil.getCodigo())))
+                .orElseThrow(() -> new SolicitanteInvalidoException("Selecione um cliente ativo como solicitante."));
+        String atendente = usuarioRepository.findById(atendenteId).map(Usuario::getNome).orElse("Central ViaFlux");
+        return registrar(request, solicitante, "Chamado registrado pela Central ViaFlux por " + atendente + ".");
+    }
+
+    private ChamadoResponse registrar(AbrirChamadoRequest request, Usuario solicitante, String detalheDaAbertura) {
+        String codigo = String.format(Locale.ROOT, "VF-%04d", chamadoRepository.proximoNumero());
+        OffsetDateTime agora = OffsetDateTime.now(ZoneOffset.UTC);
         Chamado chamado = chamadoRepository.save(new Chamado(codigo, request, agora, solicitante));
         ChamadoEvento abertura = chamadoEventoRepository.save(new ChamadoEvento(
                 chamado,
                 "Chamado aberto",
-                "Chamado registrado pelo portal ViaFlux.",
+                detalheDaAbertura,
                 "aberto",
                 agora
         ));

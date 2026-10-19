@@ -32,6 +32,8 @@ cp infra/.env.example infra/.env
 | `JWT_REFRESH_TTL` | API | Validade do *refresh token*. `P7D` são 7 dias. |
 | `ADMIN_EMAIL` | API | E-mail do administrador inicial. Só é usado quando a tabela de usuários está vazia; depois do primeiro login pode ser removido. |
 | `ADMIN_PASSWORD` | API | Senha do administrador inicial, com a mesma regra do `ADMIN_EMAIL`. |
+| `DEV_TOOLS_HABILITADO` | API | `true` liga os endpoints `/api/dev/**` e a tela `/dev-tools` (sem link no menu, só para ADMIN), que populam e limpam dados de exemplo. Padrão `false` em todos os ambientes. Em produção, ligue só enquanto precisar de dados de demonstração e desligue depois. |
+| `DEV_TOOLS_SENHA` | API | Senha dos usuários de exemplo (`*@seed.viaflux.local`) criados pelo `/dev-tools`. Sem ela, o seed é recusado. Em produção use uma senha forte: quem souber pode entrar com qualquer perfil de exemplo. |
 | `CORS_ALLOWED_ORIGINS` | API | Origens do frontend autorizadas a chamar a API, separadas por vírgula. Em desenvolvimento, `http://localhost:5261`; em produção, o domínio público da `web`, por exemplo `https://viaflux.seudominio.com`. Sem a origem correta, o navegador bloqueia o login. |
 | `NEXT_PUBLIC_API_URL` | Frontend | URL da API vista pelo navegador. Em produção é o domínio público da `api`, por exemplo `https://api.viaflux.seudominio.com`. |
 

@@ -36,6 +36,9 @@ viaflux:
   admin:
     email: ${VIAFLUX_ADMIN_EMAIL:${ADMIN_EMAIL:}}
     senha: ${VIAFLUX_ADMIN_PASSWORD:${ADMIN_PASSWORD:}}
+  dev-tools:
+    habilitado: ${VIAFLUX_DEV_TOOLS_HABILITADO:${DEV_TOOLS_HABILITADO:false}}
+    senha-dos-usuarios: ${VIAFLUX_DEV_TOOLS_SENHA:${DEV_TOOLS_SENHA:}}
 
 management:
   endpoints:

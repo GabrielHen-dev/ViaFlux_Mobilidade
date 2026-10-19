@@ -35,6 +35,7 @@ public class ChamadoController {
     private static final Set<String> PERFIS_COM_ACESSO_GLOBAL = Set.of(
             "ADMIN", "ATENDENTE", "LIDER_OPERACIONAL"
     );
+    private static final Set<String> PERFIS_QUE_ABREM_PELA_CENTRAL = Set.of("ADMIN", "ATENDENTE");
 
     private final ChamadoService chamadoService;
 
@@ -45,7 +46,7 @@ public class ChamadoController {
     @PostMapping
     @Operation(
             summary = "Abrir chamado",
-            description = "Disponível para CLIENTE e GESTOR_FROTA. O solicitante é identificado pelo token autenticado.",
+            description = "CLIENTE e GESTOR_FROTA abrem em nome próprio. ADMIN e ATENDENTE abrem pela Central e informam o solicitanteId de um cliente ativo.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
@@ -58,8 +59,10 @@ public class ChamadoController {
             @Valid @RequestBody AbrirChamadoRequest request,
             @AuthenticationPrincipal Jwt token
     ) {
-        UUID solicitanteId = token == null ? null : UUID.fromString(token.getSubject());
-        ChamadoResponse chamado = chamadoService.abrir(request, solicitanteId);
+        UUID autenticadoId = token == null ? null : UUID.fromString(token.getSubject());
+        ChamadoResponse chamado = abrePelaCentral(token, request)
+                ? chamadoService.abrirEmNomeDoCliente(request, exigirSolicitante(request), autenticadoId)
+                : chamadoService.abrir(request, autenticadoId);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
                 .buildAndExpand(chamado.id())
@@ -134,7 +137,24 @@ public class ChamadoController {
     }
 
     private static boolean temAcessoGlobal(Jwt token) {
-        var perfis = token.getClaimAsStringList("perfis");
-        return perfis != null && perfis.stream().anyMatch(PERFIS_COM_ACESSO_GLOBAL::contains);
+        return temAlgumPerfil(token, PERFIS_COM_ACESSO_GLOBAL);
+    }
+
+    private static boolean temAlgumPerfil(Jwt token, Set<String> esperados) {
+        var perfis = token == null ? null : token.getClaimAsStringList("perfis");
+        return perfis != null && perfis.stream().anyMatch(esperados::contains);
+    }
+
+    private static boolean abrePelaCentral(Jwt token, AbrirChamadoRequest request) {
+        boolean daCentral = temAlgumPerfil(token, PERFIS_QUE_ABREM_PELA_CENTRAL);
+        boolean tambemECliente = temAlgumPerfil(token, ChamadoService.PERFIS_DE_SOLICITANTE);
+        return daCentral && (request.solicitanteId() != null || !tambemECliente);
+    }
+
+    private static UUID exigirSolicitante(AbrirChamadoRequest request) {
+        if (request.solicitanteId() == null) {
+            throw new SolicitanteInvalidoException("Informe o cliente solicitante.");
+        }
+        return request.solicitanteId();
     }
 }

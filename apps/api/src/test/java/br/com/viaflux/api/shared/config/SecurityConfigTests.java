@@ -49,10 +49,10 @@ class SecurityConfigTests {
     }
 
     @Test
-    void forbidsAdministrativeProfileFromCreatingCustomerTicket() throws Exception {
+    void forbidsOperationalLeaderFromCreatingTicket() throws Exception {
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                         .post("/api/chamados")
-                        .with(perfil("ADMIN"))
+                        .with(perfil("LIDER_OPERACIONAL"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isForbidden());

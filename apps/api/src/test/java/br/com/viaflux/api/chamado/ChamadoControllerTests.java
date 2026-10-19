@@ -219,6 +219,33 @@ class ChamadoControllerTests {
                 .andExpect(jsonPath("$.detail").value("Chamado não encontrado."));
     }
 
+    @Test
+    void centralOpensTicketOnBehalfOfTheChosenClient() throws Exception {
+        UUID atendenteId = UUID.randomUUID();
+        UUID clienteId = UUID.randomUUID();
+        given(chamadoService.abrirEmNomeDoCliente(any(AbrirChamadoRequest.class), eq(clienteId), eq(atendenteId)))
+                .willReturn(new ChamadoResponse("VF-0002", "Maria Silva", "", "Volvo FH 460",
+                        "", "Mecânico", "Média", "", "", "Aberto",
+                        OffsetDateTime.of(2026, 10, 8, 16, 0, 0, 0, ZoneOffset.UTC), List.of()));
+
+        mockMvc.perform(post("/api/chamados")
+                        .with(autenticado(atendenteId, "ATENDENTE"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"cliente\":\"Maria Silva\",\"modelo\":\"Volvo FH 460\",\"tipo\":\"Mecânico\",\"solicitanteId\":\"" + clienteId + "\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value("VF-0002"));
+    }
+
+    @Test
+    void centralMustInformTheClient() throws Exception {
+        mockMvc.perform(post("/api/chamados")
+                        .with(autenticado(UUID.randomUUID(), "ADMIN"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"cliente\":\"Maria Silva\",\"modelo\":\"Volvo FH 460\",\"tipo\":\"Mecânico\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.solicitanteId").value("Informe o cliente solicitante."));
+    }
+
     private static RequestPostProcessor autenticado(UUID usuarioId, String perfil) {
         return jwt()
                 .jwt(token -> token.subject(usuarioId.toString()).claim("perfis", List.of(perfil)))

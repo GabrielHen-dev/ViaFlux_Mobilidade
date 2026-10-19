@@ -36,6 +36,8 @@ services:
       VIAFLUX_CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?defina CORS_ALLOWED_ORIGINS com o endereço público do frontend}
       VIAFLUX_ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       VIAFLUX_ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      VIAFLUX_DEV_TOOLS_HABILITADO: ${DEV_TOOLS_HABILITADO:-false}
+      VIAFLUX_DEV_TOOLS_SENHA: ${DEV_TOOLS_SENHA:-}
       VIAFLUX_ANEXO_DIR: /var/viaflux/anexos
       TZ: America/Recife
     expose:

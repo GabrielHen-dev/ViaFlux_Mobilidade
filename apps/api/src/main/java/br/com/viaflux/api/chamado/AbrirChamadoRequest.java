@@ -3,6 +3,8 @@ package br.com.viaflux.api.chamado;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import java.util.UUID;
+
 public record AbrirChamadoRequest(
         @NotBlank(message = "O nome do cliente é obrigatório.")
         @Size(max = 150, message = "O nome do cliente deve ter no máximo 150 caracteres.")
@@ -25,6 +27,20 @@ public record AbrirChamadoRequest(
         String descricao,
 
         @Size(max = 255, message = "A localização deve ter no máximo 255 caracteres.")
-        String localizacao
+        String localizacao,
+
+        UUID solicitanteId
 ) {
+
+    public AbrirChamadoRequest(
+            String cliente,
+            String telefone,
+            String modelo,
+            String placa,
+            String tipo,
+            String descricao,
+            String localizacao
+    ) {
+        this(cliente, telefone, modelo, placa, tipo, descricao, localizacao, null);
+    }
 }

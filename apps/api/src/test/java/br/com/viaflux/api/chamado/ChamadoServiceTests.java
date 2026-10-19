@@ -125,6 +125,21 @@ class ChamadoServiceTests {
     }
 
     @Test
+    void rejectsRequesterWithoutClientProfileWhenCentralOpensTicket() {
+        UUID atendenteId = UUID.randomUUID();
+        UUID naoClienteId = UUID.randomUUID();
+        Usuario naoCliente = mock(Usuario.class);
+        given(naoCliente.isAtivo()).willReturn(true);
+        given(naoCliente.getPerfis()).willReturn(java.util.Set.of());
+        given(usuarioRepository.findById(naoClienteId)).willReturn(Optional.of(naoCliente));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> chamadoService.abrirEmNomeDoCliente(new AbrirChamadoRequest(
+                        "Maria Silva", null, "Volvo FH 460", null, "Mecânico", null, null
+                ), naoClienteId, atendenteId))
+                .isInstanceOf(SolicitanteInvalidoException.class);
+    }
+
+    @Test
     void returnsTheTimelineWhenConsultingATicket() {
         OffsetDateTime ocorridoEm = OffsetDateTime.of(2026, 10, 13, 12, 0, 0, 0, ZoneOffset.UTC);
         Chamado chamado = new Chamado("VF-0000", new AbrirChamadoRequest(

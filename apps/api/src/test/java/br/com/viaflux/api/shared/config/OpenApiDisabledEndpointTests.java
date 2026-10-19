@@ -1,5 +1,7 @@
 package br.com.viaflux.api.shared.config;
 
+import br.com.viaflux.api.usuario.DepartamentoRepository;
+import br.com.viaflux.api.usuario.OrganizacaoRepository;
 import br.com.viaflux.api.usuario.PerfilRepository;
 import br.com.viaflux.api.usuario.UsuarioRepository;
 import br.com.viaflux.api.chamado.ChamadoService;
@@ -36,6 +38,12 @@ class OpenApiDisabledEndpointTests {
 
     @MockitoBean
     private PerfilRepository perfilRepository;
+
+    @MockitoBean
+    private OrganizacaoRepository organizacaoRepository;
+
+    @MockitoBean
+    private DepartamentoRepository departamentoRepository;
 
     @Test
     void doesNotExposeDocumentationWhenDisabled() throws Exception {
