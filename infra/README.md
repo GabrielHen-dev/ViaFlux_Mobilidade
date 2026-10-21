@@ -32,7 +32,17 @@ cp infra/.env.example infra/.env
 | `JWT_REFRESH_TTL` | API | Validade do *refresh token*. `P7D` são 7 dias. |
 | `ADMIN_EMAIL` | API | E-mail do administrador inicial. Só é usado quando a tabela de usuários está vazia; depois do primeiro login pode ser removido. |
 | `ADMIN_PASSWORD` | API | Senha do administrador inicial, com a mesma regra do `ADMIN_EMAIL`. |
+| `DEV_TOOLS_HABILITADO` | API | `true` liga os endpoints `/api/dev/**` e a tela `/dev-tools` (sem link no menu, só para ADMIN), que populam e limpam dados de exemplo. Padrão `false` em todos os ambientes. Em produção, ligue só enquanto precisar de dados de demonstração e desligue depois. |
+| `DEV_TOOLS_SENHA` | API | Senha dos usuários de exemplo (`*@seed.viaflux.local`) criados pelo `/dev-tools`. Sem ela, o seed é recusado. Em produção use uma senha forte: quem souber pode entrar com qualquer perfil de exemplo. |
 | `CORS_ALLOWED_ORIGINS` | API | Origens do frontend autorizadas a chamar a API, separadas por vírgula. Em desenvolvimento, `http://localhost:5261`; em produção, o domínio público da `web`, por exemplo `https://viaflux.seudominio.com`. Sem a origem correta, o navegador bloqueia o login. |
+| `NOMINATIM_URL` | API | Servidor do OpenStreetMap Nominatim usado em `/api/enderecos/reverso` (endereço a partir do GPS) e `/api/enderecos/busca` (sugestão de ruas). Padrão `https://nominatim.openstreetmap.org`. O servidor público aceita no máximo 1 requisição por segundo; a API respeita esse limite e guarda as respostas em cache por algumas horas. |
+| `VIACEP_URL` | API | Servidor do ViaCEP usado em `/api/enderecos/cep/{cep}`. Padrão `https://viacep.com.br`. |
+| `ENDERECOS_USER_AGENT` | API | `User-Agent` enviado ao Nominatim e ao ViaCEP, exigido pela política de uso do Nominatim para identificar a aplicação. Vazio usa `ViaFlux-Mobilidade/1.0 (residencia-avanade-squad03)`. |
+| `TRIAGEM_URGENCIA_ALTA_MINUTOS` | API | Prazo, em minutos, para o atendente concluir a triagem quando o cliente informa urgência alta. Padrão `10`. É um prazo provisório: a documentação ainda não define tempos-alvo com o cliente. |
+| `TRIAGEM_URGENCIA_MEDIA_MINUTOS` | API | Prazo da triagem para urgência média. Padrão `20`. Também vale para chamados antigos, abertos sem contexto. |
+| `TRIAGEM_URGENCIA_BAIXA_MINUTOS` | API | Prazo da triagem para urgência baixa. Padrão `40`. |
+| `ANEXO_DIR` | API | Pasta onde a API grava fotos e documentos dos chamados. Padrão `./data/anexos`, relativo a `apps/api`. Em produção o Compose usa `VIAFLUX_ANEXO_DIR=/var/viaflux/anexos`, montado no volume `anexos`. |
+| `ANEXO_LIMITE_MB` | API | Tamanho máximo de cada anexo, em MB. Padrão `10`. Mantenha igual a `NEXT_PUBLIC_ANEXO_LIMITE_MB` do frontend, se definido. |
 | `NEXT_PUBLIC_API_URL` | Frontend | URL da API vista pelo navegador. Em produção é o domínio público da `api`, por exemplo `https://api.viaflux.seudominio.com`. |
 
 > ⚠️ `NEXT_PUBLIC_*` é embutido no bundle do frontend e **fica visível para qualquer usuário**. Nunca coloque segredo nessa variável, porque ela existe só para endereço público.

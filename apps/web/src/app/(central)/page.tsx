@@ -1,2 +1,2 @@
-import Dashboard from "@/components/chamados/Dashboard";
-export default function Page() { return <Dashboard />; }
+import Inicio from "@/components/layout/Inicio";
+export default function Page() { return <Inicio />; }

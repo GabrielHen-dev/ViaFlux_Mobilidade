@@ -1,219 +1,87 @@
 "use client";
+
 import Link from "next/link";
-import { Check, ChevronLeft } from "lucide-react";
-import type { Anexo } from "@/types/chamado";
-import { useChamados } from "@/store/ChamadosContext";
-import { dataHoraAtual, horaAtual } from "@/utils/date";
-import AnexosInput from "@/components/forms/AnexosInput";
-import { useState } from "react";
-import type { Chamado } from "@/types/chamado";
+import { useRef } from "react";
+import { ChevronLeft, CircleAlert } from "lucide-react";
+import { useUsuarioAutenticado } from "@/store/AuthContext";
+import { PERFIS_DE_CLIENTE, PERFIS_QUE_ABREM_PELA_CENTRAL, usuarioTemPerfil } from "@/utils/perfis";
+import { ID_DO_CAMPO, ROTULO_DO_CAMPO, type CampoDoFormulario } from "@/components/forms/novo-chamado/formulario";
+import { useAberturaDeChamado } from "@/components/forms/novo-chamado/useAberturaDeChamado";
+import { SecaoDeAnexos, SecaoDoProblema, SecaoDoSolicitante, SecaoDoVeiculoELocal } from "@/components/forms/novo-chamado/SecoesDoFormulario";
+import ConfirmacaoDeAbertura from "@/components/forms/novo-chamado/ConfirmacaoDeAbertura";
 
 export default function NovoChamado() {
-  const { proximoId: novoId, adicionarChamado: onCriar } = useChamados();
-  const [anexos, setAnexos] = useState<Anexo[]>([]);
-  const [form, setForm] = useState({
-    cliente: "",
-    telefone: "",
-    modelo: "",
-    placa: "",
-    tipo: "",
-    descricao: "",
-    localizacao: "",
-  });
-  const [confirmado, setConfirmado] = useState(false);
-  const [novoChamadoId, setNovoChamadoId] = useState("");
+  const usuario = useUsuarioAutenticado();
+  const ehCliente = usuarioTemPerfil(usuario, PERFIS_DE_CLIENTE);
+  const abrePelaCentral = !ehCliente && usuarioTemPerfil(usuario, PERFIS_QUE_ABREM_PELA_CENTRAL);
+  const resumoDosErros = useRef<HTMLDivElement>(null);
+  const avisoDeFalha = useRef<HTMLDivElement>(null);
+  const abertura = useAberturaDeChamado({ abrePelaCentral, nomeInicial: abrePelaCentral ? "" : usuario.nome, resumoDosErros, avisoDeFalha });
+  const { campos, erros, alterar } = abertura;
 
-
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-    setForm((f) => ({ ...f, [k]: e.target.value }));
-
-  const handleSubmit = () => {
-    if (!form.cliente.trim() || !form.modelo.trim() || !form.tipo) return;
-    const dataStr = dataHoraAtual();
-    const novo: Chamado = {
-      id: novoId,
-      cliente: form.cliente.trim(),
-      telefone: form.telefone,
-      modelo: form.modelo.trim(),
-      placa: form.placa.toUpperCase(),
-      tipo: form.tipo,
-      descricao: form.descricao,
-      localizacao: form.localizacao,
-      status: "Aberto",
-      prioridade: "Média",
-      setor: "",
-      responsavel: "",
-      abertura: dataStr,
-      sla: "8h restantes",
-      timeline: [{ hora: horaAtual(), acao: "Chamado aberto", detalhe: "Registrado por João Matos · Central ViaFlux", icon: "aberto" }], historico: [], servicoTerceiro: null, anexos,
-    };
-    onCriar(novo);
-    setNovoChamadoId(novoId);
-    setConfirmado(true);
-  };
-
-  const labelClass = "block text-xs font-semibold text-[#475569] uppercase tracking-wide mb-1.5";
-  const inputClass =
-    "w-full px-3.5 py-2.5 rounded-lg border border-[#E2E8F0] text-sm text-brand-dark outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all";
-
-  if (confirmado) {
+  if (abertura.criado) {
     return (
-      <div className="min-w-0">
-        <main id="conteudo" className="min-h-[70vh] md:min-h-screen flex items-center justify-center p-4 md:p-8">
-          <div className="max-w-md w-full bg-white rounded-2xl border border-[#E2E8F0] p-10 text-center shadow-sm">
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
-              style={{ background: "#ECFDF5" }}
-            >
-              <Check size={32} color="#10B981" strokeWidth={2.5} />
-            </div>
-            <h2 className="text-xl font-bold text-brand-navy mb-2" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>
-              Chamado aberto!
-            </h2>
-            <p className="text-[#64748B] text-sm mb-1">
-              Seu chamado foi registrado com sucesso.
-            </p>
-            <p className="text-brand-blue font-bold text-lg mb-6">#{novoChamadoId}</p>
-            <p className="text-xs text-[#94A3B8] mb-8">
-              Em breve nossa equipe entrará em contato. O SLA de atendimento é de até 8 horas.
-            </p>
-            <div className="flex gap-3">
-              <Link href="/"
-                className="flex-1 py-2.5 rounded-xl border border-[#E2E8F0] text-sm font-semibold text-[#475569] hover:bg-brand-light transition-colors"
-              >
-                Ir ao Dashboard
-              </Link>
-              <button
-                onClick={() => { setConfirmado(false); setAnexos([]); setForm({ cliente: "", telefone: "", modelo: "", placa: "", tipo: "", descricao: "", localizacao: "" }); }}
-                className="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold hover:opacity-90 transition-opacity"
-                style={{ background: "var(--brand-green)" }}
-              >
-                Novo chamado
-              </button>
-            </div>
-          </div>
-        </main>
-      </div>
+      <ConfirmacaoDeAbertura
+        chamado={abertura.criado}
+        arquivos={abertura.arquivos}
+        ehCliente={ehCliente}
+        aoReenviarAnexos={abertura.reenviarAnexosQueFalharam}
+        aoNovoChamado={abertura.comecarOutro}
+      />
     );
   }
 
+  const listaDeErros = Object.entries(erros).filter(([, mensagem]) => mensagem) as [CampoDoFormulario, string][];
+
   return (
-    <div className="min-w-0">
-
-      <main id="conteudo" className="p-4 md:p-8">
-        <div className="max-w-2xl mx-auto">
-          {/* Header */}
-          <div className="flex items-center gap-4 mb-8">
-            <Link href="/" aria-label="Voltar ao Dashboard"
-              className="w-9 h-9 rounded-xl border border-[#E2E8F0] flex items-center justify-center text-[#64748B] hover:bg-white hover:border-[#CBD5E1] transition-all"
-            >
-              <ChevronLeft size={16} />
-            </Link>
-            <div>
-              <div className="text-xs text-[#94A3B8] font-medium mb-0.5">Nº do chamado</div>
-              <h1 className="text-2xl font-bold text-brand-navy" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>
-                #{novoId} — Novo Chamado
-              </h1>
-            </div>
+    <main id="conteudo" className="p-4 md:p-8">
+      <div className="mx-auto max-w-2xl">
+        <div className="mb-6 flex items-center gap-4">
+          <Link href={ehCliente ? "/portal" : "/"} aria-label="Voltar" className="alvo-toque flex h-9 w-9 items-center justify-center rounded-xl border border-[#E2E8F0] text-[#64748B] transition-all hover:border-[#CBD5E1] hover:bg-white">
+            <ChevronLeft size={16} />
+          </Link>
+          <div>
+            <h1 className="font-display text-2xl font-bold text-brand-navy">Novo Chamado</h1>
+            <p className="text-sm text-[#64748B]">O protocolo é gerado quando o servidor confirmar a abertura.</p>
           </div>
-
-          <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-5">
-            {/* Dados do cliente */}
-            <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
-              <h2 className="font-semibold text-brand-navy text-sm mb-5 flex items-center gap-2" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>
-                <span className="w-6 h-6 rounded-md bg-[#EFF6FF] flex items-center justify-center text-brand-blue text-xs font-bold">1</span>
-                Dados do Cliente
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="novo-campo-1" className={labelClass}>Nome *</label>
-                  <input id="novo-campo-1" className={inputClass} placeholder="Nome completo" required value={form.cliente} onChange={set("cliente")} />
-                </div>
-                <div>
-                  <label htmlFor="novo-campo-2" className={labelClass}>Telefone</label>
-                  <input id="novo-campo-2" className={inputClass} type="tel" placeholder="(00) 00000-0000" value={form.telefone} onChange={set("telefone")} />
-                </div>
-              </div>
-            </div>
-
-            {/* Dados do veículo */}
-            <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
-              <h2 className="font-semibold text-brand-navy text-sm mb-5 flex items-center gap-2" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>
-                <span className="w-6 h-6 rounded-md bg-[#EFF6FF] flex items-center justify-center text-brand-blue text-xs font-bold">2</span>
-                Dados do Veículo
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="novo-campo-3" className={labelClass}>Modelo *</label>
-                  <input id="novo-campo-3" className={inputClass} placeholder="Ex: Volvo FH 460" required value={form.modelo} onChange={set("modelo")} />
-                </div>
-                <div>
-                  <label htmlFor="novo-campo-4" className={labelClass}>Placa</label>
-                  <input id="novo-campo-4" className={inputClass} placeholder="ABC-1D23" value={form.placa} onChange={set("placa")} />
-                </div>
-              </div>
-            </div>
-
-            {/* Problema */}
-            <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
-              <h2 className="font-semibold text-brand-navy text-sm mb-5 flex items-center gap-2" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>
-                <span className="w-6 h-6 rounded-md bg-[#EFF6FF] flex items-center justify-center text-brand-blue text-xs font-bold">3</span>
-                Problema
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="novo-campo-5" className={labelClass}>Tipo do problema *</label>
-                  <select id="novo-campo-5" className={inputClass} required value={form.tipo} onChange={set("tipo")}>
-                    <option value="">Selecione</option>
-                    <option>Mecânico</option>
-                    <option>Sistema</option>
-                    <option>Financeiro</option>
-                    <option>Outro</option>
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="novo-campo-6" className={labelClass}>Descrição</label>
-                  <textarea id="novo-campo-6"
-                    className={inputClass + " resize-none"}
-                    rows={3}
-                    placeholder="Descreva o problema com o máximo de detalhes..."
-                    value={form.descricao}
-                    onChange={set("descricao")}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="novo-campo-7" className={labelClass}>Localização</label>
-                  <input id="novo-campo-7"
-                    className={inputClass}
-                    placeholder="Ex: BR-116, km 312, Guarulhos – SP"
-                    value={form.localizacao}
-                    onChange={set("localizacao")}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Upload */}
-            <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
-              <h2 className="font-semibold text-brand-navy text-sm mb-4 flex items-center gap-2" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>
-                <span className="w-6 h-6 rounded-md bg-[#EFF6FF] flex items-center justify-center text-brand-blue text-xs font-bold">4</span>
-                Anexos (opcional)
-              </h2>
-              <AnexosInput anexos={anexos} onAdicionar={(novos) => setAnexos((itens) => [...itens, ...novos])} />
-            </div>
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={!form.cliente.trim() || !form.modelo.trim() || !form.tipo}
-              className="w-full py-3.5 rounded-xl text-white font-semibold text-sm shadow-sm transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ background: "var(--brand-green)" }}
-            >
-              Abrir Chamado
-            </button>
-          </form>
         </div>
-      </main>
-    </div>
+
+        {abertura.restaurado && (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+            <span>Recuperamos o rascunho que você estava preenchendo. Anexos precisam ser selecionados de novo.</span>
+            <button type="button" onClick={abertura.descartarRascunho} className="text-xs font-semibold underline">Descartar rascunho</button>
+          </div>
+        )}
+
+        {abertura.falhaDoEnvio && (
+          <div ref={avisoDeFalha} tabIndex={-1} role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 outline-none">
+            <p className="flex items-center gap-2 font-semibold"><CircleAlert size={16} aria-hidden /> Envio não confirmado: a abertura não foi registrada.</p>
+            <p className="mt-1">{abertura.falhaDoEnvio} Seus dados continuam preenchidos. Use “Tentar de novo”, sem risco de duplicar o chamado.</p>
+          </div>
+        )}
+
+        {listaDeErros.length > 0 && (
+          <div ref={resumoDosErros} tabIndex={-1} role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 outline-none">
+            <p className="font-semibold">Corrija os campos antes de enviar:</p>
+            <ul className="mt-1 list-disc pl-5">
+              {listaDeErros.map(([campo, mensagem]) => (
+                <li key={campo}><a href={`#${ID_DO_CAMPO[campo]}`} className="underline">{ROTULO_DO_CAMPO[campo]}</a>: {mensagem}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <form noValidate onSubmit={abertura.enviar} className="space-y-5">
+          <SecaoDoProblema campos={campos} erros={erros} alterar={alterar} escolherMotivo={abertura.escolherMotivo} />
+          <SecaoDoSolicitante campos={campos} erros={erros} alterar={alterar} abrePelaCentral={abrePelaCentral} escolherSolicitante={abertura.escolherSolicitante} />
+          <SecaoDoVeiculoELocal campos={campos} erros={erros} alterar={alterar} />
+          <SecaoDeAnexos arquivos={abertura.arquivos} aoAdicionar={abertura.adicionarArquivos} aoRemover={abertura.removerArquivo} />
+
+          <button type="submit" disabled={abertura.enviando} className="alvo-toque w-full rounded-xl bg-brand-green py-3.5 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 active:scale-95 disabled:cursor-wait disabled:opacity-60">
+            {abertura.enviando ? "Enviando…" : abertura.falhaDoEnvio ? "Tentar de novo" : "Abrir Chamado"}
+          </button>
+        </form>
+      </div>
+    </main>
   );
 }

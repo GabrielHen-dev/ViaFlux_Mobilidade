@@ -1,89 +1,99 @@
-# Implementação do protótipo ViaFlux
+# Implementação do frontend ViaFlux
 
-A implementação ficou restrita a `apps/web`. O diretório inicialmente continha apenas Dockerfile, .dockerignore e public/.gitkeep; não existiam package.json, tsconfig, configuração Next.js, componentes ou estilos para reaproveitar. A aplicação foi criada sobre a stack solicitada, com Next.js 16.4.0 e App Router. O Dockerfile existente foi preservado. `apps/api` e `infra` não foram alterados.
+Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, TanStack Query e Zod. Todas as telas exigem login e usam a API Spring Boot de `apps/api`. Não há simulação no navegador nem dados fictícios: a camada `services/api/simulacao/`, que imitava os endpoints que faltavam, foi removida quando o backend passou a cobrir o ciclo completo do chamado.
 
-Todos os arquivos de referência foram lidos em `C:/Users/ferdi/Downloads/ViaFlux/src`: App.tsx, main.tsx, index.css, vite-env.d.ts, as sete telas, Sidebar.tsx e StatusBadge.tsx. Seus textos, seções, SVGs, cores, formulários, filtros e confirmações orientaram a implementação.
+O ciclo do chamado, a triagem manual, a prioridade e o SLA estão descritos em [`docs/fluxo-de-chamados.md`](../../docs/fluxo-de-chamados.md).
 
-A árvore relevante final é:
+## Rotas
+
+Todas ficam no grupo `src/app/(central)/` e passam pela verificação de sessão de `components/auth/AreaProtegida.tsx`. Cada tela confere o perfil com `PerfilRequerido`.
+
+| Rota | Tela | Perfis |
+|---|---|---|
+| `/` | Dashboard (visão global) ou fila do departamento | ADMIN, ATENDENTE, LIDER_OPERACIONAL, DEPARTAMENTO |
+| `/triagem` | Fila de triagem com cronômetro e "Assumir" | ADMIN, ATENDENTE |
+| `/chamados/novo` | Abertura de chamado | CLIENTE, GESTOR_FROTA, ADMIN, ATENDENTE |
+| `/chamados/[id]` | Detalhes, timeline, anexos, localização e fornecedor | Central |
+| `/chamados/[id]/triagem` | Conclusão da triagem; depois, reclassificação e override | ADMIN, ATENDENTE |
+| `/chamados/[id]/encaminhamento` | Transferência (e status, para quem atende), só depois da triagem | ADMIN, ATENDENTE, DEPARTAMENTO |
+| `/chamados/[id]/acompanhamento` | Acompanhamento do serviço terceirizado | Central |
+| `/portal`, `/portal/chamados/[id]` | Portal do cliente, com as etapas do chamado | CLIENTE, GESTOR_FROTA |
+| `/fornecedor` | Serviços do fornecedor | FORNECEDOR |
+| `/metricas` | Indicadores e exportação CSV | ADMIN, LIDER_OPERACIONAL |
+| `/lixeira` | Lixeira | ADMIN, ATENDENTE |
+| `/usuarios`, `/dev-tools` | Gestão de usuários e dados de exemplo | ADMIN |
+
+## Organização
 
 ```text
-apps/web/src/
-├── app/
-│   ├── layout.tsx
-│   ├── page.tsx
-│   ├── not-found.tsx
-│   ├── chamados/
-│   │   ├── novo/page.tsx
-│   │   └── [id]/
-│   │       ├── page.tsx
-│   │       ├── triagem/page.tsx
-│   │       ├── encaminhamento/page.tsx
-│   │       └── acompanhamento/page.tsx
-│   └── lixeira/page.tsx
+src/
+├── app/(central)/          Rotas (páginas finas que só montam o componente)
 ├── components/
-│   ├── chamados/
-│   │   ├── Dashboard.tsx
-│   │   ├── DetalhesChamado.tsx
-│   │   ├── TimelineChamado.tsx
-│   │   ├── AcompanhamentoTerceiro.tsx
-│   │   └── Lixeira.tsx
-│   ├── forms/
-│   │   ├── NovoChamado.tsx
-│   │   ├── Triagem.tsx
-│   │   ├── Encaminhamento.tsx
-│   │   ├── ServicoTerceiroForm.tsx
-│   │   └── AnexosInput.tsx
-│   ├── feedback/ChamadoIndisponivel.tsx
-│   ├── layout/Sidebar.tsx
-│   └── ui/
-│       ├── StatusBadge.tsx
-│       ├── StatusServico.tsx
-│       └── button.tsx
-├── hooks/useChamado.ts
-├── mocks/
-│   ├── chamados.ts
-│   ├── opcoes.ts
-│   └── servicos.ts
-├── services/api/README.md
-├── store/
-│   ├── ChamadosContext.tsx
-│   └── chamadosReducer.ts
-├── styles/
-│   ├── globals.css
-│   ├── tokens/brand.css
-│   ├── base/global.css
-│   └── layout/shell.css
-├── types/chamado.ts
-└── utils/
-    ├── cn.ts
-    └── date.ts
+│   ├── chamados/           Dashboard, detalhes, timeline, anexos, localização, lixeira
+│   │   └── painel/         Filtros, tabela e alertas do Dashboard
+│   ├── triagem/            Fila, prazo da triagem, conclusão, reclassificação, override e campos comuns
+│   ├── forms/              Triagem (casca), encaminhamento, serviço terceirizado, localização
+│   │   └── novo-chamado/   Esquema e rascunho, hook de envio, seções e confirmação
+│   ├── portal/             Portal e etapas do chamado para o cliente
+│   └── ui/, layout/, auth/, feedback/, metricas/, fornecedor/, admin/, devtools/
+├── hooks/consultas.ts      Consultas e mutações do TanStack Query
+├── services/api/           Cliente HTTP e funções por recurso
+├── store/AuthContext.tsx   Sessão, renovação do token e ClienteApi
+├── types/                  Contratos de resposta da API
+└── utils/                  Datas, prioridade, perfis, endereço e anexos
 ```
 
-As rotas criadas são `/`, `/chamados/novo`, `/chamados/[id]`, `/chamados/[id]/triagem`, `/chamados/[id]/encaminhamento`, `/chamados/[id]/acompanhamento` e `/lixeira`. As páginas e o layout são Server Components de composição. Os componentes com formulários, estado e handlers são Client Components. Links usam `next/link`; navegação após exclusão e clique na linha da tabela usa `useRouter`. A Sidebar aparece uma vez no layout, determina o item ativo pelo pathname e exibe o contador compartilhado da lixeira.
+As telas dependem dos hooks de `consultas.ts` e das funções de `services/api/`, que recebem um `ClienteApi`. Nenhuma tela chama `fetch` direto. Os componentes maiores foram divididos por responsabilidade:
 
-Os componentes listados na árvore foram criados. `StatusBadge.tsx` exporta StatusBadge e PrioridadeBadge. `button.tsx` segue a composição shadcn/ui com Radix Slot, class-variance-authority e o utilitário cn; é usado no feedback de chamado indisponível e no controle compacto de anexos. Não havia componentes anteriores do ViaFlux. A marca, os ícones SVG e a composição visual da exportação foram reaproveitados e adaptados.
+- **Abertura:** `NovoChamado` só compõe as partes. O esquema, o rascunho e o hook de envio ficam em `forms/novo-chamado/`.
+- **Dashboard:** filtros, tabela e alertas ficam em `chamados/painel/`.
+- **Triagem:** a casca `forms/Triagem.tsx` escolhe o modo: `ConclusaoDaTriagem` antes da triagem, e `Reclassificacao` com `OverrideDePrioridade` depois.
 
-`types/chamado.ts` reúne Chamado, Status, Prioridade, StatusServico, TimelineItem, HistoricoItem, EventoTimeline, Anexo e ServicoTerceiro. `mocks/chamados.ts` contém os cinco chamados originais e o histórico inicial; `mocks/opcoes.ts` reúne parceiros, tipos de serviço, setores, responsáveis e gravidades demonstrativas; `mocks/servicos.ts` contém a timeline, os metadados e as previsões do parceiro original. Essas opções e SLAs permanecem exemplos de interface.
+## Triagem na interface
 
-O Context usa um reducer para criação, atualização, envio à lixeira, restauração, exclusão definitiva, limpeza da lixeira, histórico, serviço terceirizado, observações e metadados de anexos. A sequência de IDs é independente da quantidade de chamados ativos, evitando reutilização após excluir. Histórico e serviço pertencem ao chamado e são mantidos durante a navegação, inclusive após restaurar. Observações do acompanhamento também aparecem na timeline dos detalhes. Formulários continuam com estado local; não existe controlador global de telas.
+- **Fila de triagem (`/triagem`).** Mostra os chamados com `etapa=TRIAGEM`, do prazo mais curto para o mais longo. O cronômetro (`PrazoDaTriagem`) fica verde, fica amarelo a partir da metade do prazo e fica vermelho depois do limite.
+- **Conclusão.** O formulário vem com a sugestão tirada do motivo e do contexto do cliente (`sugestaoDoCliente`). Nada é aplicado sem a confirmação do atendente. O departamento é opcional: no automático vale a regra de plantão do backend.
+- **Antes da triagem:**
+  - A prioridade aparece como "Aguardando triagem".
+  - O Dashboard troca o SLA pelo prazo da triagem.
+  - Encaminhamento, status e fornecedor ficam bloqueados.
+  - O cliente vê a etapa "Em análise" com a previsão.
+- **Departamento:** vê só os chamados triados da própria fila. Não tem lixeira nem exclusão.
 
-O index.css foi distribuído entre tokens, base e layout. As cinco cores recorrentes possuem tokens Tailwind e variáveis CSS. Inter e Montserrat são carregadas por next/font/google no layout. Permanecem bordas, radius, fundos, sombras, estados ativos e SVGs da referência. Foram adicionados foco visível, labels associados, aria-label em ações sem texto, estados de seleção e link para pular ao conteúdo. Em larguras pequenas, a Sidebar passa ao topo, grids se empilham e tabelas ganham rolagem horizontal dentro do próprio cartão.
+## Perfis na interface
 
-App.tsx foi usado para extrair tipos, mocks e comportamento; não existe na aplicação final. main.tsx e vite-env.d.ts foram analisados e não utilizados. index.css foi adaptado, sem import externo de fontes. Nenhuma configuração, bootstrap ou router Vite foi incorporado. Vitest possui dependências internas de Vite apenas para os testes; dev e build executam Next.js. Não foram criados Route Handlers, endpoints artificiais, fetches ou proxy de autenticação sem finalidade.
+Os grupos de perfis ficam em `utils/perfis.ts` e espelham as regras do backend:
 
-Validação em 08/10/2026:
+- `PERFIS_QUE_ATENDEM` (ADMIN e DEPARTAMENTO): botão **Assumir chamado** (ou "Assumir no lugar de…") e o bloco de status no encaminhamento. O responsável aparece nos detalhes e na tabela do painel.
+- `PERFIS_QUE_CONDUZEM` (ADMIN, ATENDENTE e DEPARTAMENTO): transferência, fornecedor, mensagens, anexos e localização. Para os outros perfis, a timeline, os anexos e a localização ficam **somente leitura**.
+- `PERFIS_DA_LIXEIRA` (ADMIN e ATENDENTE): exclusão e a tela de lixeira.
+- O Líder vê o painel, os detalhes e as métricas, sem nenhuma ação.
 
-- `npm install`: concluído; package-lock.json gerado.
-- `npm run lint`: aprovado sem erros ou warnings.
-- `npm run typecheck`: aprovado; tipos de rotas gerados e TypeScript sem erros.
-- `npm run build`: aprovado, com as sete rotas e saída standalone.
-- `npm run test`: 10 testes de reducer e React Testing Library aprovados.
-- `npm run test:e2e`: 4 testes Playwright aprovados no Chrome, cobrindo criação com anexo, triagem, encaminhamento, status, parceiro manual, observações, histórico, exclusão/restauração, filtros, confirmações, rotas diretas, recarregamento, ID inexistente e largura de 375 px.
-- `npm run dev -- --hostname 127.0.0.1 --port 3101`: iniciado; Dashboard servido com HTTP 200 e os mocks presentes. A porta alternativa foi usada para a verificação local; o comando padrão continua usando 3000.
-- Capturas das sete telas e das páginas móveis foram geradas em test-results/ para inspeção visual. O teste responsivo detectou e validou a correção de overflow no cartão do parceiro.
+## Testes
 
-O build precisou de acesso à rede para baixar as fontes. A geração das páginas foi limitada a um processo em next.config.ts após esgotamento de memória. O disco também ficou sem espaço; a limpeza autorizada do cache de downloads npm, fora do repositório, permitiu concluir a validação. Nenhum código fora de apps/web foi alterado.
+```powershell
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npm run test:e2e
+```
 
-O primeiro `next dev` gerou automaticamente `apps/web/AGENTS.md` com a orientação para consultar a documentação instalada da versão Next.js. O arquivo foi preservado; não contém regras de aplicação, estado ou domínio.
+- **Unitários (Vitest e Testing Library), em `tests/unit/`:**
+  - Regras: matriz de prioridade, prazo da triagem, sugestão, menu por perfil, contagem regressiva e anexos.
+  - Fluxos: abertura, rascunho, abertura pela Central, triagem, bloqueio antes da triagem, fila do departamento e Dashboard.
+  - Endereço.
+- **E2E (Playwright), em `tests/e2e/prototipo.spec.ts`:**
+  - Ciclo completo: cliente abre → atendente tria → Central atende → fornecedor atualiza → cliente acompanha.
+  - Menus por perfil.
+  - Celular em 360 px, com queda de rede e reenvio sem duplicar.
+  - Rotas diretas.
+- **Backend falso.** Os dois tipos de teste usam `tests/support/backendFalso.ts`, um backend em memória que segue o contrato e os textos da API real (triagem, SLA, notificações, fornecedor, anexos). A matriz de motivos e contextos fica em `tests/support/matriz.ts`.
 
-Limitações conhecidas: o estado reinicia ao recarregar ou abrir outra sessão; anexos guardam apenas nome, tamanho e tipo em memória, sem envio ou armazenamento do conteúdo; autenticação e notificações reais não existem; imagens permanecem externas, como na referência; o cartão de localização é ilustrativo; SLA, previsões e eventos do parceiro são demonstrativos. As ações rápidas de solicitar atualização e cancelar serviço são simulações locais. A comparação visual foi feita com o código exportado e capturas da implementação; não foi fornecida uma referência independente em pixels do canvas original do Figma.
+O Playwright sobe `next start` na porta 3100, então rode `build` antes. Sem os navegadores do Playwright instalados, use o Chrome da máquina com `PLAYWRIGHT_CHANNEL=chrome`.
+
+## Limitações conhecidas
+
+- Se a página for recarregada sem rede, a renovação da sessão falha e a aplicação volta para o login. O rascunho do chamado continua salvo e é recuperado depois de entrar de novo.
+- O painel atualiza por polling (15 s). Não há push em tempo real.
+- Os prazos de triagem e de SLA são provisórios e vêm do backend (ver `docs/fluxo-de-chamados.md`).

@@ -1,256 +1,205 @@
 "use client";
+
 import Link from "next/link";
-import { Check, ChevronLeft } from "lucide-react";
-import { setores, responsaveis, statuses, statusColor } from "@/mocks/opcoes";
-import { useChamados } from "@/store/ChamadosContext";
-import { horaAtual } from "@/utils/date";
-import { useChamado } from "@/hooks/useChamado";
-import ChamadoIndisponivel from "@/components/feedback/ChamadoIndisponivel";
 import { useState } from "react";
-import type { Chamado } from "@/types/chamado";
-import { StatusBadge, PrioridadeBadge } from "@/components/ui/StatusBadge";
+import { ArrowRightLeft, Check, ChevronLeft, ClipboardList } from "lucide-react";
+import { MOTIVOS_AGUARDANDO, STATUS_DEFINIVEIS, type Chamado, type MotivoAguardando, type Status, type TipoChamado } from "@/types/chamado";
+import type { DadosStatus, DadosTransferencia } from "@/services/api/contratos";
+import { alterarStatus, transferirChamado } from "@/services/api/chamados";
+import { useAcaoNoChamado, useDepartamentos } from "@/hooks/consultas";
+import { useRascunho } from "@/hooks/useRascunho";
+import ComChamado from "@/components/chamados/ComChamado";
+import PerfilRequerido from "@/components/auth/PerfilRequerido";
+import { APARENCIA_DO_STATUS, PrioridadeIndicador, StatusBadge } from "@/components/ui/StatusBadge";
+import { AvisoDeErro } from "@/components/feedback/EstadoDaConsulta";
+import { formatarDataHora } from "@/utils/date";
+import { useUsuarioAutenticado } from "@/store/AuthContext";
+import { PERFIS_DE_TRIAGEM, PERFIS_QUE_ATENDEM, PERFIS_QUE_CONDUZEM, usuarioTemPerfil } from "@/utils/perfis";
+import { cn } from "@/utils/cn";
+
+const TAMANHO_MINIMO_DO_MOTIVO = 10;
+const ROTULO_DO_AGUARDANDO: Record<MotivoAguardando, string> = {
+  CLIENTE: "Cliente (pausa o relógio de resolução)",
+  FORNECEDOR: "Fornecedor (SLA continua contando)",
+  OUTRO_DEPARTAMENTO: "Outro departamento (SLA continua contando)",
+};
+const labelClass = "block text-xs font-semibold text-[#475569] uppercase tracking-wide mb-2";
+const inputClass = "w-full px-3.5 py-2.5 rounded-lg border border-[#E2E8F0] bg-white text-sm text-brand-dark outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10";
 
 function EncaminhamentoConteudo({ chamado }: { chamado: Chamado }) {
-  const { atualizarChamado: onAtualizar } = useChamados();
-  const historico = chamado.historico;
-  const [setor, setSetor] = useState(chamado.setor || "");
-  const [responsavel, setResponsavel] = useState(chamado.responsavel || "");
-  const [status, setStatus] = useState(chamado.status);
-  const [obs, setObs] = useState("");
-  const [encaminhado, setEncaminhado] = useState(false);
+  const atende = usuarioTemPerfil(useUsuarioAutenticado(), PERFIS_QUE_ATENDEM);
+  const departamentos = useDepartamentos();
+  const [destino, setDestino] = useState<TipoChamado | "">("");
+  const { valor: motivo, setValor: setMotivo, descartar: descartarMotivo } = useRascunho(`transferencia-${chamado.id}`, "");
+  const [status, setStatus] = useState<Status>(chamado.status);
+  const [motivoAguardando, setMotivoAguardando] = useState<MotivoAguardando | "">(chamado.motivoAguardando ?? "");
+  const [observacao, setObservacao] = useState("");
+  const [confirmacao, setConfirmacao] = useState<string | null>(null);
 
-  const handleEncaminhar = () => {
-    if (!setor || !responsavel) return;
-    const hora = horaAtual();
-    const updated: Chamado = { ...chamado, setor, responsavel, status: "Em atendimento" };
-    onAtualizar(updated, { acao: "Encaminhado", detalhe: `${setor} · ${responsavel}${obs.trim() ? " · " + obs.trim() : ""}`, icon: "encaminhado" }, { hora, acao: "Encaminhado", de: chamado.setor || "—", para: setor + " · " + responsavel });
-    setStatus("Em atendimento");
-    setEncaminhado(true);
-  };
-
-  const handleAtualizarStatus = () => {
-    const hora = horaAtual();
-    const updated: Chamado = { ...chamado, setor, responsavel, status };
-    onAtualizar(updated, { acao: "Status atualizado", detalhe: status + (obs.trim() ? " · " + obs.trim() : ""), icon: "atualizacao" }, { hora, acao: "Status atualizado", de: chamado.status, para: status + (obs.trim() ? " · " + obs.trim() : "") });
-    setObs("");
-  };
+  const transferencia = useAcaoNoChamado(chamado.id, (api, dados: DadosTransferencia) => transferirChamado(api, chamado.id, dados));
+  const mudancaDeStatus = useAcaoNoChamado(chamado.id, (api, dados: DadosStatus) => alterarStatus(api, chamado.id, dados));
+  const transferencias = chamado.timeline.filter((evento) => evento.tipo === "TRANSFERENCIA" || evento.tipo === "ROTEAMENTO");
+  const destinosValidos = (departamentos.data ?? []).filter((departamento) => departamento.codigo !== chamado.departamento?.codigo);
+  const podeTransferir = destino !== "" && motivo.trim().length >= TAMANHO_MINIMO_DO_MOTIVO;
+  const precisaDeMotivoAguardando = status === "Aguardando" && motivoAguardando === "";
+  const statusMudou = status !== chamado.status || (status === "Aguardando" && motivoAguardando !== chamado.motivoAguardando);
 
   return (
-    <div className="min-w-0">
-
-      <main id="conteudo" className="p-4 md:p-8">
-        <div className="max-w-3xl mx-auto">
-          {/* Header */}
-          <div className="flex items-center gap-4 mb-8">
-            <Link aria-label="Voltar ao chamado" href={`/chamados/${chamado.id}`} className="w-9 h-9 rounded-xl border border-[#E2E8F0] flex items-center justify-center text-[#64748B] hover:bg-white transition-all">
-              <ChevronLeft size={16} />
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold text-brand-navy" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>
-                Encaminhamento — #{chamado.id}
-              </h1>
-              <p className="text-sm text-[#64748B] mt-0.5">Defina setor, responsável e acompanhe o status</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <div className="lg:col-span-2 space-y-5">
-              {/* Resumo */}
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <div className="font-semibold text-brand-dark">{chamado.cliente}</div>
-                    <div className="text-sm text-[#94A3B8]">{chamado.modelo} · {chamado.placa} · {chamado.tipo}</div>
-                  </div>
-                  <div className="flex gap-2">
-                    <StatusBadge status={chamado.status} />
-                    <PrioridadeBadge prioridade={chamado.prioridade} />
-                  </div>
-                </div>
-                <div className="text-sm text-[#64748B]">{chamado.localizacao}</div>
-              </div>
-
-              {/* Setor */}
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
-                <h2 className="font-semibold text-brand-navy text-sm mb-4" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>
-                  Setor responsável
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {setores.map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => { setSetor(s.id); setResponsavel(""); }}
-                      className="p-4 rounded-xl border-2 text-left transition-all"
-                      style={{
-                        borderColor: setor === s.id ? "#2563EB" : "#E2E8F0",
-                        background: setor === s.id ? "#EFF6FF" : "white",
-                      }}
-                    >
-                      <s.icon className="mb-1.5" size={20} style={{ color: setor === s.id ? "#2563EB" : "#475569" }} />
-                      <div className="font-semibold text-sm" style={{ color: setor === s.id ? "#2563EB" : "#1E293B" }}>
-                        {s.id}
-                      </div>
-                      <div className="text-xs text-[#94A3B8] mt-0.5">{s.desc}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Responsável */}
-              {setor && (
-                <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
-                  <h2 className="font-semibold text-brand-navy text-sm mb-4" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>
-                    Responsável
-                  </h2>
-                  <div className="flex flex-wrap gap-3">
-                    {(responsaveis[setor] || []).map((r) => (
-                      <button
-                        key={r}
-                        onClick={() => setResponsavel(r)}
-                        className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl border-2 transition-all"
-                        style={{
-                          borderColor: responsavel === r ? "#2563EB" : "#E2E8F0",
-                          background: responsavel === r ? "#EFF6FF" : "white",
-                        }}
-                      >
-                        <div
-                          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                          style={{ background: "linear-gradient(135deg, #2563EB, #10B981)" }}
-                        >
-                          {r.split(" ").map((n) => n[0]).join("").slice(0, 2)}
-                        </div>
-                        <span className="text-sm font-medium" style={{ color: responsavel === r ? "#2563EB" : "#1E293B" }}>
-                          {r}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Status */}
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
-                <h2 className="font-semibold text-brand-navy text-sm mb-4" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>
-                  Status do chamado
-                </h2>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {statuses.map((s) => (
-                    <button
-                      key={s}
-                      aria-pressed={status === s} onClick={() => setStatus(s)}
-                      className="px-3.5 py-2 rounded-lg border-2 text-xs font-semibold transition-all"
-                      style={{
-                        borderColor: status === s ? statusColor[s] : "#E2E8F0",
-                        background: status === s ? statusColor[s] + "18" : "white",
-                        color: status === s ? statusColor[s] : "#64748B",
-                      }}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-                <textarea
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-[#E2E8F0] text-sm text-brand-dark outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 resize-none transition-all"
-                  rows={2}
-                  aria-label="Observação do encaminhamento" placeholder="Observação (opcional)..."
-                  value={obs}
-                  onChange={(e) => setObs(e.target.value)}
-                />
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-3">
-                <button
-                  onClick={handleEncaminhar}
-                  disabled={!setor || !responsavel}
-                  className="flex-1 py-3.5 rounded-xl text-white font-semibold text-sm hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-                  style={{ background: "var(--brand-green)" }}
-                >
-                  Encaminhar
-                </button>
-                <button
-                  onClick={handleAtualizarStatus}
-                  className="flex-1 py-3.5 rounded-xl text-white font-semibold text-sm hover:opacity-90 transition-opacity"
-                  style={{ background: "var(--brand-blue)" }}
-                >
-                  Atualizar Status
-                </button>
-              </div>
-
-              {encaminhado && (
-                <div className="rounded-2xl p-4 flex items-center gap-3" style={{ background: "#ECFDF5" }}>
-                  <Check size={20} color="#10B981" strokeWidth={2.5} />
-                  <span className="text-sm font-semibold text-[#059669]">
-                    Chamado encaminhado para {responsavel} · {setor}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Histórico lateral */}
-            <div className="space-y-4">
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5">
-                <h3 className="font-semibold text-brand-navy text-xs uppercase tracking-wide mb-4" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>
-                  Histórico de alterações
-                </h3>
-                {historico.length === 0 ? (
-                  <p className="text-xs text-[#94A3B8] text-center py-6">Nenhuma alteração registrada</p>
-                ) : (
-                  <div className="space-y-4">
-                    {historico.map((h, i) => (
-                      <div key={i} className="border-l-2 border-[#E2E8F0] pl-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-semibold text-brand-dark">{h.acao}</span>
-                          <span className="text-xs text-[#94A3B8]">{h.hora}</span>
-                        </div>
-                        <div className="text-xs text-[#94A3B8]">
-                          {h.de} → <span className="text-brand-blue font-medium">{h.para}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Fluxo visual */}
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5">
-                <h3 className="font-semibold text-brand-navy text-xs uppercase tracking-wide mb-4" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>
-                  Fluxo do chamado
-                </h3>
-                <div className="space-y-2">
-                  {[
-                    { label: "Abertura", done: true },
-                    { label: "Triagem", done: chamado.status !== "Aberto" },
-                    { label: "Encaminhamento", done: encaminhado || !!chamado.responsavel },
-                    { label: "Atendimento", done: chamado.status === "Em atendimento" || chamado.status === "Resolvido" || chamado.status === "Encerrado" },
-                    { label: "Resolvido", done: chamado.status === "Resolvido" || chamado.status === "Encerrado" },
-                  ].map((step, i) => (
-                    <div key={step.label} className="flex items-center gap-3">
-                      <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                        style={{
-                          background: step.done ? "#10B981" : "#F1F5F9",
-                          color: step.done ? "white" : "#94A3B8",
-                        }}
-                      >
-                        {step.done ? "✓" : i + 1}
-                      </div>
-                      <span className="text-xs font-medium" style={{ color: step.done ? "#059669" : "#94A3B8" }}>
-                        {step.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+    <main id="conteudo" className="p-4 md:p-8">
+      <div className="mx-auto max-w-3xl">
+        <div className="mb-6 flex items-center gap-4">
+          <Link aria-label="Voltar ao chamado" href={`/chamados/${chamado.id}`} className="alvo-toque flex h-9 w-9 items-center justify-center rounded-xl border border-[#E2E8F0] text-[#64748B] transition-all hover:bg-white">
+            <ChevronLeft size={16} />
+          </Link>
+          <div>
+            <h1 className="font-display text-2xl font-bold text-brand-navy">Transferência — #{chamado.id}</h1>
+            <p className="mt-0.5 text-sm text-[#64748B]">O histórico e os anexos acompanham o chamado. O SLA não reinicia.</p>
           </div>
         </div>
-      </main>
-    </div>
+
+        {confirmacao && (
+          <p role="status" className="mb-4 flex items-center gap-2 rounded-2xl bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">
+            <Check size={18} aria-hidden /> {confirmacao}
+          </p>
+        )}
+
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+          <div className="space-y-5 lg:col-span-2">
+            <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#E2E8F0] bg-white p-5">
+              <div>
+                <div className="text-xs uppercase tracking-wide text-slate-400">Departamento responsável</div>
+                <div className="font-display text-lg font-bold text-brand-navy">{chamado.departamento?.nome ?? "Não definido"}</div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <StatusBadge status={chamado.status} />
+                <PrioridadeIndicador prioridade={chamado.prioridade} score={chamado.score} />
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5 md:p-6">
+              <h2 className="mb-4 flex items-center gap-2 font-display text-sm font-semibold text-brand-navy"><ArrowRightLeft size={16} aria-hidden /> Transferir para outro departamento</h2>
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="transferencia-destino" className={labelClass}>Departamento de destino *</label>
+                  <select id="transferencia-destino" className={inputClass} value={destino} onChange={(evento) => setDestino(evento.target.value as TipoChamado | "")}>
+                    <option value="">Selecione</option>
+                    {destinosValidos.map((departamento) => <option key={departamento.codigo} value={departamento.codigo}>{departamento.nome}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="transferencia-motivo" className={labelClass}>Motivo da transferência *</label>
+                  <textarea id="transferencia-motivo" className={`${inputClass} resize-none`} rows={2} value={motivo} onChange={(evento) => setMotivo(evento.target.value)} placeholder="Por que este departamento deve assumir?" />
+                  <p className="mt-1 text-xs text-slate-400">Obrigatório, com pelo menos {TAMANHO_MINIMO_DO_MOTIVO} caracteres.</p>
+                </div>
+                {transferencia.isError && <AvisoDeErro erro={transferencia.error} />}
+                <button
+                  type="button"
+                  disabled={!podeTransferir || transferencia.isPending}
+                  onClick={() => transferencia.mutate({ departamento: destino as TipoChamado, motivo: motivo.trim() }, {
+                    onSuccess: (atualizado) => {
+                      setDestino("");
+                      descartarMotivo("");
+                      setConfirmacao(`Chamado transferido para ${atualizado.departamento?.nome}.`);
+                    },
+                  })}
+                  className="alvo-toque w-full rounded-xl bg-brand-green py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                >
+                  {transferencia.isPending ? "Transferindo…" : "Transferir"}
+                </button>
+              </div>
+            </section>
+
+            {atende && <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5 md:p-6">
+              <h2 className="mb-4 font-display text-sm font-semibold text-brand-navy">Status do chamado</h2>
+              <div className="mb-4 flex flex-wrap gap-2" role="radiogroup" aria-label="Novo status">
+                {STATUS_DEFINIVEIS.map((opcao) => {
+                  const { texto } = APARENCIA_DO_STATUS[opcao];
+                  const selecionado = status === opcao;
+                  return (
+                    <button key={opcao} type="button" role="radio" aria-checked={selecionado} onClick={() => setStatus(opcao)} className="alvo-toque rounded-lg border-2 px-3.5 py-2 text-xs font-semibold transition-all" style={{ borderColor: selecionado ? texto : "#E2E8F0", color: selecionado ? texto : "#64748B", background: selecionado ? `${texto}14` : "white" }}>
+                      {opcao}
+                    </button>
+                  );
+                })}
+              </div>
+              {status === "Aguardando" && (
+                <fieldset className="mb-4">
+                  <legend className={labelClass}>Aguardando quem? *</legend>
+                  <div className="space-y-2">
+                    {MOTIVOS_AGUARDANDO.map((opcao) => (
+                      <label key={opcao} className={cn("alvo-toque flex cursor-pointer items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm", motivoAguardando === opcao ? "border-brand-blue bg-blue-50" : "border-[#E2E8F0]")}>
+                        <input type="radio" name="motivo-aguardando" checked={motivoAguardando === opcao} onChange={() => setMotivoAguardando(opcao)} />
+                        {ROTULO_DO_AGUARDANDO[opcao]}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
+              <label htmlFor="status-observacao" className="sr-only">Observação</label>
+              <textarea id="status-observacao" className={`${inputClass} resize-none`} rows={2} placeholder="Observação (opcional)…" value={observacao} onChange={(evento) => setObservacao(evento.target.value)} />
+              {mudancaDeStatus.isError && <div className="mt-3"><AvisoDeErro erro={mudancaDeStatus.error} /></div>}
+              <button
+                type="button"
+                disabled={!statusMudou || precisaDeMotivoAguardando || mudancaDeStatus.isPending}
+                onClick={() => mudancaDeStatus.mutate({ status, motivoAguardando: status === "Aguardando" ? (motivoAguardando as MotivoAguardando) : null, observacao: observacao.trim() }, {
+                  onSuccess: (atualizado) => { setObservacao(""); setConfirmacao(`Status atualizado para ${atualizado.status}. O cliente foi notificado.`); },
+                })}
+                className="alvo-toque mt-4 w-full rounded-xl bg-brand-blue py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+              >
+                {mudancaDeStatus.isPending ? "Atualizando…" : "Atualizar status"}
+              </button>
+            </section>}
+          </div>
+
+          <aside className="space-y-4">
+            <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5">
+              <h3 className="mb-4 font-display text-xs font-semibold uppercase tracking-wide text-brand-navy">Histórico de encaminhamentos</h3>
+              {transferencias.length === 0 ? (
+                <p className="py-6 text-center text-xs text-[#94A3B8]">Nenhum encaminhamento registrado</p>
+              ) : (
+                <ol className="space-y-4">
+                  {transferencias.map((evento) => (
+                    <li key={evento.id} className="border-l-2 border-[#E2E8F0] pl-3">
+                      <div className="text-xs font-semibold text-brand-dark">{evento.acao}</div>
+                      <div className="text-[11px] text-[#94A3B8]">{formatarDataHora(evento.ocorridoEm)} · {evento.autor?.nome ?? "Sistema"}</div>
+                      <div className="mt-1 break-words text-xs text-[#64748B]">{evento.detalhe}</div>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </section>
+          </aside>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function AguardandoTriagem({ chamado }: { chamado: Chamado }) {
+  const usuario = useUsuarioAutenticado();
+  return (
+    <main id="conteudo" className="p-4 md:p-8">
+      <div className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center">
+        <ClipboardList size={28} className="mx-auto mb-3 text-amber-600" aria-hidden />
+        <h1 className="mb-2 text-xl font-bold text-brand-navy">Transferência — #{chamado.id}</h1>
+        <p className="mb-6 text-sm text-slate-500">Este chamado ainda não passou pela triagem. Status e transferência ficam disponíveis depois que o atendente classificar e encaminhar.</p>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Link href={`/chamados/${chamado.id}`} className="alvo-toque rounded-xl border border-[#E2E8F0] px-4 py-2.5 text-sm font-semibold text-[#475569]">Voltar ao chamado</Link>
+          {usuarioTemPerfil(usuario, PERFIS_DE_TRIAGEM) && (
+            <Link href={`/chamados/${chamado.id}/triagem`} className="alvo-toque rounded-xl bg-brand-green px-4 py-2.5 text-sm font-semibold text-white">Fazer triagem</Link>
+          )}
+        </div>
+      </div>
+    </main>
   );
 }
 
 export default function Encaminhamento({ id }: { id: string }) {
-  const chamado = useChamado(id);
-  return chamado ? <EncaminhamentoConteudo key={id} chamado={chamado} /> : <ChamadoIndisponivel id={id} />;
+  return (
+    <PerfilRequerido perfis={PERFIS_QUE_CONDUZEM}>
+      <ComChamado id={id}>
+        {(chamado) => chamado.classificacao === null ? <AguardandoTriagem chamado={chamado} /> : <EncaminhamentoConteudo key={chamado.id} chamado={chamado} />}
+      </ComChamado>
+    </PerfilRequerido>
+  );
 }

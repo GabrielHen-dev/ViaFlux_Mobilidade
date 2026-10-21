@@ -1,194 +1,105 @@
 "use client";
+
 import Link from "next/link";
-import { Check, ChevronLeft } from "lucide-react";
-import { tipos, gravidades } from "@/mocks/opcoes";
-import { useChamados } from "@/store/ChamadosContext";
-import { useChamado } from "@/hooks/useChamado";
-import ChamadoIndisponivel from "@/components/feedback/ChamadoIndisponivel";
 import { useState } from "react";
+import { ChevronLeft } from "lucide-react";
 import type { Chamado } from "@/types/chamado";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import ComChamado from "@/components/chamados/ComChamado";
+import PerfilRequerido from "@/components/auth/PerfilRequerido";
+import { PrioridadeIndicador, StatusBadge } from "@/components/ui/StatusBadge";
+import ConclusaoDaTriagem from "@/components/triagem/ConclusaoDaTriagem";
+import Reclassificacao from "@/components/triagem/Reclassificacao";
+import OverrideDePrioridade from "@/components/triagem/OverrideDePrioridade";
+import { cartaoClass } from "@/components/triagem/CamposDaTriagem";
+import { NOME_TIPO, ROTULO_PESO } from "@/utils/prioridade";
+import { formatarDataHora } from "@/utils/date";
+import { PERFIS_DE_TRIAGEM } from "@/utils/perfis";
+
+function InformadoPeloCliente({ chamado }: { chamado: Chamado }) {
+  return (
+    <section className={cartaoClass}>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-display text-sm font-semibold text-brand-navy">O que o cliente informou</h2>
+        <StatusBadge status={chamado.status} />
+      </div>
+      <p className="text-xs text-slate-500">{chamado.cliente} · aberto em {formatarDataHora(chamado.abertura)}</p>
+      {chamado.motivo && (
+        <p className="mt-3 text-sm text-slate-600">
+          <span className="font-semibold">Motivo:</span> {chamado.motivo.descricao} <span className="text-xs text-slate-400">({NOME_TIPO[chamado.motivo.tipo]} · severidade {ROTULO_PESO[chamado.motivo.severidade].toLowerCase()})</span>
+        </p>
+      )}
+      {chamado.contexto && (
+        <p className="mt-1 text-sm text-slate-600">
+          <span className="font-semibold">Contexto:</span> {chamado.contexto.descricao} <span className="text-xs text-slate-400">(urgência {ROTULO_PESO[chamado.contexto.urgencia].toLowerCase()})</span>
+        </p>
+      )}
+      {chamado.descricao && <p className="mt-3 border-t border-slate-100 pt-3 text-sm text-slate-600">{chamado.descricao}</p>}
+      {chamado.localizacao && <p className="mt-2 text-xs text-slate-500">Local: {chamado.localizacao}</p>}
+    </section>
+  );
+}
+
+function ClassificacaoVigente({ chamado }: { chamado: Chamado }) {
+  const { classificacao } = chamado;
+  if (!classificacao) return null;
+  return (
+    <section className={cartaoClass}>
+      <h2 className="mb-3 font-display text-sm font-semibold text-brand-navy">Classificação vigente</h2>
+      <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+        <div><div className="text-xs text-slate-400">Tipo</div><div className="font-semibold">{NOME_TIPO[classificacao.tipo]}</div></div>
+        <div><div className="text-xs text-slate-400">Severidade</div><div className="font-semibold">{ROTULO_PESO[classificacao.severidade]} ({classificacao.severidade})</div></div>
+        <div><div className="text-xs text-slate-400">Urgência</div><div className="font-semibold">{ROTULO_PESO[classificacao.urgencia]} ({classificacao.urgencia})</div></div>
+        <div><div className="text-xs text-slate-400">Calculada</div><PrioridadeIndicador prioridade={classificacao.prioridade} score={classificacao.score} /></div>
+      </div>
+      {chamado.triagem.concluidaEm && (
+        <p className="mt-3 text-xs text-slate-500">Triagem concluída por {chamado.triagem.concluidaPor?.nome ?? "—"} em {formatarDataHora(chamado.triagem.concluidaEm)}.</p>
+      )}
+    </section>
+  );
+}
 
 function TriagemConteudo({ chamado }: { chamado: Chamado }) {
-  const { atualizarChamado: onAtualizar } = useChamados();
-  const [tipo, setTipo] = useState(chamado.tipo || "Mecânico");
-  const [gravidade, setGravidade] = useState<typeof gravidades[number]["label"]>(chamado.prioridade as typeof gravidades[number]["label"] || "Média");
-  const [justificativa, setJustificativa] = useState("");
-  const [confirmado, setConfirmado] = useState(false);
-
-  const gravSel = gravidades.find((g) => g.label === gravidade)!;
-
-  const confirmar = () => {
-    const updated: Chamado = {
-      ...chamado,
-      tipo,
-      prioridade: gravidade,
-      status: "Em triagem",
-      sla: gravSel.sla + " restantes",
-    };
-    onAtualizar(updated, { acao: "Triagem realizada", detalhe: `Prioridade ${gravidade} · ${tipo}${justificativa.trim() ? " · " + justificativa.trim() : ""}`, icon: "triagem" });
-    setConfirmado(true);
-  };
-
-  if (confirmado) {
-    return (
-      <div className="min-w-0">
-        <main id="conteudo" className="min-h-[70vh] md:min-h-screen flex items-center justify-center p-4 md:p-8">
-          <div className="max-w-md w-full bg-white rounded-2xl border border-[#E2E8F0] p-10 text-center shadow-sm">
-            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ background: "#ECFDF5" }}>
-              <Check size={32} color="#10B981" strokeWidth={2.5} />
-            </div>
-            <h2 className="text-xl font-bold text-brand-navy mb-2" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>Triagem confirmada!</h2>
-            <p className="text-[#64748B] text-sm mb-1">Chamado <span className="font-bold text-brand-blue">#{chamado.id}</span></p>
-            <p className="text-sm text-[#475569] mb-6">
-              Prioridade <span className="font-bold" style={{ color: gravSel.color }}>{gravidade}</span> · SLA {gravSel.sla}
-            </p>
-            <div className="flex gap-3">
-              <Link href={`/chamados/${chamado.id}`} className="flex-1 py-2.5 rounded-xl border border-[#E2E8F0] text-sm font-semibold text-[#475569] hover:bg-brand-light transition-colors">
-                Ver detalhes
-              </Link>
-              <Link href={`/chamados/${chamado.id}/encaminhamento`} className="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold hover:opacity-90 transition-opacity" style={{ background: "var(--brand-blue)" }}>
-                Encaminhar
-              </Link>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
+  const [aviso, setAviso] = useState<string | null>(null);
+  const triado = chamado.classificacao !== null;
 
   return (
-    <div className="min-w-0">
-
-      <main id="conteudo" className="p-4 md:p-8">
-        <div className="max-w-2xl mx-auto">
-          {/* Header */}
-          <div className="flex items-center gap-4 mb-8">
-            <Link aria-label="Voltar ao chamado" href={`/chamados/${chamado.id}`} className="w-9 h-9 rounded-xl border border-[#E2E8F0] flex items-center justify-center text-[#64748B] hover:bg-white transition-all">
-              <ChevronLeft size={16} />
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold text-brand-navy" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>
-                Triagem — #{chamado.id}
-              </h1>
-              <p className="text-sm text-[#64748B] mt-0.5">Defina o tipo e a gravidade do chamado</p>
-            </div>
-          </div>
-
-          <div className="space-y-5">
-            {/* Resumo */}
-            <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-semibold text-brand-dark">{chamado.cliente}</div>
-                  <div className="text-sm text-[#94A3B8] mt-0.5">{chamado.modelo} · {chamado.placa}</div>
-                  <div className="text-sm text-[#64748B] mt-1">{chamado.localizacao}</div>
-                </div>
-                <StatusBadge status={chamado.status} />
-              </div>
-              {chamado.descricao && (
-                <div className="mt-3 pt-3 border-t border-[#F1F5F9] text-sm text-[#475569]">{chamado.descricao}</div>
-              )}
-            </div>
-
-            {/* Tipo */}
-            <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
-              <h2 className="font-semibold text-brand-navy text-sm mb-4" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>
-                Tipo do problema
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-4 gap-3">
-                {tipos.map((t) => (
-                  <button
-                    key={t}
-                    aria-pressed={tipo === t} onClick={() => setTipo(t)}
-                    className="py-3 px-4 rounded-xl border-2 text-sm font-semibold transition-all"
-                    style={{
-                      borderColor: tipo === t ? "#2563EB" : "#E2E8F0",
-                      background: tipo === t ? "#EFF6FF" : "white",
-                      color: tipo === t ? "#2563EB" : "#475569",
-                    }}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Gravidade */}
-            <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
-              <h2 className="font-semibold text-brand-navy text-sm mb-4" style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}>
-                Gravidade
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {gravidades.map((g) => (
-                  <button
-                    key={g.label}
-                    aria-pressed={gravidade === g.label} onClick={() => setGravidade(g.label)}
-                    className="p-4 rounded-xl border-2 text-left transition-all"
-                    style={{
-                      borderColor: gravidade === g.label ? g.color : "#E2E8F0",
-                      background: gravidade === g.label ? g.bg : "white",
-                    }}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-bold text-sm" style={{ color: g.color }}>{g.label}</span>
-                      <span className="text-xs font-medium text-[#94A3B8]">SLA {g.sla}</span>
-                    </div>
-                    <p className="text-xs text-[#64748B]">{g.desc}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Indicador */}
-            {gravidade && (
-              <div className="rounded-2xl p-5 flex items-center gap-4" style={{ background: gravSel.bg }}>
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white text-sm flex-shrink-0"
-                  style={{ background: gravSel.color }}
-                >
-                  {gravSel.sla}
-                </div>
-                <div>
-                  <div className="font-bold text-sm" style={{ color: gravSel.color }}>
-                    Prioridade {gravSel.label}
-                  </div>
-                  <div className="text-xs text-[#64748B] mt-0.5">
-                    SLA de atendimento: {gravSel.sla} · {gravSel.desc}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Justificativa */}
-            <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
-              <label htmlFor="triagem-campo-1" className="block text-xs font-semibold text-[#475569] uppercase tracking-wide mb-2">
-                Justificativa da prioridade
-              </label>
-              <textarea id="triagem-campo-1"
-                className="w-full px-3.5 py-2.5 rounded-lg border border-[#E2E8F0] text-sm text-brand-dark outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 resize-none transition-all"
-                rows={3}
-                placeholder="Descreva o motivo para a prioridade selecionada..."
-                value={justificativa}
-                onChange={(e) => setJustificativa(e.target.value)}
-              />
-            </div>
-
-            <button
-              onClick={confirmar}
-              className="w-full py-3.5 rounded-xl text-white font-semibold text-sm shadow-sm transition-all hover:opacity-90 active:scale-95"
-              style={{ background: "var(--brand-green)" }}
-            >
-              Confirmar Triagem
-            </button>
+    <main id="conteudo" className="p-4 md:p-8">
+      <div className="mx-auto max-w-2xl">
+        <div className="mb-6 flex items-center gap-4">
+          <Link aria-label="Voltar ao chamado" href={`/chamados/${chamado.id}`} className="alvo-toque flex h-9 w-9 items-center justify-center rounded-xl border border-[#E2E8F0] text-[#64748B] transition-all hover:bg-white">
+            <ChevronLeft size={16} />
+          </Link>
+          <div>
+            <h1 className="font-display text-2xl font-bold text-brand-navy">Triagem — #{chamado.id}</h1>
+            <p className="mt-0.5 text-sm text-[#64748B]">
+              {triado ? "Revise a classificação e, se preciso, ajuste a prioridade." : "Classifique o chamado para encaminhá-lo à fila do departamento."}
+            </p>
           </div>
         </div>
-      </main>
-    </div>
+
+        {aviso && <p role="status" className="mb-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">{aviso}</p>}
+
+        <div className="space-y-5">
+          <InformadoPeloCliente chamado={chamado} />
+          {chamado.classificacao && chamado.prioridade ? (
+            <>
+              <ClassificacaoVigente chamado={chamado} />
+              <Reclassificacao chamado={chamado} vigente={chamado.classificacao} aoConcluir={setAviso} />
+              <OverrideDePrioridade chamado={chamado} prioridadeEfetiva={chamado.prioridade} aoConcluir={setAviso} />
+            </>
+          ) : (
+            <ConclusaoDaTriagem chamado={chamado} aoConcluir={setAviso} />
+          )}
+        </div>
+      </div>
+    </main>
   );
 }
 
 export default function Triagem({ id }: { id: string }) {
-  const chamado = useChamado(id);
-  return chamado ? <TriagemConteudo key={id} chamado={chamado} /> : <ChamadoIndisponivel id={id} />;
+  return (
+    <PerfilRequerido perfis={PERFIS_DE_TRIAGEM}>
+      <ComChamado id={id}>{(chamado) => <TriagemConteudo key={chamado.id} chamado={chamado} />}</ComChamado>
+    </PerfilRequerido>
+  );
 }

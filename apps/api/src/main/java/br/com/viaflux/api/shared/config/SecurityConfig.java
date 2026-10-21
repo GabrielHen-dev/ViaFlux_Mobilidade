@@ -35,6 +35,17 @@ import java.util.List;
 @Import(JwtConfig.class)
 public class SecurityConfig {
 
+    private static final String[] PERFIS_DA_CENTRAL = {"ADMIN", "ATENDENTE", "DEPARTAMENTO", "LIDER_OPERACIONAL"};
+    private static final String[] PERFIS_DE_TRIAGEM = {"ADMIN", "ATENDENTE"};
+    private static final String[] PERFIS_DA_LIXEIRA = {"ADMIN", "ATENDENTE"};
+    private static final String[] PERFIS_QUE_CONDUZEM = {"ADMIN", "ATENDENTE", "DEPARTAMENTO"};
+    private static final String[] PERFIS_QUE_ATENDEM = {"ADMIN", "DEPARTAMENTO"};
+    private static final String[] PERFIS_DE_METRICAS = {"ADMIN", "LIDER_OPERACIONAL"};
+    private static final String[] PERFIS_QUE_ABREM_CHAMADO = {"CLIENTE", "GESTOR_FROTA", "ADMIN", "ATENDENTE"};
+    private static final String[] PERFIS_COM_ACESSO_A_CHAMADOS = {
+            "ADMIN", "ATENDENTE", "DEPARTAMENTO", "LIDER_OPERACIONAL", "CLIENTE", "GESTOR_FROTA"
+    };
+
     @Bean
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
@@ -57,13 +68,27 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.GET, "/auth/me").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/chamados/resumo")
-                        .hasAnyRole("ADMIN", "ATENDENTE", "LIDER_OPERACIONAL")
-                        .requestMatchers(HttpMethod.POST, "/api/chamados")
-                        .hasAnyRole("CLIENTE", "GESTOR_FROTA")
-                        .requestMatchers(HttpMethod.GET, "/api/chamados", "/api/chamados/*")
-                        .hasAnyRole("ADMIN", "ATENDENTE", "LIDER_OPERACIONAL", "CLIENTE", "GESTOR_FROTA")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/dev/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/enderecos/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/classificacao/**", "/api/departamentos").authenticated()
+                        .requestMatchers("/api/notificacoes", "/api/notificacoes/**").authenticated()
+                        .requestMatchers("/api/fornecedor/**").hasRole("FORNECEDOR")
+                        .requestMatchers(HttpMethod.GET, "/api/fornecedores").hasAnyRole(PERFIS_QUE_CONDUZEM)
+                        .requestMatchers(HttpMethod.GET, "/api/metricas", "/api/metricas/**").hasAnyRole(PERFIS_DE_METRICAS)
+                        .requestMatchers(HttpMethod.GET, "/api/solicitantes").hasAnyRole(PERFIS_DE_TRIAGEM)
+                        .requestMatchers(HttpMethod.POST, "/api/chamados").hasAnyRole(PERFIS_QUE_ABREM_CHAMADO)
+                        .requestMatchers("/api/chamados/lixeira", "/api/chamados/lixeira/**").hasAnyRole(PERFIS_DA_LIXEIRA)
+                        .requestMatchers(HttpMethod.DELETE, "/api/chamados/*").hasAnyRole(PERFIS_DA_LIXEIRA)
+                        .requestMatchers(HttpMethod.POST, "/api/chamados/*/restauracao").hasAnyRole(PERFIS_DA_LIXEIRA)
+                        .requestMatchers(HttpMethod.GET, "/api/chamados/resumo").hasAnyRole(PERFIS_DA_CENTRAL)
+                        .requestMatchers("/api/chamados/*/triagem", "/api/chamados/*/triagem/**").hasAnyRole(PERFIS_DE_TRIAGEM)
+                        .requestMatchers("/api/chamados/*/classificacao", "/api/chamados/*/override").hasAnyRole(PERFIS_DE_TRIAGEM)
+                        .requestMatchers(HttpMethod.PATCH, "/api/chamados/*/status").hasAnyRole(PERFIS_QUE_ATENDEM)
+                        .requestMatchers(HttpMethod.POST, "/api/chamados/*/atendimento").hasAnyRole(PERFIS_QUE_ATENDEM)
+                        .requestMatchers(HttpMethod.POST, "/api/chamados/*/transferencias").hasAnyRole(PERFIS_QUE_CONDUZEM)
+                        .requestMatchers("/api/chamados/*/servicos", "/api/chamados/*/servicos/*").hasAnyRole(PERFIS_QUE_CONDUZEM)
+                        .requestMatchers("/api/chamados", "/api/chamados/**").hasAnyRole(PERFIS_COM_ACESSO_A_CHAMADOS)
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .authenticationEntryPoint(authenticationEntryPoint)
@@ -81,7 +106,8 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(properties.allowedOrigins());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Idempotency-Key"));
+        configuration.setExposedHeaders(List.of("Content-Disposition", "Location"));
         configuration.setAllowCredentials(false);
         configuration.setMaxAge(3600L);
 

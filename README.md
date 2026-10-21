@@ -56,6 +56,8 @@ O objetivo 6 depende de o cliente definir o que conta como impacto, e o 9 depend
 
 **Controle de SLA não é objetivo desta fase.** Ele aparece em [`docs/stack.md`](docs/stack.md#backend) como regra prevista, mas está bloqueado pela pendência descrita em [O que o produto não resolve](#o-que-o-produto-não-resolve). Até lá a plataforma registra os tempos, sem cobrar prazo.
 
+> **Atenção — decisão pendente.** O protótipo atual já tem triagem manual com prazo, prioridade P1–P4 e situação de SLA, com parâmetros **provisórios** definidos pelo squad para o fluxo funcionar de ponta a ponta. Isso vai além do recorte acima, e cabe ao cliente decidir se os prazos ficam, mudam ou saem desta fase. O fluxo e os parâmetros estão em [`docs/fluxo-de-chamados.md`](docs/fluxo-de-chamados.md).
+
 ### Premissas
 
 1. **Operação 24/7**, com acesso por navegador nas unidades e por celular nas equipes de campo e na assistência. Parte dos usuários está em deslocamento com conexão instável no celular pessoal — como tratar isso ainda é decisão em aberto, registrada como risco em [`docs/stack.md`](docs/stack.md#principais-riscos).
@@ -75,7 +77,7 @@ O objetivo 6 depende de o cliente definir o que conta como impacto, e o 9 depend
 | Tecnologia, manutenção e financeiro | Atuação em segunda camada quando acionados | Computador corporativo, horário comercial |
 | Liderança operacional | Visão consolidada de volume, criticidade e status | Computador e celular |
 
-Logística e contratos ainda não têm perfil, pela pendência descrita no contexto. Os perfis técnicos correspondentes estão em [`docs/stack.md`](docs/stack.md#autenticação-e-permissões).
+Logística e contratos já existem como departamentos, mas ainda falta confirmar se recebem chamado direto, pela pendência descrita no contexto. Os perfis técnicos correspondentes estão em [`docs/stack.md`](docs/stack.md#autenticação-e-permissões).
 
 ## O que o produto não resolve
 
@@ -108,6 +110,7 @@ Nenhuma linha de base foi medida ainda. Como o cenário atual está espalhado em
 |---|---|
 | Logística e contratos recebem chamado direto, ou só apoiam? | Áreas atendentes e perfis de acesso |
 | O que conta como impacto real: clientes afetados, veículo parado em via, unidade indisponível? Qual a ordem? | Objetivo 6, o motor de triagem |
+| Quais os prazos de triagem, 1ª resposta e resolução, e o SLA entra nesta fase? | Os prazos provisórios que estão no código ([`docs/fluxo-de-chamados.md`](docs/fluxo-de-chamados.md)) |
 | Como o parceiro acessa sem conta corporativa: link por chamado, convite, credencial? | Objetivo 9 e a premissa 3 |
 | Por qual meio o cliente é notificado: e-mail, SMS, WhatsApp? Há contrato com provedor? | Objetivo 11 e o custo de infraestrutura |
 | Qual o prazo de retenção de dados e anexos, e como se dá a exclusão a pedido do titular? | Premissa 4 e conformidade com a LGPD |
@@ -210,7 +213,8 @@ ViaFlux_Mobilidade/
 │           │   └── db/migration/V1__initialize_schema.sql
 │           └── test/java/br/com/viaflux/api/ViafluxApplicationTests.java
 ├── docs/
-│   └── stack.md                Decisão de stack, justificativas e riscos
+│   ├── stack.md                Decisão de stack, justificativas e riscos
+│   └── fluxo-de-chamados.md    Ciclo do chamado, triagem, prioridade e SLA
 ├── infra/
 │   ├── docker-compose.yml      Desenvolvimento: PostgreSQL e Adminer
 │   ├── docker-compose.prod.yml Produção: web, api e banco
@@ -221,7 +225,7 @@ ViaFlux_Mobilidade/
 
 ## Como rodar localmente
 
-> **Estado desta etapa.** A API possui a fundação técnica Spring Boot, PostgreSQL e Flyway, além do Compose de desenvolvimento. Ainda não há `package.json` nem aplicação web; o frontend e o CI serão entregas posteriores.
+> **Estado desta etapa.** A API Spring Boot e o frontend Next.js cobrem o ciclo completo do chamado: abertura, triagem manual, atendimento pelos departamentos, fornecedores, anexos, notificações, métricas e lixeira. O fluxo está em [`docs/fluxo-de-chamados.md`](docs/fluxo-de-chamados.md).
 
 ### Pré-requisitos
 
@@ -266,9 +270,11 @@ A API sobe em <http://localhost:8281> e o healthcheck fica em <http://localhost:
 
 ### 4. Frontend
 
-O frontend ainda não possui `package.json`; sua implementação será feita em uma entrega posterior.
+```bash
+cd apps/web && npm install && npm run dev
+```
 
-Esta etapa entrega a configuração executável da API e do banco, sem entidades ou endpoints de negócio. O endpoint `/health` é fornecido pelo Actuator.
+O frontend sobe em <http://localhost:5261> e conversa com a API em `http://localhost:8281` (mude com `NEXT_PUBLIC_API_URL`). Para ter dados de exemplo, habilite `DEV_TOOLS_HABILITADO=true` e `DEV_TOOLS_SENHA` no `infra/.env`, entre como admin e use a tela `/dev-tools`. Detalhes em [`apps/web/README.md`](apps/web/README.md).
 
 ## Publicação
 

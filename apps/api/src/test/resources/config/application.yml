@@ -6,3 +6,6 @@ viaflux:
   admin:
     email: ""
     senha: ""
+  dev-tools:
+    habilitado: false
+    senha-dos-usuarios: ""

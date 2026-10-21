@@ -1,0 +1,18 @@
+package br.com.viaflux.api.chamado;
+
+enum TipoEvento {
+    ABERTURA,
+    TRIAGEM,
+    CLASSIFICACAO,
+    RECLASSIFICACAO,
+    OVERRIDE,
+    ROTEAMENTO,
+    TRANSFERENCIA,
+    STATUS,
+    ATUALIZACAO,
+    ANEXO,
+    LOCALIZACAO,
+    SLA,
+    FORNECEDOR,
+    NOTIFICACAO
+}

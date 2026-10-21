@@ -1,6 +1,21 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
-import { afterEach, vi } from "vitest";
+import { afterEach, beforeEach, vi } from "vitest";
 
-afterEach(cleanup);
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }), usePathname: () => "/" }));
+const navegacao = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), caminho: "/" }));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: navegacao.push, replace: navegacao.replace }),
+  usePathname: () => navegacao.caminho,
+}));
+
+beforeEach(() => {
+  window.localStorage.clear();
+});
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
+
+export { navegacao };
