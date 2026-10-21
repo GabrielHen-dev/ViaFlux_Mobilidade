@@ -8,7 +8,7 @@ import PerfilRequerido from "@/components/auth/PerfilRequerido";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { StatusServicoBadge } from "@/components/ui/StatusServico";
 import { formatarDataHora } from "@/utils/date";
-import { PERFIS_DA_CENTRAL } from "@/utils/perfis";
+import { PERFIS_QUE_CONDUZEM } from "@/utils/perfis";
 
 function AcompanhamentoConteudo({ chamado, servico }: { chamado: Chamado; servico: ServicoTerceiro }) {
   const historico = [...servico.historico].reverse();
@@ -67,7 +67,7 @@ function AcompanhamentoConteudo({ chamado, servico }: { chamado: Chamado; servic
 
 export default function AcompanhamentoTerceiro({ id }: { id: string }) {
   return (
-    <PerfilRequerido perfis={PERFIS_DA_CENTRAL}>
+    <PerfilRequerido perfis={PERFIS_QUE_CONDUZEM}>
       <ComChamado id={id}>
         {(chamado) => chamado.servico ? <AcompanhamentoConteudo key={chamado.id} chamado={chamado} servico={chamado.servico} /> : (
           <main id="conteudo" className="p-4 md:p-8">

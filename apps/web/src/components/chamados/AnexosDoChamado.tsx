@@ -82,7 +82,7 @@ function BotaoDeDownload({ codigo, anexo }: { codigo: string; anexo: Anexo }) {
   );
 }
 
-export default function AnexosDoChamado({ chamado }: { chamado: Chamado }) {
+export default function AnexosDoChamado({ chamado, somenteLeitura = false }: { chamado: Chamado; somenteLeitura?: boolean }) {
   const api = useApi();
   const clienteDeConsultas = useQueryClient();
   const [envios, setEnvios] = useState<EnvioEmAndamento[]>([]);
@@ -152,7 +152,7 @@ export default function AnexosDoChamado({ chamado }: { chamado: Chamado }) {
           <RotateCcw size={12} aria-hidden /> Tentar de novo
         </button>
       )}
-      <SeletorDeArquivos compacto aoAceitar={aoAceitar} desabilitado={enviando} />
+      {!somenteLeitura && <SeletorDeArquivos compacto aoAceitar={aoAceitar} desabilitado={enviando} />}
     </section>
   );
 }

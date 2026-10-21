@@ -1,6 +1,11 @@
 package br.com.viaflux.api.chamado;
 
+import br.com.viaflux.api.usuario.Usuario;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -9,9 +14,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import br.com.viaflux.api.usuario.Usuario;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -28,26 +35,21 @@ class Chamado {
     @Column(nullable = false, length = 150)
     private String cliente;
 
-    @Column(length = 30)
+    @Column(nullable = false, length = 30)
     private String telefone;
 
     @Column(nullable = false, length = 120)
     private String modelo;
 
-    @Column(length = 20)
+    @Column(nullable = false, length = 20)
     private String placa;
 
-    @Column(nullable = false, length = 80)
-    private String tipo;
-
-    @Column(nullable = false, length = 20)
-    private String prioridade;
-
-    @Column(columnDefinition = "text")
+    @Column(nullable = false, columnDefinition = "text")
     private String descricao;
 
-    @Column(length = 255)
-    private String localizacao;
+    @Embedded
+    @AttributeOverride(name = "endereco", column = @Column(name = "localizacao", nullable = false, length = 255))
+    private Localizacao localizacao;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -56,35 +58,366 @@ class Chamado {
     @Column(name = "aberto_em", nullable = false, updatable = false)
     private OffsetDateTime abertoEm;
 
+    @Column(name = "atualizado_em", nullable = false)
+    private OffsetDateTime atualizadoEm;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "solicitante_id")
     private Usuario solicitante;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "motivo_id")
+    private Motivo motivo;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "contexto_id")
+    private Contexto contexto;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_declarado", nullable = false, length = 40)
+    private TipoChamado tipoDeclarado;
+
+    @Column(name = "urgencia_declarada")
+    private Integer urgenciaDeclarada;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "classificacao_tipo", length = 40)
+    private TipoChamado classificacaoTipo;
+
+    @Column(name = "severidade")
+    private Integer severidade;
+
+    @Column(name = "urgencia")
+    private Integer urgencia;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "override_prioridade", length = 2)
+    private Prioridade overridePrioridade;
+
+    @Column(name = "override_justificativa", columnDefinition = "text")
+    private String overrideJustificativa;
+
+    @Column(name = "override_autor_id")
+    private UUID overrideAutorId;
+
+    @Column(name = "override_autor_nome", length = 150)
+    private String overrideAutorNome;
+
+    @Column(name = "override_definido_em")
+    private OffsetDateTime overrideDefinidoEm;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "departamento_codigo", length = 40)
+    private TipoChamado departamento;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "motivo_aguardando", length = 30)
+    private MotivoAguardando motivoAguardando;
+
+    @Column(name = "triagem_prazo_minutos", nullable = false)
+    private int triagemPrazoMinutos;
+
+    @Column(name = "triagem_limite", nullable = false)
+    private OffsetDateTime triagemLimite;
+
+    @Column(name = "triagem_iniciada_em")
+    private OffsetDateTime triagemIniciadaEm;
+
+    @Column(name = "triagem_responsavel_id")
+    private UUID triagemResponsavelId;
+
+    @Column(name = "triagem_responsavel_nome", length = 150)
+    private String triagemResponsavelNome;
+
+    @Column(name = "triado_em")
+    private OffsetDateTime triadoEm;
+
+    @Column(name = "triado_por_id")
+    private UUID triadoPorId;
+
+    @Column(name = "triado_por_nome", length = 150)
+    private String triadoPorNome;
+
+    @Column(name = "primeira_resposta_em")
+    private OffsetDateTime primeiraRespostaEm;
+
+    @Column(name = "atendimento_responsavel_id")
+    private UUID atendimentoResponsavelId;
+
+    @Column(name = "atendimento_responsavel_nome", length = 150)
+    private String atendimentoResponsavelNome;
+
+    @Column(name = "atendimento_assumido_em")
+    private OffsetDateTime atendimentoAssumidoEm;
+
+    @Column(name = "resolvido_em")
+    private OffsetDateTime resolvidoEm;
+
+    @Column(name = "excluido_em")
+    private OffsetDateTime excluidoEm;
+
+    @Column(name = "chave_idempotencia", length = 160, updatable = false)
+    private String chaveIdempotencia;
+
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "chamado_pausa", joinColumns = @JoinColumn(name = "chamado_id"))
+    @BatchSize(size = 100)
+    private List<PausaDoChamado> pausas = new ArrayList<>();
+
     protected Chamado() {
     }
 
-    Chamado(String codigo, AbrirChamadoRequest request, OffsetDateTime abertoEm) {
-        this(codigo, request, abertoEm, null);
-    }
-
-    Chamado(String codigo, AbrirChamadoRequest request, OffsetDateTime abertoEm, Usuario solicitante) {
+    Chamado(String codigo, DadosDeAbertura dados, OffsetDateTime abertoEm) {
         this.id = UUID.randomUUID();
         this.codigo = codigo;
-        this.cliente = request.cliente().trim();
-        this.telefone = valorOuVazio(request.telefone());
-        this.modelo = request.modelo().trim();
-        this.placa = valorOuVazio(request.placa()).toUpperCase(Locale.ROOT);
-        this.tipo = request.tipo().trim();
-        this.prioridade = "Média";
-        this.descricao = valorOuVazio(request.descricao());
-        this.localizacao = valorOuVazio(request.localizacao());
+        this.cliente = dados.cliente().trim();
+        this.telefone = texto(dados.telefone());
+        this.modelo = dados.modelo();
+        this.placa = texto(dados.placa()).toUpperCase(Locale.ROOT);
+        this.descricao = texto(dados.descricao());
+        this.localizacao = Localizacao.de(dados.localizacao());
         this.status = StatusChamado.ABERTO;
         this.abertoEm = abertoEm;
-        this.solicitante = solicitante;
+        this.atualizadoEm = abertoEm;
+        this.solicitante = dados.solicitante();
+        this.motivo = dados.motivo();
+        this.contexto = dados.contexto();
+        this.tipoDeclarado = dados.motivo().getTipo();
+        this.urgenciaDeclarada = dados.contexto().getUrgencia();
+        this.triagemPrazoMinutos = dados.prazoDeTriagemMinutos();
+        this.triagemLimite = abertoEm.plusMinutes(dados.prazoDeTriagemMinutos());
+        this.chaveIdempotencia = dados.chaveIdempotencia();
     }
 
-    private static String valorOuVazio(String valor) {
+    private static String texto(String valor) {
         return valor == null ? "" : valor.trim();
+    }
+
+    boolean triado() {
+        return triadoEm != null;
+    }
+
+    void exigirTriagemConcluida() {
+        if (!triado()) {
+            throw ErroDeChamado.conflito("Conclua a triagem do chamado antes desta ação.");
+        }
+    }
+
+    void iniciarTriagem(Autor responsavel, OffsetDateTime agora) {
+        if (triado()) {
+            throw ErroDeChamado.conflito("A triagem deste chamado já foi concluída.");
+        }
+        this.status = StatusChamado.EM_TRIAGEM;
+        if (triagemIniciadaEm == null) {
+            this.triagemIniciadaEm = agora;
+        }
+        this.triagemResponsavelId = responsavel.id();
+        this.triagemResponsavelNome = responsavel.nome();
+        tocar(agora);
+    }
+
+    void concluirTriagem(TipoChamado tipo, int severidade, int urgencia, TipoChamado destino, Autor autor, OffsetDateTime agora) {
+        if (triado()) {
+            throw ErroDeChamado.conflito("A triagem deste chamado já foi concluída.");
+        }
+        classificar(tipo, severidade, urgencia);
+        this.departamento = destino;
+        this.status = StatusChamado.NA_FILA;
+        if (triagemIniciadaEm == null) {
+            this.triagemIniciadaEm = agora;
+        }
+        this.triagemResponsavelId = autor.id();
+        this.triagemResponsavelNome = autor.nome();
+        this.triadoEm = agora;
+        this.triadoPorId = autor.id();
+        this.triadoPorNome = autor.nome();
+        tocar(agora);
+    }
+
+    void reclassificar(TipoChamado tipo, int severidade, int urgencia, OffsetDateTime agora) {
+        exigirTriagemConcluida();
+        if (tipo == classificacaoTipo && severidade == this.severidade && urgencia == this.urgencia) {
+            throw ErroDeChamado.conflito("A classificação informada é igual à vigente.");
+        }
+        classificar(tipo, severidade, urgencia);
+        tocar(agora);
+    }
+
+    private void classificar(TipoChamado tipo, int severidade, int urgencia) {
+        this.classificacaoTipo = tipo;
+        this.severidade = severidade;
+        this.urgencia = urgencia;
+    }
+
+    void definirOverride(Prioridade prioridade, String justificativa, Autor autor, OffsetDateTime agora) {
+        exigirTriagemConcluida();
+        if (prioridade == prioridadeEfetiva()) {
+            throw ErroDeChamado.conflito("A prioridade efetiva já é essa.");
+        }
+        this.overridePrioridade = prioridade;
+        this.overrideJustificativa = justificativa;
+        this.overrideAutorId = autor.id();
+        this.overrideAutorNome = autor.nome();
+        this.overrideDefinidoEm = agora;
+        tocar(agora);
+    }
+
+    Prioridade removerOverride(OffsetDateTime agora) {
+        if (overridePrioridade == null) {
+            throw ErroDeChamado.conflito("O chamado não tem override de prioridade.");
+        }
+        Prioridade anterior = overridePrioridade;
+        this.overridePrioridade = null;
+        this.overrideJustificativa = null;
+        this.overrideAutorId = null;
+        this.overrideAutorNome = null;
+        this.overrideDefinidoEm = null;
+        tocar(agora);
+        return anterior;
+    }
+
+    StatusChamado alterarStatus(StatusChamado novo, MotivoAguardando motivo, OffsetDateTime agora) {
+        exigirTriagemConcluida();
+        if (novo.aguardaTriagem()) {
+            throw ErroDeChamado.campoInvalido("status", "Abertura e triagem não podem ser definidas manualmente.");
+        }
+        if (novo == StatusChamado.AGUARDANDO && motivo == null) {
+            throw ErroDeChamado.campoInvalido("motivoAguardando", "Informe quem está sendo aguardado: cliente, fornecedor ou outro departamento.");
+        }
+        StatusChamado anterior = status;
+        boolean mesmoMotivo = novo != StatusChamado.AGUARDANDO || motivo == motivoAguardando;
+        if (anterior == novo && mesmoMotivo) {
+            throw ErroDeChamado.conflito("O chamado já está " + novo.getRotulo() + ".");
+        }
+        if (novo == StatusChamado.FECHADO && anterior != StatusChamado.RESOLVIDO) {
+            throw ErroDeChamado.conflito("Só é possível fechar um chamado depois de resolvido.");
+        }
+        encerrarPausa(agora);
+        this.status = novo;
+        this.motivoAguardando = novo == StatusChamado.AGUARDANDO ? motivo : null;
+        if (novo == StatusChamado.NA_FILA) {
+            liberarResponsavel();
+        }
+        if (motivoAguardando == MotivoAguardando.CLIENTE) {
+            pausas.add(new PausaDoChamado(agora));
+        }
+        if (novo == StatusChamado.EM_ATENDIMENTO || novo == StatusChamado.RESOLVIDO) {
+            registrarPrimeiraResposta(agora);
+        }
+        if (novo == StatusChamado.RESOLVIDO) {
+            this.resolvidoEm = agora;
+        } else if (novo != StatusChamado.FECHADO) {
+            this.resolvidoEm = null;
+        }
+        tocar(agora);
+        return anterior;
+    }
+
+    TipoChamado transferir(TipoChamado destino, OffsetDateTime agora) {
+        exigirTriagemConcluida();
+        if (destino == departamento) {
+            throw ErroDeChamado.conflito("O chamado já está neste departamento.");
+        }
+        if (status == StatusChamado.FECHADO) {
+            throw ErroDeChamado.conflito("Chamados fechados não podem ser transferidos.");
+        }
+        TipoChamado origem = departamento;
+        encerrarPausa(agora);
+        this.departamento = destino;
+        this.motivoAguardando = null;
+        liberarResponsavel();
+        if (status != StatusChamado.RESOLVIDO) {
+            this.status = StatusChamado.NA_FILA;
+        }
+        tocar(agora);
+        return origem;
+    }
+
+    void assumirAtendimento(Autor responsavel, OffsetDateTime agora) {
+        exigirTriagemConcluida();
+        if (status == StatusChamado.RESOLVIDO || status == StatusChamado.FECHADO) {
+            throw ErroDeChamado.conflito("Chamados resolvidos ou fechados não podem ser assumidos.");
+        }
+        if (status == StatusChamado.EM_ATENDIMENTO && responsavel.id() != null && responsavel.id().equals(atendimentoResponsavelId)) {
+            throw ErroDeChamado.conflito("Você já está com este chamado.");
+        }
+        encerrarPausa(agora);
+        this.status = StatusChamado.EM_ATENDIMENTO;
+        this.motivoAguardando = null;
+        definirResponsavel(responsavel, agora);
+        registrarPrimeiraResposta(agora);
+        tocar(agora);
+    }
+
+    void registrarResponsavelSeAusente(Autor responsavel, OffsetDateTime agora) {
+        if (atendimentoResponsavelNome == null) {
+            definirResponsavel(responsavel, agora);
+        }
+    }
+
+    private void definirResponsavel(Autor responsavel, OffsetDateTime agora) {
+        this.atendimentoResponsavelId = responsavel.id();
+        this.atendimentoResponsavelNome = responsavel.nome();
+        this.atendimentoAssumidoEm = agora;
+    }
+
+    private void liberarResponsavel() {
+        this.atendimentoResponsavelId = null;
+        this.atendimentoResponsavelNome = null;
+        this.atendimentoAssumidoEm = null;
+    }
+
+    void registrarPrimeiraResposta(OffsetDateTime agora) {
+        if (primeiraRespostaEm == null && triado()) {
+            this.primeiraRespostaEm = agora;
+        }
+    }
+
+    void atualizarLocalizacao(DadosDeLocalizacao dados, OffsetDateTime agora) {
+        this.localizacao = Localizacao.de(dados);
+        tocar(agora);
+    }
+
+    void moverParaLixeira(OffsetDateTime agora) {
+        this.excluidoEm = agora;
+    }
+
+    void restaurar() {
+        this.excluidoEm = null;
+    }
+
+    void tocar(OffsetDateTime agora) {
+        if (agora.isAfter(atualizadoEm)) {
+            this.atualizadoEm = agora;
+        }
+    }
+
+    private void encerrarPausa(OffsetDateTime agora) {
+        pausas.stream().filter(PausaDoChamado::emAndamento).forEach(pausa -> pausa.encerrar(agora));
+    }
+
+    Prioridade prioridadeCalculada() {
+        return triado() ? Prioridade.porScore(score()) : null;
+    }
+
+    Prioridade prioridadeEfetiva() {
+        return overridePrioridade != null ? overridePrioridade : prioridadeCalculada();
+    }
+
+    Integer score() {
+        return triado() ? Prioridade.score(severidade, urgencia) : null;
+    }
+
+    TipoChamado tipoVigente() {
+        return classificacaoTipo != null ? classificacaoTipo : tipoDeclarado;
+    }
+
+    boolean pertenceAo(UUID usuarioId) {
+        return solicitante != null && solicitante.getId().equals(usuarioId);
+    }
+
+    boolean naLixeira() {
+        return excluidoEm != null;
     }
 
     UUID getId() {
@@ -111,19 +444,11 @@ class Chamado {
         return placa;
     }
 
-    String getTipo() {
-        return tipo;
-    }
-
-    String getPrioridade() {
-        return prioridade;
-    }
-
     String getDescricao() {
         return descricao;
     }
 
-    String getLocalizacao() {
+    Localizacao getLocalizacao() {
         return localizacao;
     }
 
@@ -135,7 +460,107 @@ class Chamado {
         return abertoEm;
     }
 
+    OffsetDateTime getAtualizadoEm() {
+        return atualizadoEm;
+    }
+
     Usuario getSolicitante() {
         return solicitante;
+    }
+
+    Motivo getMotivo() {
+        return motivo;
+    }
+
+    Contexto getContexto() {
+        return contexto;
+    }
+
+    Integer getUrgenciaDeclarada() {
+        return urgenciaDeclarada;
+    }
+
+    TipoChamado getClassificacaoTipo() {
+        return classificacaoTipo;
+    }
+
+    Integer getSeveridade() {
+        return severidade;
+    }
+
+    Integer getUrgencia() {
+        return urgencia;
+    }
+
+    Prioridade getOverridePrioridade() {
+        return overridePrioridade;
+    }
+
+    String getOverrideJustificativa() {
+        return overrideJustificativa;
+    }
+
+    Autor getOverrideAutor() {
+        return Autor.de(overrideAutorId, overrideAutorNome);
+    }
+
+    OffsetDateTime getOverrideDefinidoEm() {
+        return overrideDefinidoEm;
+    }
+
+    TipoChamado getDepartamento() {
+        return departamento;
+    }
+
+    MotivoAguardando getMotivoAguardando() {
+        return motivoAguardando;
+    }
+
+    int getTriagemPrazoMinutos() {
+        return triagemPrazoMinutos;
+    }
+
+    OffsetDateTime getTriagemLimite() {
+        return triagemLimite;
+    }
+
+    OffsetDateTime getTriagemIniciadaEm() {
+        return triagemIniciadaEm;
+    }
+
+    Autor getTriagemResponsavel() {
+        return Autor.de(triagemResponsavelId, triagemResponsavelNome);
+    }
+
+    OffsetDateTime getTriadoEm() {
+        return triadoEm;
+    }
+
+    Autor getTriadoPor() {
+        return Autor.de(triadoPorId, triadoPorNome);
+    }
+
+    Autor getAtendimentoResponsavel() {
+        return Autor.de(atendimentoResponsavelId, atendimentoResponsavelNome);
+    }
+
+    OffsetDateTime getAtendimentoAssumidoEm() {
+        return atendimentoAssumidoEm;
+    }
+
+    OffsetDateTime getPrimeiraRespostaEm() {
+        return primeiraRespostaEm;
+    }
+
+    OffsetDateTime getResolvidoEm() {
+        return resolvidoEm;
+    }
+
+    OffsetDateTime getExcluidoEm() {
+        return excluidoEm;
+    }
+
+    List<PausaDoChamado> getPausas() {
+        return List.copyOf(pausas);
     }
 }

@@ -19,7 +19,19 @@ public class OpenApiConfig {
                         .bearerFormat("JWT")))
                 .info(new Info()
                 .title("ViaFlux Mobilidade API")
-                .description("API da plataforma de gerenciamento de chamados da ViaFlux Mobilidade.")
+                .description("""
+                        API da plataforma de chamados da ViaFlux Mobilidade.
+
+                        Ciclo do chamado: o cliente abre (Aberto) → o atendente faz a triagem (Em triagem) → o chamado entra na fila do \
+                        departamento (Na fila) → o departamento assume (Em atendimento) → Aguardando, Resolvido e Fechado.
+
+                        Perfis: CLIENTE e GESTOR_FROTA abrem e acompanham os próprios chamados; ATENDENTE faz a triagem e apoia a Central \
+                        (transfere, aciona fornecedor e usa a lixeira); DEPARTAMENTO assume e resolve os chamados da própria fila; \
+                        LIDER_OPERACIONAL acompanha tudo e vê as métricas, sem alterar; FORNECEDOR atualiza os serviços acionados; \
+                        ADMIN faz tudo e cadastra usuários.
+
+                        Autenticação: entre em POST /auth/login e use o accessToken no botão Authorize (Bearer).
+                        """)
                 .version("v1"));
     }
 }

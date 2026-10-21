@@ -14,9 +14,10 @@ import { cn } from "@/utils/cn";
 interface Props {
   chamado: Chamado;
   visaoDeCliente?: boolean;
+  somenteLeitura?: boolean;
 }
 
-export default function TimelineChamado({ chamado, visaoDeCliente = false }: Props) {
+export default function TimelineChamado({ chamado, visaoDeCliente = false, somenteLeitura = false }: Props) {
   const { valor: texto, setValor: setTexto, descartar } = useRascunho(`atualizacao-${chamado.id}`, "");
   const [visivelCliente, setVisivelCliente] = useState(false);
   const [somentePublicos, setSomentePublicos] = useState(false);
@@ -65,7 +66,7 @@ export default function TimelineChamado({ chamado, visaoDeCliente = false }: Pro
         ))}
       </ol>
 
-      <div className="mt-5 border-t border-[#F1F5F9] pt-5">
+      {!somenteLeitura && <div className="mt-5 border-t border-[#F1F5F9] pt-5">
         <label htmlFor={`nova-atualizacao-${chamado.id}`} className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#475569]">
           {visaoDeCliente ? "Complementar informações" : "Adicionar atualização ao histórico"}
         </label>
@@ -94,7 +95,7 @@ export default function TimelineChamado({ chamado, visaoDeCliente = false }: Pro
           </button>
         </div>
         {atualizacao.isError && <div className="mt-2"><AvisoDeErro erro={atualizacao.error} /></div>}
-      </div>
+      </div>}
     </section>
   );
 }

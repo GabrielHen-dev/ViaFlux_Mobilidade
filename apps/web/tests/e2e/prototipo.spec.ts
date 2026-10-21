@@ -50,7 +50,7 @@ async function semRolagemHorizontal(page: Page, contexto: string) {
   expect(larguras.documento, contexto).toBeLessThanOrEqual(larguras.janela);
 }
 
-test("ciclo completo: cliente abre, central atende, fornecedor atualiza e cliente acompanha", async ({ page, context }) => {
+test("ciclo completo: cliente abre, atendente tria, central atende, fornecedor atualiza e cliente acompanha", async ({ page, context }) => {
   const backend = criarBackendFalso();
   const erros = await conectar(page, backend);
   await context.grantPermissions(["geolocation"]);
@@ -60,20 +60,34 @@ test("ciclo completo: cliente abre, central atende, fornecedor atualiza e client
   await expect(page).toHaveURL(/\/portal$/);
   await abrirChamadoDePane(page);
   await page.getByRole("button", { name: "Usar minha localização" }).click();
-  await expect(page.getByText("GPS registrado: -23.43560, -46.47310")).toBeVisible();
+  await expect(page.getByLabel("Rua, avenida ou rodovia")).toHaveValue("Rodovia Presidente Dutra");
+  await expect(page.getByText("Localização obtida com sucesso.")).toBeVisible();
+  await expect(page.getByText(/GPS registrado|Localização encontrada/)).toHaveCount(0);
   await page.getByLabel("Selecionar anexos").setInputFiles({ name: "painel.png", mimeType: "image/png", buffer: Buffer.from("png") });
   await page.getByRole("button", { name: "Abrir Chamado" }).click();
   await expect(page.getByRole("heading", { name: "Chamado aberto!" })).toBeVisible();
   await expect(page.getByTestId("protocolo")).toHaveText("VF-0000");
-  await expect(page.getByText("P1 · Crítica")).toBeVisible();
+  await expect(page.getByText("Aguardando triagem")).toBeVisible();
+  await expect(page.getByTestId("previsao-da-triagem")).toBeVisible();
   await expect(page.getByText("Enviado")).toBeVisible();
   await sair(page);
 
+  await entrarComo(page, USUARIOS.departamento);
+  await expect(page.getByText("Nenhum chamado encontrado com os filtros aplicados.")).toBeVisible();
+  await sair(page);
+
   await entrarComo(page, USUARIOS.admin);
-  await expect(page.getByText(/P1 sem 1ª resposta \(1\)/)).toBeVisible();
-  await page.getByRole("link", { name: "#VF-0000" }).first().click();
+  await expect(page.getByRole("region", { name: "Fila de triagem" })).toBeVisible();
+  await page.getByRole("navigation", { name: "Menu principal" }).getByRole("link", { name: "Triagem" }).click();
+  await expect(page.getByRole("heading", { name: "Fila de triagem" })).toBeVisible();
+  await page.getByRole("button", { name: "Assumir triagem do chamado VF-0000" }).click();
+  await expect(page.getByRole("heading", { name: "Triagem — #VF-0000" })).toBeVisible();
+  await expect(page.getByText("Em triagem com você")).toBeVisible();
+  await page.getByRole("button", { name: "Concluir triagem e encaminhar" }).click();
+  await expect(page.getByText("Triagem concluída: P1 · encaminhado para Assistência 24h.")).toBeVisible();
+  await page.getByRole("link", { name: "Voltar ao chamado" }).click();
   await expect(page.getByRole("heading", { name: "#VF-0000" })).toBeVisible();
-  await expect(page.getByText("painel.png")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Baixar painel.png" })).toBeVisible();
   await expect(page.getByRole("link", { name: /Abrir no mapa/ })).toHaveAttribute("href", /-23\.4356/);
   await page.getByRole("button", { name: "Assumir chamado" }).click();
   await expect(page.getByText("Status alterado para Em atendimento")).toBeVisible();
@@ -93,7 +107,7 @@ test("ciclo completo: cliente abre, central atende, fornecedor atualiza e client
   await page.getByRole("button", { name: "Transferir", exact: true }).click();
   await expect(page.getByText("Chamado transferido para Manutenção.")).toBeVisible();
   await page.getByRole("link", { name: "Voltar ao chamado" }).click();
-  await page.getByRole("link", { name: "Triagem", exact: true }).click();
+  await page.getByRole("main").getByRole("link", { name: "Triagem", exact: true }).click();
   await page.getByText("Média (3)").first().click();
   await page.getByLabel("Justificativa *").first().fill("Veículo já está em local seguro, sem risco");
   await page.getByRole("button", { name: "Confirmar reclassificação" }).click();
@@ -117,6 +131,7 @@ test("ciclo completo: cliente abre, central atende, fornecedor atualiza e client
   await expect(page.getByText("Status alterado para Em atendimento")).toBeVisible();
   await expect(page.getByText(/Anotação interna/)).toHaveCount(0);
   await expect(page.getByText(/Chamado transferido/)).toHaveCount(0);
+  await expect(page.getByText("Triagem concluída")).toHaveCount(0);
   expect(backend.contagem.aberturas).toBe(1);
   expect(erros).toEqual([]);
 });
@@ -133,7 +148,7 @@ test("perfis só enxergam as próprias telas e menus", async ({ page }) => {
   await sair(page);
 
   await entrarComo(page, USUARIOS.lider);
-  await expect(page.getByRole("navigation", { name: "Menu principal" }).getByRole("link")).toHaveText(["Dashboard", "Métricas", "Lixeira"]);
+  await expect(page.getByRole("navigation", { name: "Menu principal" }).getByRole("link")).toHaveText(["Dashboard", "Métricas"]);
   await page.getByRole("link", { name: "Métricas" }).click();
   await expect(page.getByText("CSAT")).toBeVisible();
   await expect(page.getByText("Pendente de levantamento").first()).toBeVisible();
@@ -164,11 +179,11 @@ test("celular em 360px: rede caiu no envio, rascunho preservado e reenvio sem du
   await expect(page.getByText("Envio não confirmado: a abertura não foi registrada.")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Chamado aberto!" })).toHaveCount(0);
 
+  rede.online = true;
   await page.reload();
   await expect(page.getByText(/Recuperamos o rascunho/)).toBeVisible();
   await expect(page.getByLabel("Descrição *")).toHaveValue("Caminhão parou no acostamento e não liga mais.");
 
-  rede.online = true;
   await page.getByRole("button", { name: "Abrir Chamado" }).click();
   await expect(page.getByRole("heading", { name: "Chamado aberto!" })).toBeVisible();
   expect(backend.contagem.aberturas).toBe(1);

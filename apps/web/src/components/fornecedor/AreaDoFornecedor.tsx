@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { MapPin } from "lucide-react";
-import type { ServicoDoFornecedor } from "@/types/chamado";
+import { STATUS_SERVICO, type ServicoDoFornecedor, type StatusServico } from "@/types/chamado";
 import type { DadosAtualizacaoServico } from "@/services/api/contratos";
 import { atualizarServicoDoFornecedor } from "@/services/api/operacao";
 import { useApi } from "@/store/AuthContext";
@@ -17,7 +17,11 @@ import { formatarDataHora } from "@/utils/date";
 import { PERFIS_DE_FORNECEDOR } from "@/utils/perfis";
 import { cn } from "@/utils/cn";
 
-const PROXIMOS_STATUS: DadosAtualizacaoServico["status"][] = ["RECEBIDO", "EM_EXECUCAO", "CONCLUIDO"];
+const STATUS_ATUALIZAVEIS: DadosAtualizacaoServico["status"][] = ["RECEBIDO", "EM_EXECUCAO", "CONCLUIDO"];
+
+export function proximosStatus(atual: StatusServico) {
+  return STATUS_ATUALIZAVEIS.filter((opcao) => STATUS_SERVICO.indexOf(opcao) > STATUS_SERVICO.indexOf(atual));
+}
 
 function CartaoDoServico({ servico }: { servico: ServicoDoFornecedor }) {
   const api = useApi();
@@ -53,7 +57,7 @@ function CartaoDoServico({ servico }: { servico: ServicoDoFornecedor }) {
           <fieldset>
             <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Atualizar status</legend>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              {PROXIMOS_STATUS.map((opcao) => (
+              {proximosStatus(servico.status).map((opcao) => (
                 <label key={opcao} className={cn("alvo-toque flex cursor-pointer items-center justify-center rounded-xl border-2 px-3 py-2 text-sm font-semibold", status === opcao ? "border-brand-blue bg-blue-50 text-blue-700" : "border-[#E2E8F0] text-slate-600")}>
                   <input type="radio" name={`status-${servico.id}`} className="sr-only" checked={status === opcao} onChange={() => setStatus(opcao)} />
                   {APARENCIA_DO_STATUS_DO_SERVICO[opcao].rotulo}

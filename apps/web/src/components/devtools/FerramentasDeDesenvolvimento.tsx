@@ -4,8 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Database, Eraser, FlaskConical, Trash } from "lucide-react";
 import { ErroApi } from "@/services/api/cliente";
-import { consultarEstadoDosDados, enriquecerComDadosSimulados, limparDadosDeExemplo, popularBanco } from "@/services/api/devtools";
-import { reiniciarEstadoSimulado } from "@/services/api/simulacao/estado";
+import { complementarComAcoesDeExemplo, consultarEstadoDosDados, limparDadosDeExemplo, popularBanco } from "@/services/api/devtools";
 import { useApi } from "@/store/AuthContext";
 import { invalidarListas } from "@/hooks/consultas";
 import PerfilRequerido from "@/components/auth/PerfilRequerido";
@@ -15,15 +14,15 @@ const QUANTIDADE_PADRAO = 30;
 const LIMITE_POR_VEZ = 200;
 const PREFIXO_DOS_DADOS_DO_NAVEGADOR = "viaflux.";
 const CHAVES_PRESERVADAS = ["viaflux.refreshToken"];
+const BANCO_DA_SIMULACAO_ANTIGA = "viaflux-simulacao";
 
 function apagarDadosDoNavegador() {
-  reiniciarEstadoSimulado();
   try {
     Object.keys(window.localStorage)
       .filter((chave) => chave.startsWith(PREFIXO_DOS_DADOS_DO_NAVEGADOR) && !CHAVES_PRESERVADAS.includes(chave))
       .forEach((chave) => window.localStorage.removeItem(chave));
   } catch { }
-  if (typeof indexedDB !== "undefined") indexedDB.deleteDatabase("viaflux-simulacao");
+  if (typeof indexedDB !== "undefined") indexedDB.deleteDatabase(BANCO_DA_SIMULACAO_ANTIGA);
 }
 
 function Cartao({ titulo, icone, children }: { titulo: string; icone: React.ReactNode; children: React.ReactNode }) {
@@ -53,7 +52,7 @@ function ConteudoDasFerramentas() {
   const populacao = useMutation({
     mutationFn: async () => {
       const resultado = await popularBanco(api, quantidade);
-      const acoes = enriquecer ? await enriquecerComDadosSimulados(api, resultado.protocolos) : [];
+      const acoes = enriquecer ? await complementarComAcoesDeExemplo(api, resultado.protocolos) : [];
       return { resultado, acoes };
     },
     onSuccess: ({ resultado, acoes }) => aposMudanca([
@@ -112,7 +111,7 @@ function ConteudoDasFerramentas() {
                 </label>
                 <label className="flex items-center gap-2 text-sm text-slate-600 sm:pb-2">
                   <input type="checkbox" checked={enriquecer} onChange={(evento) => setEnriquecer(evento.target.checked)} />
-                  Gerar também dados simulados neste navegador (fornecedor, transferência e override)
+                  Gerar também acionamento de fornecedor, transferência e override nos chamados já triados
                 </label>
               </div>
               {!quantidadeValida && <p className="mt-2 text-xs text-red-600">Use um número entre 1 e {LIMITE_POR_VEZ}.</p>}
@@ -158,15 +157,15 @@ function ConteudoDasFerramentas() {
                   )}
                 </div>
                 <div className="rounded-xl border border-slate-200 p-4">
-                  <p className="mb-3 text-sm text-slate-600">Apaga deste navegador os dados simulados (score, SLA, fornecedores, anexos, notificações) e os rascunhos. Você continua logado.</p>
+                  <p className="mb-3 text-sm text-slate-600">Apaga os rascunhos salvos neste navegador. Você continua logado.</p>
                   {confirmandoLimpeza === "navegador" ? (
                     <div className="flex gap-2">
-                      <button type="button" onClick={() => { apagarDadosDoNavegador(); void aposMudanca(["Dados simulados deste navegador apagados."]); }} className="alvo-toque rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white">Confirmar</button>
+                      <button type="button" onClick={() => { apagarDadosDoNavegador(); void aposMudanca(["Rascunhos deste navegador apagados."]); }} className="alvo-toque rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white">Confirmar</button>
                       <button type="button" onClick={() => setConfirmandoLimpeza(null)} className="alvo-toque rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600">Cancelar</button>
                     </div>
                   ) : (
                     <button type="button" onClick={() => setConfirmandoLimpeza("navegador")} className="alvo-toque inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">
-                      <Eraser size={14} aria-hidden /> Limpar dados simulados do navegador
+                      <Eraser size={14} aria-hidden /> Limpar rascunhos do navegador
                     </button>
                   )}
                 </div>

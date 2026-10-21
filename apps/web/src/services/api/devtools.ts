@@ -49,11 +49,11 @@ const DESTINO_DA_TRANSFERENCIA: Partial<Record<TipoChamado, TipoChamado>> = {
   TI: "CONTRATOS",
 };
 
-export async function enriquecerComDadosSimulados(api: ClienteApi, protocolos: string[]) {
+export async function complementarComAcoesDeExemplo(api: ClienteApi, protocolos: string[]) {
   const fornecedores = await listarFornecedores(api);
   const guincho = fornecedores.find((fornecedor) => fornecedor.nome === "Guincho ViaRápido") ?? fornecedores[0];
   const chamados = await Promise.all(protocolos.map((protocolo) => consultarChamado(api, protocolo)));
-  const abertos = chamados.filter((chamado) => chamado.status !== "Resolvido" && chamado.status !== "Fechado");
+  const abertos = chamados.filter((chamado) => chamado.prioridade !== null && chamado.status !== "Resolvido" && chamado.status !== "Fechado");
   const acoes: string[] = [];
 
   const paraGuincho = abertos.filter((chamado) => chamado.tipo === "ASSISTENCIA_24H").slice(0, 2);

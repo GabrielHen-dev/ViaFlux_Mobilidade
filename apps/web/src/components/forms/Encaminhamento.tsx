@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowRightLeft, Check, ChevronLeft } from "lucide-react";
-import { MOTIVOS_AGUARDANDO, STATUS_CHAMADO, type Chamado, type MotivoAguardando, type Status, type TipoChamado } from "@/types/chamado";
+import { ArrowRightLeft, Check, ChevronLeft, ClipboardList } from "lucide-react";
+import { MOTIVOS_AGUARDANDO, STATUS_DEFINIVEIS, type Chamado, type MotivoAguardando, type Status, type TipoChamado } from "@/types/chamado";
 import type { DadosStatus, DadosTransferencia } from "@/services/api/contratos";
 import { alterarStatus, transferirChamado } from "@/services/api/chamados";
 import { useAcaoNoChamado, useDepartamentos } from "@/hooks/consultas";
@@ -13,7 +13,8 @@ import PerfilRequerido from "@/components/auth/PerfilRequerido";
 import { APARENCIA_DO_STATUS, PrioridadeIndicador, StatusBadge } from "@/components/ui/StatusBadge";
 import { AvisoDeErro } from "@/components/feedback/EstadoDaConsulta";
 import { formatarDataHora } from "@/utils/date";
-import { PERFIS_DA_CENTRAL } from "@/utils/perfis";
+import { useUsuarioAutenticado } from "@/store/AuthContext";
+import { PERFIS_DE_TRIAGEM, PERFIS_QUE_ATENDEM, PERFIS_QUE_CONDUZEM, usuarioTemPerfil } from "@/utils/perfis";
 import { cn } from "@/utils/cn";
 
 const TAMANHO_MINIMO_DO_MOTIVO = 10;
@@ -26,6 +27,7 @@ const labelClass = "block text-xs font-semibold text-[#475569] uppercase trackin
 const inputClass = "w-full px-3.5 py-2.5 rounded-lg border border-[#E2E8F0] bg-white text-sm text-brand-dark outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10";
 
 function EncaminhamentoConteudo({ chamado }: { chamado: Chamado }) {
+  const atende = usuarioTemPerfil(useUsuarioAutenticado(), PERFIS_QUE_ATENDEM);
   const departamentos = useDepartamentos();
   const [destino, setDestino] = useState<TipoChamado | "">("");
   const { valor: motivo, setValor: setMotivo, descartar: descartarMotivo } = useRascunho(`transferencia-${chamado.id}`, "");
@@ -107,10 +109,10 @@ function EncaminhamentoConteudo({ chamado }: { chamado: Chamado }) {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5 md:p-6">
+            {atende && <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5 md:p-6">
               <h2 className="mb-4 font-display text-sm font-semibold text-brand-navy">Status do chamado</h2>
               <div className="mb-4 flex flex-wrap gap-2" role="radiogroup" aria-label="Novo status">
-                {STATUS_CHAMADO.map((opcao) => {
+                {STATUS_DEFINIVEIS.map((opcao) => {
                   const { texto } = APARENCIA_DO_STATUS[opcao];
                   const selecionado = status === opcao;
                   return (
@@ -146,7 +148,7 @@ function EncaminhamentoConteudo({ chamado }: { chamado: Chamado }) {
               >
                 {mudancaDeStatus.isPending ? "Atualizando…" : "Atualizar status"}
               </button>
-            </section>
+            </section>}
           </div>
 
           <aside className="space-y-4">
@@ -173,10 +175,31 @@ function EncaminhamentoConteudo({ chamado }: { chamado: Chamado }) {
   );
 }
 
+function AguardandoTriagem({ chamado }: { chamado: Chamado }) {
+  const usuario = useUsuarioAutenticado();
+  return (
+    <main id="conteudo" className="p-4 md:p-8">
+      <div className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center">
+        <ClipboardList size={28} className="mx-auto mb-3 text-amber-600" aria-hidden />
+        <h1 className="mb-2 text-xl font-bold text-brand-navy">Transferência — #{chamado.id}</h1>
+        <p className="mb-6 text-sm text-slate-500">Este chamado ainda não passou pela triagem. Status e transferência ficam disponíveis depois que o atendente classificar e encaminhar.</p>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Link href={`/chamados/${chamado.id}`} className="alvo-toque rounded-xl border border-[#E2E8F0] px-4 py-2.5 text-sm font-semibold text-[#475569]">Voltar ao chamado</Link>
+          {usuarioTemPerfil(usuario, PERFIS_DE_TRIAGEM) && (
+            <Link href={`/chamados/${chamado.id}/triagem`} className="alvo-toque rounded-xl bg-brand-green px-4 py-2.5 text-sm font-semibold text-white">Fazer triagem</Link>
+          )}
+        </div>
+      </div>
+    </main>
+  );
+}
+
 export default function Encaminhamento({ id }: { id: string }) {
   return (
-    <PerfilRequerido perfis={PERFIS_DA_CENTRAL}>
-      <ComChamado id={id}>{(chamado) => <EncaminhamentoConteudo key={chamado.id} chamado={chamado} />}</ComChamado>
+    <PerfilRequerido perfis={PERFIS_QUE_CONDUZEM}>
+      <ComChamado id={id}>
+        {(chamado) => chamado.classificacao === null ? <AguardandoTriagem chamado={chamado} /> : <EncaminhamentoConteudo key={chamado.id} chamado={chamado} />}
+      </ComChamado>
     </PerfilRequerido>
   );
 }

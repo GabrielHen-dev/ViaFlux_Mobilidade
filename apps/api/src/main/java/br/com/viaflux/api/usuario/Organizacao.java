@@ -29,6 +29,9 @@ public class Organizacao {
     @Column(nullable = false)
     private boolean ativo = true;
 
+    @Column(length = 120)
+    private String especialidade;
+
     protected Organizacao() {
     }
 
@@ -51,5 +54,9 @@ public class Organizacao {
 
     public boolean isAtivo() {
         return ativo;
+    }
+
+    public String getEspecialidade() {
+        return especialidade;
     }
 }

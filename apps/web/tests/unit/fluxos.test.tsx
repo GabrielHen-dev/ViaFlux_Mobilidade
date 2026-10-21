@@ -1,16 +1,33 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import NovoChamado from "@/components/forms/NovoChamado";
 import Dashboard from "@/components/chamados/Dashboard";
 import SeletorDeArquivos from "@/components/forms/SeletorDeArquivos";
-import { abrirChamado } from "@/services/api/chamados";
+import Triagem from "@/components/forms/Triagem";
+import Encaminhamento from "@/components/forms/Encaminhamento";
+import DetalhesChamado from "@/components/chamados/DetalhesChamado";
+import { type ClienteApi, abrirChamado, concluirTriagem } from "@/services/api/chamados";
 import { requisitarApi } from "@/services/api/cliente";
 import { render } from "@testing-library/react";
-import { USUARIOS, tokenDeAcesso } from "../support/backendFalso";
+import { USUARIOS, type UsuarioDeTeste, tokenDeAcesso } from "../support/backendFalso";
 import { derrubarRede, ligarBackendFalso, renderizarComo } from "../support/renderizar";
 
 type Usuario = typeof userEvent extends { setup: (...args: never[]) => infer U } ? U : never;
+
+function apiComo(usuario: UsuarioDeTeste): ClienteApi {
+  const autorizacao = { Authorization: `Bearer ${tokenDeAcesso(usuario)}` };
+  return {
+    requisitar: <T,>(caminho: string, init: RequestInit = {}) => requisitarApi<T>(caminho, { ...init, headers: { ...autorizacao, ...(init.headers as Record<string, string>) } }),
+    baixar: () => Promise.reject(new Error("não usado")),
+  };
+}
+
+const ABERTURA_BASE = { cliente: "Carla", telefone: "", modelo: "", placa: "", localizacao: null };
+
+async function abrirPane(chave = "pane") {
+  return abrirChamado(apiComo(USUARIOS.cliente), { ...ABERTURA_BASE, motivoId: "M-ASSISTENCIA_24H-1", contextoId: "C-ASSISTENCIA_24H-1", descricao: "Pane na rodovia" }, chave);
+}
 
 async function preencherAbertura(usuario: Usuario) {
   await usuario.selectOptions(await screen.findByLabelText("Motivo *"), "Veículo não liga / Pane elétrica ou mecânica");
@@ -32,7 +49,7 @@ describe("abertura de chamado", () => {
     expect(screen.getByLabelText("Motivo *")).toHaveAttribute("aria-invalid", "true");
   });
 
-  it("mostra o protocolo e a prioridade calculada só depois da confirmação do servidor", async () => {
+  it("mostra o protocolo e o prazo da triagem, sem prioridade, depois da confirmação do servidor", async () => {
     const usuario = userEvent.setup();
     ligarBackendFalso();
     await renderizarComo(USUARIOS.cliente, <NovoChamado />);
@@ -40,8 +57,9 @@ describe("abertura de chamado", () => {
     await usuario.click(screen.getByRole("button", { name: "Abrir Chamado" }));
     expect(await screen.findByRole("heading", { name: "Chamado aberto!" })).toBeInTheDocument();
     expect(screen.getByTestId("protocolo")).toHaveTextContent("VF-0000");
-    expect(screen.getByText("P1 · Crítica")).toBeInTheDocument();
-    expect(screen.getByText("Assistência 24h")).toBeInTheDocument();
+    expect(screen.getByText("Aguardando triagem")).toBeInTheDocument();
+    expect(screen.getByTestId("previsao-da-triagem")).toHaveTextContent(/Um atendente vai analisar e classificar o chamado até/);
+    expect(screen.queryByText(/P1/)).not.toBeInTheDocument();
   });
 
   it("em falha de rede avisa que o envio não foi confirmado, mantém os dados e reenvia sem duplicar", async () => {
@@ -93,17 +111,123 @@ describe("abertura pela Central", () => {
   });
 });
 
+describe("triagem", () => {
+  it("chega sem prioridade, o atendente confirma a sugestão e o chamado vai para a fila do departamento", async () => {
+    const usuario = userEvent.setup();
+    ligarBackendFalso();
+    await abrirPane();
+    await renderizarComo(USUARIOS.atendente, <Triagem id="VF-0000" />);
+    expect(await screen.findByRole("heading", { name: "Triagem — #VF-0000" })).toBeInTheDocument();
+    expect(screen.getByText("sugestão")).toBeInTheDocument();
+    expect(screen.getByLabelText("Tipo")).toHaveValue("ASSISTENCIA_24H");
+    await usuario.click(screen.getByRole("button", { name: "Assumir triagem" }));
+    expect(await screen.findByText("você")).toBeInTheDocument();
+    await usuario.click(within(screen.getByRole("group", { name: "Urgência (contexto)" })).getByText("Média (3)"));
+    await usuario.click(screen.getByRole("button", { name: "Concluir triagem e encaminhar" }));
+    expect(await screen.findByText("Triagem concluída: P2 · encaminhado para Assistência 24h.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Confirmar reclassificação" })).toBeInTheDocument();
+  });
+
+  it("reclassificar para outro tipo não muda a fila e aponta para a transferência", async () => {
+    const usuario = userEvent.setup();
+    ligarBackendFalso();
+    await abrirPane();
+    await concluirTriagem(apiComo(USUARIOS.atendente), "VF-0000", { tipo: "ASSISTENCIA_24H", severidade: 5, urgencia: 5 });
+    await renderizarComo(USUARIOS.atendente, <Triagem id="VF-0000" />);
+    await usuario.selectOptions(await screen.findByLabelText("Tipo"), "MANUTENCAO");
+    expect(screen.getByText(/A reclassificação não muda a fila: o chamado continua em Assistência 24h/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Transferir o chamado" })).toHaveAttribute("href", "/chamados/VF-0000/encaminhamento");
+    await usuario.type(screen.getAllByLabelText("Justificativa *")[0], "Problema é mecânico, não de socorro");
+    await usuario.click(screen.getByRole("button", { name: "Confirmar reclassificação" }));
+    expect(await screen.findByText(/Chamado reclassificado: score 10 · P1/)).toBeInTheDocument();
+  });
+
+  it("bloqueia status e transferência enquanto o chamado não foi triado", async () => {
+    ligarBackendFalso();
+    await abrirPane();
+    await renderizarComo(USUARIOS.atendente, <Encaminhamento id="VF-0000" />);
+    expect(await screen.findByText(/ainda não passou pela triagem/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Fazer triagem" })).toHaveAttribute("href", "/chamados/VF-0000/triagem");
+    expect(screen.queryByRole("button", { name: "Transferir" })).not.toBeInTheDocument();
+  });
+
+  it("o departamento só vê o chamado depois da triagem", async () => {
+    ligarBackendFalso();
+    await abrirPane();
+    const primeira = await renderizarComo(USUARIOS.departamento, <Dashboard />);
+    expect(await screen.findByText("Nenhum chamado encontrado com os filtros aplicados.")).toBeInTheDocument();
+    primeira.unmount();
+    await concluirTriagem(apiComo(USUARIOS.atendente), "VF-0000", { tipo: "ASSISTENCIA_24H", severidade: 5, urgencia: 5 });
+    await renderizarComo(USUARIOS.departamento, <Dashboard />);
+    expect(await screen.findByRole("link", { name: "#VF-0000" })).toBeInTheDocument();
+    expect(screen.getAllByText("Na fila").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: /Excluir chamado/ })).not.toBeInTheDocument();
+  });
+});
+
+describe("o que cada perfil faz no chamado", () => {
+  async function chamadoTriado() {
+    ligarBackendFalso();
+    await abrirPane();
+    await concluirTriagem(apiComo(USUARIOS.atendente), "VF-0000", { tipo: "ASSISTENCIA_24H", severidade: 5, urgencia: 5 });
+  }
+
+  it("o departamento assume e passa a constar como responsável", async () => {
+    const usuario = userEvent.setup();
+    await chamadoTriado();
+    await renderizarComo(USUARIOS.departamento, <DetalhesChamado id="VF-0000" />);
+    expect(await screen.findByText("Ninguém assumiu ainda")).toBeInTheDocument();
+    await usuario.click(screen.getByRole("button", { name: "Assumir chamado" }));
+    expect(await screen.findByText("Você")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Assumir chamado" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Transferir / status" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Excluir/ })).not.toBeInTheDocument();
+  });
+
+  it("outra pessoa da fila pode assumir no lugar de quem está com o chamado", async () => {
+    const usuario = userEvent.setup();
+    await chamadoTriado();
+    await renderizarComo(USUARIOS.departamento, <DetalhesChamado id="VF-0000" />);
+    await usuario.click(await screen.findByRole("button", { name: "Assumir chamado" }));
+    await screen.findByText("Você");
+    cleanup();
+    await renderizarComo(USUARIOS.admin, <DetalhesChamado id="VF-0000" />);
+    await usuario.click(await screen.findByRole("button", { name: "Assumir no lugar de Davi Departamento" }));
+    expect(await screen.findByText("Você")).toBeInTheDocument();
+  });
+
+  it("o atendente transfere e aciona fornecedor, mas não assume o atendimento", async () => {
+    await chamadoTriado();
+    await renderizarComo(USUARIOS.atendente, <DetalhesChamado id="VF-0000" />);
+    expect(await screen.findByRole("link", { name: "Transferir" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Assumir chamado" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Incluir serviço terceirizado" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Excluir/ })).toBeInTheDocument();
+  });
+
+  it("o líder só acompanha: sem ações, sem registrar atualização e sem enviar anexos", async () => {
+    await chamadoTriado();
+    await renderizarComo(USUARIOS.lider, <DetalhesChamado id="VF-0000" />);
+    expect(await screen.findByRole("heading", { name: "#VF-0000" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Assumir chamado" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Transferir/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Excluir/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Incluir serviço terceirizado" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Adicionar atualização ao histórico")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Selecionar anexos")).not.toBeInTheDocument();
+  });
+});
+
 describe("dashboard", () => {
   async function criarChamados() {
     const { backend } = ligarBackendFalso();
-    const comoCliente = { Authorization: `Bearer ${tokenDeAcesso(USUARIOS.cliente)}` };
-    const api = {
-      requisitar: <T,>(caminho: string, init: RequestInit = {}) => requisitarApi<T>(caminho, { ...init, headers: { ...comoCliente, ...(init.headers as Record<string, string>) } }),
-      baixar: () => Promise.reject(new Error("não usado")),
-    };
-    const base = { cliente: "Carla", telefone: "", modelo: "", placa: "", localizacao: null };
-    await abrirChamado(api, { ...base, motivoId: "M-ASSISTENCIA_24H-1", contextoId: "C-ASSISTENCIA_24H-1", descricao: "Pane na rodovia" }, "p1");
-    await abrirChamado(api, { ...base, motivoId: "M-FINANCEIRO-5", contextoId: "C-FINANCEIRO-5", descricao: "Dúvida de cobrança" }, "p4");
+    const comoCliente = apiComo(USUARIOS.cliente);
+    const comoAtendente = apiComo(USUARIOS.atendente);
+    await abrirChamado(comoCliente, { ...ABERTURA_BASE, motivoId: "M-ASSISTENCIA_24H-1", contextoId: "C-ASSISTENCIA_24H-1", descricao: "Pane na rodovia" }, "p1");
+    await abrirChamado(comoCliente, { ...ABERTURA_BASE, motivoId: "M-FINANCEIRO-5", contextoId: "C-FINANCEIRO-5", descricao: "Dúvida de cobrança" }, "p4");
+    await abrirChamado(comoCliente, { ...ABERTURA_BASE, motivoId: "M-TI-5", contextoId: "C-TI-5", descricao: "Reset de senha" }, "triagem");
+    await concluirTriagem(comoAtendente, "VF-0000", { tipo: "ASSISTENCIA_24H", severidade: 5, urgencia: 5 });
+    await concluirTriagem(comoAtendente, "VF-0001", { tipo: "FINANCEIRO", severidade: 1, urgencia: 1 });
     return backend;
   }
 
@@ -119,6 +243,18 @@ describe("dashboard", () => {
     expect(screen.getByRole("link", { name: "#VF-0001" })).toBeInTheDocument();
     await usuario.selectOptions(screen.getByLabelText("Filtrar por departamento"), "TI");
     expect(await screen.findByText("Nenhum chamado encontrado com os filtros aplicados.")).toBeInTheDocument();
+  });
+
+  it("mostra a fila de triagem e filtra os chamados que aguardam triagem", async () => {
+    const usuario = userEvent.setup();
+    await criarChamados();
+    await renderizarComo(USUARIOS.atendente, <Dashboard />);
+    const contadores = await screen.findByRole("region", { name: "Fila de triagem" });
+    expect(within(contadores).getByText("aguardando").previousSibling).toHaveTextContent("1");
+    await usuario.selectOptions(screen.getByLabelText("Filtrar por etapa"), "TRIAGEM");
+    await waitFor(() => expect(screen.queryByRole("link", { name: "#VF-0000" })).not.toBeInTheDocument());
+    expect(screen.getByRole("link", { name: "#VF-0002" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Triar" })).toHaveAttribute("href", "/chamados/VF-0002/triagem");
   });
 
   it("renova o token expirado e repete a consulta sem tirar o usuário da tela", async () => {

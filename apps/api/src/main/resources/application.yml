@@ -25,6 +25,10 @@ spring:
     enabled: true
     default-schema: public
     locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: ${VIAFLUX_ANEXO_LIMITE_MB:${ANEXO_LIMITE_MB:10}}MB
+      max-request-size: ${VIAFLUX_ANEXO_LIMITE_MB:${ANEXO_LIMITE_MB:10}}MB
 
 viaflux:
   jwt:
@@ -39,6 +43,17 @@ viaflux:
   dev-tools:
     habilitado: ${VIAFLUX_DEV_TOOLS_HABILITADO:${DEV_TOOLS_HABILITADO:false}}
     senha-dos-usuarios: ${VIAFLUX_DEV_TOOLS_SENHA:${DEV_TOOLS_SENHA:}}
+  triagem:
+    urgencia-alta-minutos: ${VIAFLUX_TRIAGEM_URGENCIA_ALTA_MINUTOS:${TRIAGEM_URGENCIA_ALTA_MINUTOS:10}}
+    urgencia-media-minutos: ${VIAFLUX_TRIAGEM_URGENCIA_MEDIA_MINUTOS:${TRIAGEM_URGENCIA_MEDIA_MINUTOS:20}}
+    urgencia-baixa-minutos: ${VIAFLUX_TRIAGEM_URGENCIA_BAIXA_MINUTOS:${TRIAGEM_URGENCIA_BAIXA_MINUTOS:40}}
+  anexos:
+    diretorio: ${VIAFLUX_ANEXO_DIR:${ANEXO_DIR:./data/anexos}}
+    limite-mb: ${VIAFLUX_ANEXO_LIMITE_MB:${ANEXO_LIMITE_MB:10}}
+  enderecos:
+    nominatim-url: ${VIAFLUX_NOMINATIM_URL:${NOMINATIM_URL:https://nominatim.openstreetmap.org}}
+    viacep-url: ${VIAFLUX_VIACEP_URL:${VIACEP_URL:https://viacep.com.br}}
+    user-agent: ${VIAFLUX_ENDERECOS_USER_AGENT:${ENDERECOS_USER_AGENT:ViaFlux-Mobilidade/1.0 (residencia-avanade-squad03)}}
 
 management:
   endpoints:

@@ -1,10 +1,11 @@
 import {
-  ArrowRightLeft, Bell, CirclePlus, ClipboardCheck, Clock, Forward, MapPin, NotebookPen, Paperclip, Scale, Truck, Zap, type LucideIcon, type LucideProps,
+  ArrowRightLeft, Bell, CirclePlus, ClipboardCheck, Clock, Forward, Hand, MapPin, NotebookPen, Paperclip, Scale, Truck, Zap, type LucideIcon, type LucideProps,
 } from "lucide-react";
 import type { TipoEvento } from "@/types/chamado";
 
 const ICONE_POR_TIPO: Record<TipoEvento, LucideIcon> = {
   ABERTURA: CirclePlus,
+  TRIAGEM: Hand,
   CLASSIFICACAO: ClipboardCheck,
   RECLASSIFICACAO: ClipboardCheck,
   OVERRIDE: Scale,

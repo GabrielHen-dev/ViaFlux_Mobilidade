@@ -12,7 +12,7 @@ Abra http://localhost:5261. Todas as telas exigem login, então a API precisa es
 
 A API é procurada em `http://localhost:8281`. Para usar outro endereço, crie `apps/web/.env.local` com `NEXT_PUBLIC_API_URL`.
 
-Depois do login, a aplicação começa com cinco chamados demonstrativos. Alterações nos chamados ficam em memória durante a navegação; recarregar a página reinicia os mocks, mas mantém a sessão.
+Todos os dados vêm da API; não há mais simulação no navegador. Para popular o banco com usuários, organizações e chamados de exemplo (parte deles na fila de triagem), habilite `DEV_TOOLS_HABILITADO` na API e use a tela `/dev-tools` como admin.
 
 ```powershell
 npm run lint
@@ -32,6 +32,6 @@ npm run test:e2e
 
 O Dockerfile existente publica a saída standalone. O build baixa Inter e Montserrat via `next/font/google`; a aplicação entrega essas fontes localmente depois da compilação. As imagens demonstrativas mantêm os endereços Unsplash da referência.
 
-O estado temporário é implementado em `src/store/`, com Context e reducer. Tipos ficam em `src/types/`, dados fictícios em `src/mocks/` e a integração com a API em `src/services/api/`. Hoje só a autenticação usa o backend; a sessão fica em `src/store/AuthContext.tsx`, e as rotas protegidas estão no grupo `src/app/(central)/`. TanStack Query permanece disponível para essa integração; Zod valida o limite dos anexos.
+A sessão fica em `src/store/AuthContext.tsx` e as rotas protegidas no grupo `src/app/(central)/`. As telas buscam dados pelos hooks de `src/hooks/consultas.ts` (TanStack Query), que usam as funções de `src/services/api/`; nenhuma tela chama `fetch` direto. O ciclo do chamado e a triagem estão em [`docs/fluxo-de-chamados.md`](../../docs/fluxo-de-chamados.md).
 
 Consulte [IMPLEMENTACAO.md](./IMPLEMENTACAO.md) para rotas, estrutura, validações e limitações.

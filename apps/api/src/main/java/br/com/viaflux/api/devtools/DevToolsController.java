@@ -39,13 +39,22 @@ class DevToolsController {
     }
 
     @GetMapping("/estado")
-    @Operation(summary = "Consultar dados de exemplo", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(
+            summary = "Consultar dados de exemplo",
+            description = "Só existe com DEV_TOOLS_HABILITADO=true. Perfil: ADMIN.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
     PopuladorDeDados.EstadoDosDados estado() {
         return populador.estado();
     }
 
     @PostMapping("/seed")
-    @Operation(summary = "Popular o banco com usuários, organizações e chamados de exemplo", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(
+            summary = "Popular o banco com usuários, organizações e chamados de exemplo",
+            description = "Cria usuários *@seed.viaflux.local com a senha DEV_TOOLS_SENHA e chamados em todas as etapas, parte deles na "
+                    + "fila de triagem. Só existe com DEV_TOOLS_HABILITADO=true. Perfil: ADMIN.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
     PopuladorDeDados.ResultadoDoSeed popular(@Valid @RequestBody(required = false) PopularRequest requisicao) {
         int quantidade = requisicao == null || requisicao.quantidadeDeChamados() == null
                 ? QUANTIDADE_PADRAO_DE_CHAMADOS
@@ -54,7 +63,11 @@ class DevToolsController {
     }
 
     @DeleteMapping("/dados-de-exemplo")
-    @Operation(summary = "Apagar os chamados, usuários e organizações de exemplo", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(
+            summary = "Apagar os chamados, usuários e organizações de exemplo",
+            description = "Só existe com DEV_TOOLS_HABILITADO=true. Perfil: ADMIN.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
     PopuladorDeDados.ResultadoDaLimpeza limpar() {
         return populador.limpar();
     }

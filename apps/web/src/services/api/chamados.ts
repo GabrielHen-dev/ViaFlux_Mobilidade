@@ -2,7 +2,7 @@ import type {
   Anexo, Chamado, ChamadoResumo, Contexto, Departamento, Localizacao, Motivo, PaginaChamados, ResumoChamados, TipoChamado,
 } from "@/types/chamado";
 import type {
-  DadosAberturaChamado, DadosAtualizacao, DadosOverride, DadosReclassificacao, DadosStatus, DadosTransferencia, FiltrosChamados,
+  DadosAberturaChamado, DadosAtualizacao, DadosConclusaoTriagem, DadosOverride, DadosReclassificacao, DadosStatus, DadosTransferencia, FiltrosChamados,
 } from "@/services/api/contratos";
 
 export interface ClienteApi {
@@ -59,8 +59,20 @@ export function alterarStatus(api: ClienteApi, codigo: string, dados: DadosStatu
   return api.requisitar<Chamado>(caminhoDo(codigo, "/status"), json("PATCH", dados));
 }
 
+export function assumirAtendimento(api: ClienteApi, codigo: string) {
+  return api.requisitar<Chamado>(caminhoDo(codigo, "/atendimento"), json("POST"));
+}
+
 export function transferirChamado(api: ClienteApi, codigo: string, dados: DadosTransferencia) {
   return api.requisitar<Chamado>(caminhoDo(codigo, "/transferencias"), json("POST", dados));
+}
+
+export function iniciarTriagem(api: ClienteApi, codigo: string) {
+  return api.requisitar<Chamado>(caminhoDo(codigo, "/triagem/inicio"), json("POST"));
+}
+
+export function concluirTriagem(api: ClienteApi, codigo: string, dados: DadosConclusaoTriagem) {
+  return api.requisitar<Chamado>(caminhoDo(codigo, "/triagem"), json("POST", dados));
 }
 
 export function reclassificarChamado(api: ClienteApi, codigo: string, dados: DadosReclassificacao) {

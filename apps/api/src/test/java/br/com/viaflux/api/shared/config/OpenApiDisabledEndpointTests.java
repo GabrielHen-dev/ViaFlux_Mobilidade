@@ -1,14 +1,16 @@
 package br.com.viaflux.api.shared.config;
 
+import br.com.viaflux.api.chamado.RepositoriosDeChamadoSimulados;
+import br.com.viaflux.api.notificacao.RepositorioDeNotificacoesSimulado;
 import br.com.viaflux.api.usuario.DepartamentoRepository;
 import br.com.viaflux.api.usuario.OrganizacaoRepository;
 import br.com.viaflux.api.usuario.PerfilRepository;
 import br.com.viaflux.api.usuario.UsuarioRepository;
-import br.com.viaflux.api.chamado.ChamadoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -25,13 +27,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 + "org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration"
 })
 @AutoConfigureMockMvc
+@Import({RepositoriosDeChamadoSimulados.class, RepositorioDeNotificacoesSimulado.class})
 class OpenApiDisabledEndpointTests {
 
     @Autowired
     private MockMvc mockMvc;
-
-    @MockitoBean
-    private ChamadoService chamadoService;
 
     @MockitoBean
     private UsuarioRepository usuarioRepository;

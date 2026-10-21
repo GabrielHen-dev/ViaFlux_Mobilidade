@@ -9,6 +9,7 @@ import TimelineChamado from "@/components/chamados/TimelineChamado";
 import AnexosDoChamado from "@/components/chamados/AnexosDoChamado";
 import LocalizacaoDoChamado from "@/components/chamados/LocalizacaoDoChamado";
 import { PrioridadeIndicador, StatusBadge } from "@/components/ui/StatusBadge";
+import EtapasDoChamado from "@/components/portal/EtapasDoChamado";
 import { formatarDataHora } from "@/utils/date";
 import { PERFIS_DE_CLIENTE } from "@/utils/perfis";
 
@@ -44,6 +45,7 @@ function ConteudoDoChamado({ chamado }: { chamado: Chamado }) {
           )}
         </section>
 
+        <EtapasDoChamado chamado={chamado} />
         <TimelineChamado chamado={chamado} visaoDeCliente />
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <LocalizacaoDoChamado chamado={chamado} />

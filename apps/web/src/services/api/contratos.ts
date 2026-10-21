@@ -1,4 +1,4 @@
-import type { CodigoPrioridade, Localizacao, MotivoAguardando, Peso, SituacaoSla, Status, StatusServico, TipoChamado } from "@/types/chamado";
+import type { CodigoPrioridade, Etapa, Localizacao, MotivoAguardando, Peso, SituacaoSla, Status, StatusServico, TipoChamado } from "@/types/chamado";
 
 export interface DadosAberturaChamado {
   solicitanteId?: string;
@@ -20,9 +20,18 @@ export interface FiltrosChamados {
   prioridade?: CodigoPrioridade;
   departamento?: TipoChamado;
   sla?: SituacaoSlaFiltravel;
+  etapa?: Etapa;
   ordenacao?: "fila" | "recentes";
   page?: number;
   size?: number;
+}
+
+export interface DadosConclusaoTriagem {
+  tipo: TipoChamado;
+  severidade: Peso;
+  urgencia: Peso;
+  departamento?: TipoChamado | null;
+  observacao?: string;
 }
 
 export interface DadosReclassificacao {

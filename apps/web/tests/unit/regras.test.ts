@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { PESOS } from "@/types/chamado";
+import { PESOS, type Chamado, type Triagem } from "@/types/chamado";
 import { calcularScore, prioridadePorScore } from "@/utils/prioridade";
 import { motivoDeRejeicao, LIMITE_ANEXO_BYTES } from "@/utils/anexos";
 import { descreverTempoAte } from "@/utils/date";
-import { CONTEXTOS, MOTIVOS } from "@/services/api/simulacao/matriz";
-import { calcularSla, estaEmHorarioComercial, gatilhosAtingidos } from "@/services/api/simulacao/sla";
+import { faseDoPrazo } from "@/components/triagem/PrazoDaTriagem";
+import { sugestaoDoCliente } from "@/components/triagem/ConclusaoDaTriagem";
+import { itensDeMenuPara, type PerfisDoMenu } from "@/components/layout/Sidebar";
+import { proximosStatus } from "@/components/fornecedor/AreaDoFornecedor";
 
 const em = (iso: string) => new Date(iso);
 
@@ -21,56 +23,56 @@ describe("matriz de prioridade (RN06)", () => {
       expect(prioridadePorScore(calcularScore(severidade, urgencia))).toBe(prioridadePorScore(calcularScore(severidade, urgencia)));
     }
   });
+});
 
-  it("tem 5 motivos e 5 contextos para cada um dos 6 tipos", () => {
-    expect(MOTIVOS).toHaveLength(30);
-    expect(CONTEXTOS).toHaveLength(30);
-    expect(new Set(MOTIVOS.map((motivo) => motivo.tipo)).size).toBe(6);
+describe("prazo da triagem", () => {
+  const triagem = (mudancas: Partial<Triagem> = {}): Triagem => ({
+    limite: "2026-10-19T10:20:00-03:00", prazoMinutos: 20, iniciadaEm: null, responsavel: null, concluidaEm: null, concluidaPor: null, situacao: "NO_PRAZO", ...mudancas,
+  });
+
+  it("fica verde até a metade do prazo, amarelo depois e vermelho ao estourar", () => {
+    expect(faseDoPrazo(triagem(), em("2026-10-19T10:05:00-03:00"))).toBe("NO_PRAZO");
+    expect(faseDoPrazo(triagem(), em("2026-10-19T10:10:00-03:00"))).toBe("METADE");
+    expect(faseDoPrazo(triagem(), em("2026-10-19T10:20:01-03:00"))).toBe("ESTOURADO");
+  });
+
+  it("depois de concluída diz se a triagem cumpriu o prazo", () => {
+    expect(faseDoPrazo(triagem({ concluidaEm: "2026-10-19T10:15:00-03:00" }), em("2026-10-19T11:00:00-03:00"))).toBe("CONCLUIDA");
+    expect(faseDoPrazo(triagem({ concluidaEm: "2026-10-19T10:25:00-03:00" }), em("2026-10-19T11:00:00-03:00"))).toBe("CONCLUIDA_COM_ATRASO");
   });
 });
 
-describe("SLA", () => {
-  it("conta P1 em horas corridas: 15 min para 1ª resposta e 2 h para resolução", () => {
-    const sla = calcularSla({ prioridade: "P1", abertura: "2026-10-17T23:00:00-03:00", primeiraRespostaEm: null, resolvidoEm: null, pausas: [], agora: em("2026-10-17T23:05:00-03:00") });
-    expect(sla.primeiraResposta.limite).toBe(em("2026-10-17T23:15:00-03:00").toISOString());
-    expect(sla.resolucao.limite).toBe(em("2026-10-18T01:00:00-03:00").toISOString());
-    expect(sla.primeiraResposta.situacao).toBe("NO_PRAZO");
+describe("sugestão da triagem", () => {
+  it("parte do motivo e do contexto que o cliente escolheu", () => {
+    const chamado = {
+      tipo: "MANUTENCAO",
+      motivo: { id: "M-MANUTENCAO-3", descricao: "Luz de alerta", tipo: "MANUTENCAO", severidade: 3 },
+      contexto: { id: "C-MANUTENCAO-1", descricao: "Sem condições de rodar", tipo: "MANUTENCAO", urgencia: 5 },
+    } as Chamado;
+    expect(sugestaoDoCliente(chamado)).toEqual({ tipo: "MANUTENCAO", severidade: 3, urgencia: 5 });
   });
 
-  it("marca em risco a partir de 50% e violado ao estourar o prazo", () => {
-    const base = { prioridade: "P1" as const, abertura: "2026-10-19T10:00:00-03:00", primeiraRespostaEm: null, resolvidoEm: null, pausas: [] };
-    expect(calcularSla({ ...base, agora: em("2026-10-19T10:08:00-03:00") }).primeiraResposta.situacao).toBe("EM_RISCO");
-    expect(calcularSla({ ...base, agora: em("2026-10-19T10:16:00-03:00") }).primeiraResposta.situacao).toBe("VIOLADO");
+  it("usa pesos médios quando o chamado não tem motivo nem contexto", () => {
+    expect(sugestaoDoCliente({ tipo: "TI", motivo: null, contexto: null } as Chamado)).toEqual({ tipo: "TI", severidade: 3, urgencia: 3 });
   });
+});
 
-  it("conta P3 em horas úteis: aberto sexta às 17h, a 1ª resposta vence segunda às 9h", () => {
-    const sla = calcularSla({ prioridade: "P3", abertura: "2026-10-16T17:00:00-03:00", primeiraRespostaEm: null, resolvidoEm: null, pausas: [], agora: em("2026-10-16T17:00:00-03:00") });
-    expect(sla.primeiraResposta.limite).toBe(em("2026-10-19T09:00:00-03:00").toISOString());
+describe("menu por perfil", () => {
+  const nenhum: PerfisDoMenu = { central: false, triagem: false, abrePelaCentral: false, global: false, metricas: false, cliente: false, fornecedor: false, admin: false };
+  const rotulos = (perfis: Partial<PerfisDoMenu>) => itensDeMenuPara({ ...nenhum, ...perfis }).map((item) => item.rotulo);
+
+  it("mostra a fila de triagem só para quem faz triagem", () => {
+    expect(rotulos({ central: true, global: true, triagem: true, abrePelaCentral: true })).toEqual(["Dashboard", "Triagem", "Novo Chamado"]);
+    expect(rotulos({ central: true, global: true, metricas: true })).toEqual(["Dashboard", "Métricas"]);
+    expect(rotulos({ central: true })).toEqual(["Fila do departamento"]);
   });
+});
 
-  it("pausa só o relógio de resolução enquanto aguarda o cliente", () => {
-    const sla = calcularSla({
-      prioridade: "P2",
-      abertura: "2026-10-19T10:00:00-03:00",
-      primeiraRespostaEm: "2026-10-19T10:10:00-03:00",
-      resolvidoEm: null,
-      pausas: [{ inicio: "2026-10-19T11:00:00-03:00", fim: "2026-10-19T12:00:00-03:00" }],
-      agora: em("2026-10-19T12:30:00-03:00"),
-    });
-    expect(sla.resolucao.limite).toBe(em("2026-10-19T15:00:00-03:00").toISOString());
-    expect(sla.primeiraResposta.situacao).toBe("CUMPRIDO");
-    expect(sla.tempoPausadoMinutos).toBe(60);
-  });
-
-  it("dispara os gatilhos de 50%, 80% e 100% uma vez por prazo", () => {
-    const gatilhos = gatilhosAtingidos({ prioridade: "P1", abertura: "2026-10-19T10:00:00-03:00", primeiraRespostaEm: null, resolvidoEm: null, pausas: [], agora: em("2026-10-19T10:20:00-03:00") });
-    expect(gatilhos.filter((gatilho) => gatilho.prazo === "primeiraResposta").map((gatilho) => gatilho.percentual)).toEqual([0.5, 0.8, 1]);
-  });
-
-  it("reconhece o horário comercial de São Paulo", () => {
-    expect(estaEmHorarioComercial(em("2026-10-19T09:00:00-03:00"))).toBe(true);
-    expect(estaEmHorarioComercial(em("2026-10-19T20:00:00-03:00"))).toBe(false);
-    expect(estaEmHorarioComercial(em("2026-10-18T10:00:00-03:00"))).toBe(false);
+describe("status do serviço terceirizado", () => {
+  it("o fornecedor só vê os status que fazem o serviço avançar", () => {
+    expect(proximosStatus("SOLICITADO")).toEqual(["RECEBIDO", "EM_EXECUCAO", "CONCLUIDO"]);
+    expect(proximosStatus("EM_EXECUCAO")).toEqual(["CONCLUIDO"]);
+    expect(proximosStatus("CONCLUIDO")).toEqual([]);
   });
 });
 

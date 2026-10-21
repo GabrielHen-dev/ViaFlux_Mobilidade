@@ -3,6 +3,7 @@ package br.com.viaflux.api.chamado;
 public enum StatusChamado {
     ABERTO("Aberto"),
     EM_TRIAGEM("Em triagem"),
+    NA_FILA("Na fila"),
     EM_ATENDIMENTO("Em atendimento"),
     AGUARDANDO("Aguardando"),
     RESOLVIDO("Resolvido"),
@@ -14,8 +15,12 @@ public enum StatusChamado {
         this.rotulo = rotulo;
     }
 
-    String getRotulo() {
+    public String getRotulo() {
         return rotulo;
+    }
+
+    boolean aguardaTriagem() {
+        return this == ABERTO || this == EM_TRIAGEM;
     }
 
     static StatusChamado fromRotulo(String rotulo) {

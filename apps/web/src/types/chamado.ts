@@ -1,5 +1,11 @@
-export const STATUS_CHAMADO = ["Aberto", "Em triagem", "Em atendimento", "Aguardando", "Resolvido", "Fechado"] as const;
+export const STATUS_CHAMADO = ["Aberto", "Em triagem", "Na fila", "Em atendimento", "Aguardando", "Resolvido", "Fechado"] as const;
 export type Status = (typeof STATUS_CHAMADO)[number];
+
+export const STATUS_AGUARDANDO_TRIAGEM: readonly Status[] = ["Aberto", "Em triagem"];
+export const STATUS_DEFINIVEIS = STATUS_CHAMADO.filter((status) => !STATUS_AGUARDANDO_TRIAGEM.includes(status));
+
+export const ETAPAS = ["TRIAGEM", "ATENDIMENTO"] as const;
+export type Etapa = (typeof ETAPAS)[number];
 
 export const CODIGOS_PRIORIDADE = ["P1", "P2", "P3", "P4"] as const;
 export type CodigoPrioridade = (typeof CODIGOS_PRIORIDADE)[number];
@@ -68,7 +74,7 @@ export interface Sla {
 }
 
 export type TipoEvento =
-  | "ABERTURA" | "CLASSIFICACAO" | "RECLASSIFICACAO" | "OVERRIDE" | "ROTEAMENTO" | "TRANSFERENCIA"
+  | "ABERTURA" | "TRIAGEM" | "CLASSIFICACAO" | "RECLASSIFICACAO" | "OVERRIDE" | "ROTEAMENTO" | "TRANSFERENCIA"
   | "STATUS" | "ATUALIZACAO" | "ANEXO" | "LOCALIZACAO" | "SLA" | "FORNECEDOR" | "NOTIFICACAO";
 
 export interface EventoTimeline {
@@ -92,6 +98,25 @@ export interface Anexo {
 
 export interface Localizacao {
   endereco: string;
+  latitude: number | null;
+  longitude: number | null;
+  cep: string;
+  logradouro: string;
+  numero: string;
+  complemento: string;
+  bairro: string;
+  cidade: string;
+  uf: string;
+}
+
+export interface EnderecoEncontrado {
+  descricao: string;
+  cep: string;
+  logradouro: string;
+  numero: string;
+  bairro: string;
+  cidade: string;
+  uf: string;
   latitude: number | null;
   longitude: number | null;
 }
@@ -142,6 +167,21 @@ export interface ServicoDoFornecedor {
   historico: AtualizacaoServico[];
 }
 
+export interface Triagem {
+  limite: string;
+  prazoMinutos: number;
+  iniciadaEm: string | null;
+  responsavel: Autor | null;
+  concluidaEm: string | null;
+  concluidaPor: Autor | null;
+  situacao: SituacaoSla;
+}
+
+export interface Atendimento {
+  responsavel: Autor;
+  assumidoEm: string;
+}
+
 export interface ChamadoResumo {
   id: string;
   cliente: string;
@@ -149,13 +189,15 @@ export interface ChamadoResumo {
   placa: string;
   localizacao: string;
   status: Status;
-  prioridade: CodigoPrioridade;
-  score: number;
+  prioridade: CodigoPrioridade | null;
+  score: number | null;
   tipo: TipoChamado;
   departamento: Departamento | null;
   abertura: string;
   atualizadoEm: string;
   sla: Sla | null;
+  triagem: Triagem;
+  atendimento: Atendimento | null;
 }
 
 export interface Chamado extends ChamadoResumo {
@@ -163,7 +205,7 @@ export interface Chamado extends ChamadoResumo {
   descricao: string;
   motivo: Motivo | null;
   contexto: Contexto | null;
-  classificacao: Classificacao;
+  classificacao: Classificacao | null;
   override: OverridePrioridade | null;
   motivoAguardando: MotivoAguardando | null;
   localizacaoDetalhada: Localizacao | null;
@@ -193,6 +235,15 @@ export interface ResumoChamados {
   porDepartamento: Record<TipoChamado, number>;
   sla: { primeiraResposta: ContadoresSla; resolucao: ContadoresSla };
   p1SemPrimeiraResposta: string[];
+  triagem: ResumoTriagem;
+}
+
+export interface ResumoTriagem {
+  aguardando: number;
+  emAndamento: number;
+  emRisco: number;
+  atrasados: number;
+  proximoLimite: string | null;
 }
 
 export interface Notificacao {

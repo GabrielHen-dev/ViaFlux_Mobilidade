@@ -8,4 +8,6 @@ import java.util.UUID;
 public interface OrganizacaoRepository extends JpaRepository<Organizacao, UUID> {
 
     List<Organizacao> findAllByOrderByNomeAsc();
+
+    List<Organizacao> findByTipoAndAtivoTrueOrderByNomeAsc(TipoOrganizacao tipo);
 }

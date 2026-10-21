@@ -1,23 +1,19 @@
 package br.com.viaflux.api.chamado;
 
-import org.springframework.data.domain.Page;
-
 import java.util.List;
 
 public record ChamadosPageResponse(
-        List<ChamadoListaItemResponse> content,
+        List<ChamadoResumoResponse> content,
         int page,
         int size,
         long totalElements,
         int totalPages
 ) {
-    static ChamadosPageResponse from(Page<Chamado> chamados) {
-        return new ChamadosPageResponse(
-                chamados.getContent().stream().map(ChamadoListaItemResponse::from).toList(),
-                chamados.getNumber(),
-                chamados.getSize(),
-                chamados.getTotalElements(),
-                chamados.getTotalPages()
-        );
+
+    static ChamadosPageResponse de(List<ChamadoResumoResponse> todos, int page, int size) {
+        int inicio = (int) Math.min(todos.size(), (long) page * size);
+        int fim = (int) Math.min(todos.size(), (long) inicio + size);
+        int totalPages = (int) Math.ceil(todos.size() / (double) size);
+        return new ChamadosPageResponse(todos.subList(inicio, fim), page, size, todos.size(), totalPages);
     }
 }

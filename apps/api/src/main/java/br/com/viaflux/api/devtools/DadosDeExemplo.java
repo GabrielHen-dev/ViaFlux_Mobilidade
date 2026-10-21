@@ -6,7 +6,7 @@ final class DadosDeExemplo {
 
     static final String DOMINIO_DOS_EMAILS = "@seed.viaflux.local";
 
-    record OrganizacaoDeExemplo(String nome, String tipo) {
+    record OrganizacaoDeExemplo(String nome, String tipo, String especialidade) {
     }
 
     record UsuarioDeExemplo(
@@ -20,8 +20,8 @@ final class DadosDeExemplo {
     }
 
     record CenarioDeChamado(
-            String tipo,
-            String prioridade,
+            String motivoId,
+            String contextoId,
             String descricao,
             String modelo,
             String placa,
@@ -30,9 +30,9 @@ final class DadosDeExemplo {
     }
 
     static final List<OrganizacaoDeExemplo> ORGANIZACOES = List.of(
-            new OrganizacaoDeExemplo("Transportes Sul Ltda", "CLIENTE"),
-            new OrganizacaoDeExemplo("Guincho ViaRápido", "FORNECEDOR"),
-            new OrganizacaoDeExemplo("Oficina TechTruck", "FORNECEDOR")
+            new OrganizacaoDeExemplo("Transportes Sul Ltda", "CLIENTE", null),
+            new OrganizacaoDeExemplo("Guincho ViaRápido", "FORNECEDOR", "Guincho / Remoção"),
+            new OrganizacaoDeExemplo("Oficina TechTruck", "FORNECEDOR", "Mecânica")
     );
 
     static final List<UsuarioDeExemplo> USUARIOS = List.of(
@@ -49,19 +49,19 @@ final class DadosDeExemplo {
     );
 
     static final List<CenarioDeChamado> CENARIOS = List.of(
-            new CenarioDeChamado("Assistência 24h", "Crítica", "Veículo não liga e está parado no acostamento da rodovia.", "Volvo FH 460", "RTA-1D23", "BR-116, km 312, Guarulhos – SP"),
-            new CenarioDeChamado("Assistência 24h", "Alta", "Pneu furado com motorista aguardando socorro na rua.", "Fiat Strada", "QWE-4F56", "Av. Paulista, 1500, São Paulo – SP"),
-            new CenarioDeChamado("Assistência 24h", "Baixa", "Chave trancada dentro do carro, estacionado em garagem.", "Chevrolet Onix", "JKL-7H89", "Shopping Eldorado, São Paulo – SP"),
-            new CenarioDeChamado("Manutenção", "Crítica", "Falha nos freios, veículo sem condições de rodar e necessário hoje.", "Mercedes Actros 2651", "MNB-2C34", "Unidade Campinas – SP"),
-            new CenarioDeChamado("Manutenção", "Média", "Luz da injeção acesa no painel, veículo rodando com limitação.", "Renault Kwid", "ZXC-5V67", "Unidade Aeroporto de Confins – MG"),
-            new CenarioDeChamado("Logística", "Alta", "Falta de veículo disponível para reserva confirmada, cliente no balcão.", "", "", "Unidade Rodoviária do Tietê – SP"),
-            new CenarioDeChamado("Logística", "Baixa", "Agendar transferência de dois veículos entre unidades.", "", "", "Unidade Curitiba – PR"),
-            new CenarioDeChamado("Tecnologia", "Crítica", "Sistema de locação fora do ar com fila de clientes no balcão.", "", "", "Unidade Aeroporto de Guarulhos – SP"),
-            new CenarioDeChamado("Tecnologia", "Baixa", "Solicitação de reset de senha para atendente da unidade.", "", "", "Unidade Porto Alegre – RS"),
-            new CenarioDeChamado("Financeiro", "Alta", "Cobrança indevida bloqueou o cartão do cliente na retirada.", "", "", ""),
-            new CenarioDeChamado("Financeiro", "Baixa", "Solicitação de 2ª via de boleto da fatura de frota.", "", "", ""),
-            new CenarioDeChamado("Contratos", "Crítica", "Bloqueio contratual impede a retirada imediata do veículo.", "Toyota Corolla", "PLM-8K90", "Unidade Belo Horizonte – MG"),
-            new CenarioDeChamado("Contratos", "Média", "Renovação de contrato que vence nesta semana.", "", "", "")
+            new CenarioDeChamado("M-ASSISTENCIA_24H-1", "C-ASSISTENCIA_24H-1", "Veículo não liga e está parado no acostamento da rodovia.", "Volvo FH 460", "RTA-1D23", "BR-116, km 312, Guarulhos – SP"),
+            new CenarioDeChamado("M-ASSISTENCIA_24H-4", "C-ASSISTENCIA_24H-2", "Pneu furado com motorista aguardando socorro na rua.", "Fiat Strada", "QWE-4F56", "Av. Paulista, 1500, São Paulo – SP"),
+            new CenarioDeChamado("M-ASSISTENCIA_24H-5", "C-ASSISTENCIA_24H-4", "Chave trancada dentro do carro, estacionado em garagem.", "Chevrolet Onix", "JKL-7H89", "Shopping Eldorado, São Paulo – SP"),
+            new CenarioDeChamado("M-MANUTENCAO-1", "C-MANUTENCAO-1", "Falha nos freios, veículo sem condições de rodar e necessário hoje.", "Mercedes Actros 2651", "MNB-2C34", "Unidade Campinas – SP"),
+            new CenarioDeChamado("M-MANUTENCAO-3", "C-MANUTENCAO-3", "Luz da injeção acesa no painel, veículo rodando com limitação.", "Renault Kwid", "ZXC-5V67", "Unidade Aeroporto de Confins – MG"),
+            new CenarioDeChamado("M-LOGISTICA-2", "C-LOGISTICA-1", "Falta de veículo disponível para reserva confirmada, cliente no balcão.", "", "", "Unidade Rodoviária do Tietê – SP"),
+            new CenarioDeChamado("M-LOGISTICA-5", "C-LOGISTICA-4", "Agendar transferência de dois veículos entre unidades.", "", "", "Unidade Curitiba – PR"),
+            new CenarioDeChamado("M-TI-1", "C-TI-1", "Sistema de locação fora do ar com fila de clientes no balcão.", "", "", "Unidade Aeroporto de Guarulhos – SP"),
+            new CenarioDeChamado("M-TI-5", "C-TI-5", "Solicitação de reset de senha para atendente da unidade.", "", "", "Unidade Porto Alegre – RS"),
+            new CenarioDeChamado("M-FINANCEIRO-1", "C-FINANCEIRO-1", "Cobrança indevida bloqueou o cartão do cliente na retirada.", "", "", ""),
+            new CenarioDeChamado("M-FINANCEIRO-4", "C-FINANCEIRO-5", "Solicitação de 2ª via de boleto da fatura de frota.", "", "", ""),
+            new CenarioDeChamado("M-CONTRATOS-1", "C-CONTRATOS-1", "Bloqueio contratual impede a retirada imediata do veículo.", "Toyota Corolla", "PLM-8K90", "Unidade Belo Horizonte – MG"),
+            new CenarioDeChamado("M-CONTRATOS-2", "C-CONTRATOS-3", "Renovação de contrato que vence nesta semana.", "", "", "")
     );
 
     private DadosDeExemplo() {

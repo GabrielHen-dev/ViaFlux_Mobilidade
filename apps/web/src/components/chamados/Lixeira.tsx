@@ -10,7 +10,7 @@ import { invalidarListas, useLixeira } from "@/hooks/consultas";
 import PerfilRequerido from "@/components/auth/PerfilRequerido";
 import { PrioridadeIndicador, StatusBadge } from "@/components/ui/StatusBadge";
 import { AvisoDeErro, Carregando, FalhaAoCarregar } from "@/components/feedback/EstadoDaConsulta";
-import { PERFIS_DA_CENTRAL } from "@/utils/perfis";
+import { PERFIS_DA_LIXEIRA } from "@/utils/perfis";
 
 function ConteudoDaLixeira() {
   const api = useApi();
@@ -108,5 +108,5 @@ function ConteudoDaLixeira() {
 }
 
 export default function Lixeira() {
-  return <PerfilRequerido perfis={PERFIS_DA_CENTRAL}><ConteudoDaLixeira /></PerfilRequerido>;
+  return <PerfilRequerido perfis={PERFIS_DA_LIXEIRA}><ConteudoDaLixeira /></PerfilRequerido>;
 }

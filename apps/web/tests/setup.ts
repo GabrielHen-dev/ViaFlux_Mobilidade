@@ -1,9 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterEach, beforeEach, vi } from "vitest";
-import { reiniciarEstadoSimulado } from "@/services/api/simulacao/estado";
-import { limparArquivosEmMemoria } from "@/services/api/simulacao/arquivos";
-import { limparCacheDeAutores } from "@/services/api/simulacao/roteador";
 
 const navegacao = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), caminho: "/" }));
 
@@ -14,9 +11,6 @@ vi.mock("next/navigation", () => ({
 
 beforeEach(() => {
   window.localStorage.clear();
-  reiniciarEstadoSimulado();
-  limparArquivosEmMemoria();
-  limparCacheDeAutores();
 });
 
 afterEach(() => {

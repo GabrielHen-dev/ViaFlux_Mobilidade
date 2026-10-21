@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { ChartColumn, CirclePlus, Inbox, LayoutGrid, ListOrdered, LogOut, Trash, Truck, Users } from "lucide-react";
+import { ChartColumn, CirclePlus, ClipboardList, Inbox, LayoutGrid, ListOrdered, LogOut, Trash, Truck, Users } from "lucide-react";
 import MarcaViaFlux from "@/components/ui/MarcaViaFlux";
 import Notificacoes from "@/components/layout/Notificacoes";
 import { useAuth, useUsuarioAutenticado } from "@/store/AuthContext";
 import {
-  PERFIS_COM_VISAO_GLOBAL, PERFIS_DA_CENTRAL, PERFIS_DE_CLIENTE, PERFIS_DE_FORNECEDOR, PERFIS_DE_METRICAS, PERFIS_QUE_ABREM_PELA_CENTRAL, usuarioTemPerfil,
+  PERFIS_COM_VISAO_GLOBAL, PERFIS_DA_CENTRAL, PERFIS_DA_LIXEIRA, PERFIS_DE_CLIENTE, PERFIS_DE_FORNECEDOR, PERFIS_DE_METRICAS, PERFIS_DE_TRIAGEM, PERFIS_QUE_ABREM_PELA_CENTRAL,
+  usuarioTemPerfil,
 } from "@/utils/perfis";
 
 interface ItemDeMenu {
@@ -23,13 +24,29 @@ function iniciais(nome: string) {
   return ((partes[0]?.[0] ?? "") + (partes.length > 1 ? partes[partes.length - 1][0] : "")).toUpperCase();
 }
 
-function ehTelaDaCentral(caminho: string) {
-  return caminho === "/" || (caminho.startsWith("/chamados/") && caminho !== "/chamados/novo");
+function ehTelaDeTriagem(caminho: string) {
+  return caminho === "/triagem" || (caminho.startsWith("/chamados/") && caminho.endsWith("/triagem"));
 }
 
-export function itensDeMenuPara(perfis: { central: boolean; abrePelaCentral: boolean; global: boolean; metricas: boolean; cliente: boolean; fornecedor: boolean; admin: boolean }): ItemDeMenu[] {
+function ehTelaDaCentral(caminho: string) {
+  return caminho === "/" || (caminho.startsWith("/chamados/") && caminho !== "/chamados/novo" && !ehTelaDeTriagem(caminho));
+}
+
+export interface PerfisDoMenu {
+  central: boolean;
+  triagem: boolean;
+  abrePelaCentral: boolean;
+  global: boolean;
+  metricas: boolean;
+  cliente: boolean;
+  fornecedor: boolean;
+  admin: boolean;
+}
+
+export function itensDeMenuPara(perfis: PerfisDoMenu): ItemDeMenu[] {
   const itens: ItemDeMenu[] = [];
   if (perfis.central) itens.push({ href: "/", rotulo: perfis.global ? "Dashboard" : "Fila do departamento", icone: perfis.global ? <LayoutGrid size={18} /> : <ListOrdered size={18} />, ativo: ehTelaDaCentral });
+  if (perfis.triagem) itens.push({ href: "/triagem", rotulo: "Triagem", icone: <ClipboardList size={18} />, ativo: ehTelaDeTriagem });
   if (perfis.abrePelaCentral && !perfis.cliente) itens.push({ href: "/chamados/novo", rotulo: "Novo Chamado", icone: <CirclePlus size={18} />, ativo: (caminho) => caminho === "/chamados/novo" });
   if (perfis.metricas) itens.push({ href: "/metricas", rotulo: "Métricas", icone: <ChartColumn size={18} />, ativo: (caminho) => caminho.startsWith("/metricas") });
   if (perfis.cliente) {
@@ -37,18 +54,21 @@ export function itensDeMenuPara(perfis: { central: boolean; abrePelaCentral: boo
     itens.push({ href: "/chamados/novo", rotulo: "Novo Chamado", icone: <CirclePlus size={18} />, ativo: (caminho) => caminho === "/chamados/novo" });
   }
   if (perfis.fornecedor) itens.push({ href: "/fornecedor", rotulo: "Meus serviços", icone: <Truck size={18} />, ativo: (caminho) => caminho.startsWith("/fornecedor") });
-  if (perfis.admin) itens.push({ href: "/usuarios", rotulo: "Usuários", icone: <Users size={18} />, ativo: (caminho) => caminho.startsWith("/usuarios") });  return itens;
+  if (perfis.admin) itens.push({ href: "/usuarios", rotulo: "Usuários", icone: <Users size={18} />, ativo: (caminho) => caminho.startsWith("/usuarios") });
+  return itens;
 }
 
 export default function Sidebar() {
   const caminho = usePathname();
   const { sair } = useAuth();
   const usuario = useUsuarioAutenticado();
-  const daCentral = usuarioTemPerfil(usuario, PERFIS_DA_CENTRAL);
+  const comVisaoGlobal = usuarioTemPerfil(usuario, PERFIS_COM_VISAO_GLOBAL);
+  const usaLixeira = usuarioTemPerfil(usuario, PERFIS_DA_LIXEIRA);
   const itens = itensDeMenuPara({
-    central: daCentral,
+    central: usuarioTemPerfil(usuario, PERFIS_DA_CENTRAL),
+    triagem: usuarioTemPerfil(usuario, PERFIS_DE_TRIAGEM),
     abrePelaCentral: usuarioTemPerfil(usuario, PERFIS_QUE_ABREM_PELA_CENTRAL),
-    global: usuarioTemPerfil(usuario, PERFIS_COM_VISAO_GLOBAL),
+    global: comVisaoGlobal,
     metricas: usuarioTemPerfil(usuario, PERFIS_DE_METRICAS),
     cliente: usuarioTemPerfil(usuario, PERFIS_DE_CLIENTE),
     fornecedor: usuarioTemPerfil(usuario, PERFIS_DE_FORNECEDOR),
@@ -96,7 +116,7 @@ export default function Sidebar() {
 
         <div className="flex-1" />
 
-        {daCentral && (
+        {usaLixeira && (
           <div className="sidebar-trash border-t border-white/10 pt-3">
             <Link
               href="/lixeira"

@@ -1,14 +1,16 @@
 package br.com.viaflux.api.shared.config;
 
+import br.com.viaflux.api.chamado.RepositoriosDeChamadoSimulados;
+import br.com.viaflux.api.notificacao.RepositorioDeNotificacoesSimulado;
 import br.com.viaflux.api.usuario.DepartamentoRepository;
 import br.com.viaflux.api.usuario.OrganizacaoRepository;
 import br.com.viaflux.api.usuario.PerfilRepository;
 import br.com.viaflux.api.usuario.UsuarioRepository;
-import br.com.viaflux.api.chamado.ChamadoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -24,13 +26,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 + "org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration"
 })
 @AutoConfigureMockMvc
+@Import({RepositoriosDeChamadoSimulados.class, RepositorioDeNotificacoesSimulado.class})
 class OpenApiEndpointTests {
 
     @Autowired
     private MockMvc mockMvc;
-
-    @MockitoBean
-    private ChamadoService chamadoService;
 
     @MockitoBean
     private UsuarioRepository usuarioRepository;
@@ -51,7 +51,10 @@ class OpenApiEndpointTests {
                 .andExpect(jsonPath("$.info.title").value("ViaFlux Mobilidade API"))
                 .andExpect(jsonPath("$.info.version").value("v1"))
                 .andExpect(jsonPath("$.components.securitySchemes.bearerAuth.scheme").value("bearer"))
-                .andExpect(jsonPath("$.paths['/api/chamados'].post.security[0].bearerAuth").exists());
+                .andExpect(jsonPath("$.paths['/api/chamados'].post.security[0].bearerAuth").exists())
+                .andExpect(jsonPath("$.paths['/api/chamados/{codigo}/triagem'].post").exists())
+                .andExpect(jsonPath("$.paths['/api/chamados/{codigo}/triagem/inicio'].post").exists())
+                .andExpect(jsonPath("$.paths['/api/metricas'].get").exists());
     }
 
     @Test

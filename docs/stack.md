@@ -26,6 +26,8 @@ Java com Spring já faz parte da experiência do squad e oferece uma estrutura a
 
 Duas dessas regras estão bloqueadas por decisão do cliente e não entram no MVP enquanto não forem respondidas. O **cálculo de prioridade** depende da definição do que conta como impacto real, e o **controle de SLA** depende de a ViaFlux formalizar os tempos-alvo entre áreas e com os parceiros — até lá, a plataforma registra os tempos sem cobrar prazo. As duas estão em [Em aberto com o cliente](../README.md#em-aberto-com-o-cliente).
 
+O protótipo já implementa as duas com parâmetros **provisórios**, definidos pelo squad para o fluxo funcionar de ponta a ponta: a triagem é manual, com prazo pela urgência informada, a prioridade vai de P1 a P4 e o SLA mostra a situação dos prazos. Os parâmetros ficam no backend e são configuráveis. Manter, ajustar ou tirar isso desta fase continua sendo decisão do cliente. O fluxo está em [`fluxo-de-chamados.md`](fluxo-de-chamados.md).
+
 A tipagem forte, a organização em camadas e o uso de transações ajudam a manter essas informações consistentes. O Flyway controla as alterações do banco de forma organizada e garante que todos os ambientes usem a mesma estrutura.
 
 ## Banco de dados
@@ -40,9 +42,21 @@ Os anexos (fotos, documentos e contratos) ficam armazenados fora do banco. O ban
 
 A autenticação usa **Spring Security com JWT** (access e refresh), e **BCrypt** para proteger as senhas.
 
-As permissões ficam em tabelas, separando usuários, perfis e permissões. Assim os níveis de acesso podem ser ajustados sem espalhar regra pelo código, o que importa porque o cliente ainda não definiu o acesso dos usuários externos. Os perfis previstos são `ADMIN`, `ATENDENTE_UNIDADE`, `TECNOLOGIA`, `ASSISTENCIA`, `MANUTENCAO`, `FINANCEIRO`, `FORNECEDOR`, `CLIENTE_CORPORATIVO` e `MOTORISTA`.
+As permissões ficam em tabelas, separando usuários, perfis e permissões. Assim os níveis de acesso podem ser ajustados sem espalhar regra pelo código, o que importa porque o cliente ainda não definiu o acesso dos usuários externos. Os perfis são:
 
-A lista cobre as quatro áreas atendentes da primeira fase. **Logística** e **contratos** aparecem no organograma do cliente e ainda não têm perfil, porque não se sabe se recebem chamado diretamente — como as permissões estão em tabela, incluí-las depois é inserir linha, não alterar código.
+| Perfil | Quem é | Vínculo exigido |
+|---|---|---|
+| `ADMIN` | Administra usuários, organizações e a plataforma | — |
+| `ATENDENTE` | Atendente das unidades e da central. Abre chamado em nome do cliente, faz a triagem, reclassifica, transfere, aciona fornecedor e usa a lixeira. Não assume nem muda o status do atendimento | — |
+| `DEPARTAMENTO` | Área atendente que trabalha a própria fila: assume o chamado (e passa a constar como responsável), muda o status, transfere e aciona fornecedor | Ao menos um departamento |
+| `LIDER_OPERACIONAL` | Liderança: vê todos os chamados, o painel e as métricas. Só acompanha, sem alterar nada | — |
+| `CLIENTE` | Motorista ou cliente pessoa física | Organização do tipo cliente |
+| `GESTOR_FROTA` | Gestor de frota de cliente corporativo | Organização do tipo cliente |
+| `FORNECEDOR` | Oficina, guincho ou prestador externo | Organização do tipo fornecedor |
+
+Um usuário pode acumular perfis, exceto `FORNECEDOR` com `CLIENTE` ou `GESTOR_FROTA`, já que não pertence ao mesmo tempo a uma organização cliente e a uma fornecedora.
+
+As áreas atendentes não são perfis próprios. Todas usam `DEPARTAMENTO`, e o que separa uma fila da outra é o departamento associado ao usuário: `ASSISTENCIA_24H`, `MANUTENCAO`, `TI`, `FINANCEIRO`, `LOGISTICA` e `CONTRATOS`. Assim, uma área nova entra como linha na tabela de departamentos, sem perfil nem permissão novos. **Logística** e **contratos** já estão cadastrados, mas ainda não se sabe se recebem chamado diretamente ou só apoiam as outras áreas.
 
 O perfil `FORNECEDOR` pressupõe credencial própria na plataforma, o que atende à premissa de o parceiro não depender de conta no domínio corporativo, mas ainda **não é a autenticação simplificada** que o entendimento inicial descreve. A forma de acesso do terceiro — link por chamado, convite por e-mail ou credencial — é pergunta aberta com o cliente e muda o desenho desta camada.
 
