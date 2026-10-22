@@ -3,7 +3,8 @@ import type { CodigoPrioridade, Etapa, Localizacao, MotivoAguardando, Peso, Situ
 export interface DadosAberturaChamado {
   solicitanteId?: string;
   motivoId: string;
-  contextoId: string;
+  contextoId: string | null;
+  motivoOutro?: string;
   descricao: string;
   cliente: string;
   telefone: string;
@@ -19,6 +20,7 @@ export interface FiltrosChamados {
   status?: Status;
   prioridade?: CodigoPrioridade;
   departamento?: TipoChamado;
+  tipo?: TipoChamado;
   sla?: SituacaoSlaFiltravel;
   etapa?: Etapa;
   ordenacao?: "fila" | "recentes";
@@ -50,6 +52,7 @@ export interface DadosStatus {
   status: Status;
   motivoAguardando?: MotivoAguardando | null;
   observacao?: string;
+  resumoResolucao?: string;
 }
 
 export interface DadosTransferencia {

@@ -46,10 +46,14 @@ class ChamadoAnexo {
     @Column(name = "chave_idempotencia", length = 160)
     private String chaveIdempotencia;
 
+    @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private VisibilidadeDoConteudo visibilidade;
+
     protected ChamadoAnexo() {
     }
 
-    ChamadoAnexo(Chamado chamado, String nome, String tipoConteudo, long tamanho, Autor autor, String chaveIdempotencia, OffsetDateTime enviadoEm) {
+    ChamadoAnexo(Chamado chamado, String nome, String tipoConteudo, long tamanho, Autor autor, String chaveIdempotencia, OffsetDateTime enviadoEm, VisibilidadeDoConteudo visibilidade) {
         this.id = UUID.randomUUID();
         this.chamado = chamado;
         this.nome = nome;
@@ -60,6 +64,11 @@ class ChamadoAnexo {
         this.autorNome = autor.nome();
         this.chaveIdempotencia = chaveIdempotencia;
         this.enviadoEm = enviadoEm;
+        this.visibilidade = visibilidade;
+    }
+
+    ChamadoAnexo(Chamado chamado, String nome, String tipoConteudo, long tamanho, Autor autor, String chaveIdempotencia, OffsetDateTime enviadoEm) {
+        this(chamado, nome, tipoConteudo, tamanho, autor, chaveIdempotencia, enviadoEm, VisibilidadeDoConteudo.INTERNO);
     }
 
     UUID getId() {
@@ -89,4 +98,6 @@ class ChamadoAnexo {
     Autor getAutor() {
         return Autor.de(autorId, autorNome);
     }
+
+    VisibilidadeDoConteudo getVisibilidade() { return visibilidade; }
 }

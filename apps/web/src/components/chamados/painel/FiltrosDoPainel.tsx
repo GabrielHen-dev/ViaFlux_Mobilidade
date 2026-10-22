@@ -21,14 +21,14 @@ interface Props {
 }
 
 export function filtrosEstaoAtivos(filtros: FiltrosDoPainel, departamentoFixo?: TipoChamado) {
-  return Boolean(filtros.busca || filtros.status || filtros.prioridade || filtros.sla || filtros.etapa || (filtros.departamento && filtros.departamento !== departamentoFixo));
+  return Boolean(filtros.busca || filtros.status || filtros.prioridade || filtros.sla || filtros.etapa || filtros.tipo || (filtros.departamento && filtros.departamento !== departamentoFixo));
 }
 
 export default function FiltrosDoPainel({ filtros, departamentoFixo, comFiltroDeEtapa, aoFiltrar }: Props) {
   const { ordenacao } = filtros;
   return (
     <div className="mb-5 rounded-2xl border border-[#E2E8F0] bg-white p-4">
-      <div className={cn("grid grid-cols-1 gap-3 sm:grid-cols-2", comFiltroDeEtapa ? "lg:grid-cols-7" : "lg:grid-cols-6")}>
+      <div className={cn("grid grid-cols-1 gap-3 sm:grid-cols-2", comFiltroDeEtapa ? "lg:grid-cols-8" : "lg:grid-cols-7")}>
         <div className="relative sm:col-span-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={16} aria-hidden />
           <input
@@ -58,6 +58,10 @@ export default function FiltrosDoPainel({ filtros, departamentoFixo, comFiltroDe
           <option value="">Todos os departamentos</option>
           {TIPOS_CHAMADO.map((tipo) => <option key={tipo} value={tipo}>{NOME_TIPO[tipo]}</option>)}
         </select>
+        <select aria-label="Filtrar por tipo de chamado" className={selectClass} value={filtros.tipo ?? ""} onChange={(evento) => aoFiltrar({ tipo: (evento.target.value || undefined) as TipoChamado | undefined })}>
+          <option value="">Todos os tipos</option>
+          {TIPOS_CHAMADO.map((tipo) => <option key={tipo} value={tipo}>{NOME_TIPO[tipo]}</option>)}
+        </select>
         <select aria-label="Filtrar por situação do SLA" className={selectClass} value={filtros.sla ?? ""} onChange={(evento) => aoFiltrar({ sla: (evento.target.value || undefined) as SituacaoSlaFiltravel | undefined })}>
           <option value="">Qualquer SLA</option>
           {SITUACOES_DE_SLA.map((situacao) => <option key={situacao} value={situacao}>{rotuloDaSituacao(situacao)}</option>)}
@@ -73,7 +77,7 @@ export default function FiltrosDoPainel({ filtros, departamentoFixo, comFiltroDe
         {filtrosEstaoAtivos(filtros, departamentoFixo) && (
           <button
             type="button"
-            onClick={() => aoFiltrar({ busca: undefined, status: undefined, prioridade: undefined, sla: undefined, etapa: undefined, departamento: departamentoFixo })}
+            onClick={() => aoFiltrar({ busca: undefined, status: undefined, prioridade: undefined, sla: undefined, etapa: undefined, departamento: departamentoFixo, tipo: undefined })}
             className="ml-auto font-semibold text-brand-blue hover:underline"
           >
             Limpar filtros

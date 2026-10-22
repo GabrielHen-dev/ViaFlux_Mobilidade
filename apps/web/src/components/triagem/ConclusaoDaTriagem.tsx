@@ -12,20 +12,19 @@ import { PrazoDaTriagem } from "@/components/triagem/PrazoDaTriagem";
 import { ResultadoDoScore, SeletorDePeso, SeletorDeTipo, cartaoClass, inputClass, labelClass } from "@/components/triagem/CamposDaTriagem";
 import { NOME_TIPO, ROTULO_PESO } from "@/utils/prioridade";
 
-const PESO_NEUTRO: Peso = 3;
 const PELA_REGRA_DE_PLANTAO = "";
 
 export interface Sugestao {
-  tipo: TipoChamado;
-  severidade: Peso;
-  urgencia: Peso;
+  tipo: TipoChamado | null;
+  severidade: Peso | null;
+  urgencia: Peso | null;
 }
 
 export function sugestaoDoCliente(chamado: Chamado): Sugestao {
   return {
     tipo: chamado.motivo?.tipo ?? chamado.tipo,
-    severidade: chamado.motivo?.severidade ?? PESO_NEUTRO,
-    urgencia: chamado.contexto?.urgencia ?? PESO_NEUTRO,
+    severidade: chamado.motivo?.severidade ?? null,
+    urgencia: chamado.contexto?.urgencia ?? null,
   };
 }
 
@@ -57,17 +56,17 @@ function ResponsavelDaTriagem({ chamado }: { chamado: Chamado }) {
 
 export default function ConclusaoDaTriagem({ chamado, aoConcluir }: { chamado: Chamado; aoConcluir: (aviso: string) => void }) {
   const sugestao = sugestaoDoCliente(chamado);
-  const [tipo, setTipo] = useState<TipoChamado>(sugestao.tipo);
-  const [severidade, setSeveridade] = useState<Peso>(sugestao.severidade);
-  const [urgencia, setUrgencia] = useState<Peso>(sugestao.urgencia);
+  const [tipo, setTipo] = useState<TipoChamado | "">(sugestao.tipo ?? "");
+  const [severidade, setSeveridade] = useState<Peso | "">(sugestao.severidade ?? "");
+  const [urgencia, setUrgencia] = useState<Peso | "">(sugestao.urgencia ?? "");
   const [departamento, setDepartamento] = useState<TipoChamado | typeof PELA_REGRA_DE_PLANTAO>(PELA_REGRA_DE_PLANTAO);
   const [observacao, setObservacao] = useState("");
   const departamentos = useDepartamentos();
   const conclusao = useAcaoNoChamado(chamado.id, (api, dados: DadosConclusaoTriagem) => concluirTriagem(api, chamado.id, dados));
 
   const confirmar = () => conclusao.mutate(
-    { tipo, severidade, urgencia, departamento: departamento || null, observacao: observacao.trim() },
-    { onSuccess: (atualizado) => aoConcluir(`Triagem concluída: ${atualizado.prioridade} · encaminhado para ${atualizado.departamento?.nome ?? NOME_TIPO[tipo]}.`) },
+    { tipo: tipo as TipoChamado, severidade: severidade as Peso, urgencia: urgencia as Peso, departamento: departamento || null, observacao: observacao.trim() },
+    { onSuccess: (atualizado) => aoConcluir(`Triagem concluída: ${atualizado.prioridade} · encaminhado para ${atualizado.departamento?.nome ?? (tipo ? NOME_TIPO[tipo] : "Central")}.`) },
   );
 
   return (
@@ -84,7 +83,7 @@ export default function ConclusaoDaTriagem({ chamado, aoConcluir }: { chamado: C
         <p className="mb-4 flex items-start gap-1.5 text-xs text-slate-500">
           <Lightbulb size={14} className="mt-0.5 flex-shrink-0 text-amber-500" aria-hidden />
           <span>
-            Os campos vêm com uma <strong>sugestão</strong> a partir do que o cliente informou ({NOME_TIPO[sugestao.tipo]}, severidade {ROTULO_PESO[sugestao.severidade].toLowerCase()}, urgência {ROTULO_PESO[sugestao.urgencia].toLowerCase()}). Nada é aplicado sem a sua confirmação.
+            {sugestao.tipo ? <>Os campos vêm com uma <strong>sugestão</strong> baseada no catálogo ({NOME_TIPO[sugestao.tipo]}, severidade {ROTULO_PESO[sugestao.severidade!].toLowerCase()}, urgência {ROTULO_PESO[sugestao.urgencia!].toLowerCase()}). Nada é aplicado sem a sua confirmação.</> : <>Este é um chamado de exceção. Defina tipo, severidade e urgência após revisar o relato; não há valores sugeridos.</>}
           </span>
         </p>
         <div className="space-y-4">
@@ -95,7 +94,7 @@ export default function ConclusaoDaTriagem({ chamado, aoConcluir }: { chamado: C
           <div>
             <label htmlFor="conclusao-departamento" className={labelClass}>Departamento de destino</label>
             <select id="conclusao-departamento" className={inputClass} value={departamento} onChange={(evento) => setDepartamento(evento.target.value as TipoChamado)} aria-describedby="conclusao-departamento-dica">
-              <option value={PELA_REGRA_DE_PLANTAO}>Automático: {NOME_TIPO[tipo]}</option>
+              <option value={PELA_REGRA_DE_PLANTAO}>Automático: {tipo ? NOME_TIPO[tipo] : "selecione o tipo"}</option>
               {(departamentos.data ?? []).map((opcao) => <option key={opcao.codigo} value={opcao.codigo}>{opcao.nome}</option>)}
             </select>
             <p id="conclusao-departamento-dica" className="mt-1 text-xs text-slate-400">No automático, um P1 operacional fora do horário comercial vai para a Assistência 24h (plantão).</p>
@@ -107,7 +106,7 @@ export default function ConclusaoDaTriagem({ chamado, aoConcluir }: { chamado: C
           {conclusao.isError && <AvisoDeErro erro={conclusao.error} />}
           <button
             type="button"
-            disabled={conclusao.isPending}
+            disabled={conclusao.isPending || !tipo || !severidade || !urgencia}
             onClick={confirmar}
             className="alvo-toque w-full rounded-xl bg-brand-green py-3 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 disabled:opacity-40"
           >

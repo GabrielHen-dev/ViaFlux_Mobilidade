@@ -24,9 +24,7 @@ class ConsultaDeChamadosService {
             .comparing(ChamadoResumoResponse::abertura).reversed()
             .thenComparing(ChamadoResumoResponse::id, Comparator.reverseOrder());
     private static final Comparator<ChamadoResumoResponse> ORDEM_DA_FILA = Comparator
-            .comparing((ChamadoResumoResponse resumo) -> resumo.prioridade() != null)
-            .thenComparing(resumo -> resumo.prioridade() == null ? resumo.triagem().limite() : null, Comparator.nullsLast(Comparator.naturalOrder()))
-            .thenComparing(ChamadoResumoResponse::prioridade, Comparator.nullsLast(Comparator.naturalOrder()))
+            .comparing(ChamadoResumoResponse::prioridade, Comparator.nullsLast(Comparator.naturalOrder()))
             .thenComparing(ChamadoResumoResponse::score, Comparator.nullsLast(Comparator.reverseOrder()))
             .thenComparing(ChamadoResumoResponse::abertura);
 
@@ -44,15 +42,24 @@ class ConsultaDeChamadosService {
             throw new FiltroChamadoInvalidoException("O tamanho máximo da página é 100.");
         }
         Comparator<ChamadoResumoResponse> ordem = filtros.ordenacao() == FiltrosDeChamados.Ordenacao.RECENTES ? MAIS_RECENTES : ORDEM_DA_FILA;
-        List<ChamadoResumoResponse> filtrados = resumosVisiveis(filtros, usuario).sorted(ordem).toList();
+        List<ChamadoResumoResponse> filtrados = resumosVisiveis(filtros, usuario)
+                .filter(chamado -> filtros.status() != null || filaAtiva(chamado.status()))
+                .filter(chamado -> filtros.status() != null || filtros.etapa() != null || chamado.prioridade() != null)
+                .sorted(ordem)
+                .toList();
         return ChamadosPageResponse.de(filtrados, page, size);
+    }
+
+    private static boolean filaAtiva(String status) {
+        return !StatusChamado.RESOLVIDO.getRotulo().equals(status)
+                && !StatusChamado.FECHADO.getRotulo().equals(status);
     }
 
     @Transactional(readOnly = true)
     ResumoDeChamadosResponse resumir(FiltrosDeChamados filtros, UsuarioAtual usuario) {
         List<ChamadoResumoResponse> chamados = resumosVisiveis(filtros.semStatus(), usuario).toList();
         List<ChamadoResumoResponse> ativosTriados = chamados.stream()
-                .filter(chamado -> chamado.sla() != null && !StatusChamado.FECHADO.getRotulo().equals(chamado.status()))
+                .filter(chamado -> chamado.sla() != null && filaAtiva(chamado.status()))
                 .toList();
         List<ChamadoResumoResponse> emTriagem = chamados.stream().filter(chamado -> chamado.prioridade() == null).toList();
         return new ResumoDeChamadosResponse(
@@ -82,6 +89,7 @@ class ConsultaDeChamadosService {
                 .filter(porEtapa(filtros.etapa()))
                 .filter(chamado -> filtros.status() == null || chamado.getStatus() == filtros.status())
                 .filter(chamado -> filtros.departamento() == null || chamado.getDepartamento() == filtros.departamento())
+                .filter(chamado -> filtros.tipo() == null || chamado.tipoVigente() == filtros.tipo())
                 .filter(chamado -> filtros.prioridade() == null || chamado.prioridadeEfetiva() == filtros.prioridade())
                 .map(montagem::resumo)
                 .filter(porSla(filtros.sla()));

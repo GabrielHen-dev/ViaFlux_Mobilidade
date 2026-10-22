@@ -3,7 +3,7 @@ import type { Chamado, Status } from "@/types/chamado";
 import { formatarDataHora } from "@/utils/date";
 import { cn } from "@/utils/cn";
 
-const ETAPAS = ["Recebido", "Em análise", "Encaminhado", "Em atendimento", "Resolvido"] as const;
+const ETAPAS = ["Recebido", "Em análise", "Encaminhado", "Em atendimento", "Resolvido", "Fechado"] as const;
 
 const ETAPA_DO_STATUS: Record<Status, number> = {
   "Aberto": 1,
@@ -12,7 +12,7 @@ const ETAPA_DO_STATUS: Record<Status, number> = {
   "Em atendimento": 3,
   "Aguardando": 3,
   "Resolvido": 4,
-  "Fechado": 4,
+  "Fechado": 5,
 };
 
 export default function EtapasDoChamado({ chamado }: { chamado: Chamado }) {

@@ -9,11 +9,14 @@ import java.util.UUID;
 public record AbrirChamadoRequest(
         UUID solicitanteId,
 
-        @NotBlank(message = "Selecione o motivo da solicitação.")
+        @Size(max = 40, message = "O identificador do motivo é inválido.")
         String motivoId,
 
-        @NotBlank(message = "Selecione o contexto situacional.")
+        @Size(max = 40, message = "O identificador do contexto é inválido.")
         String contextoId,
+
+        @Size(max = 200, message = "A descrição do outro motivo deve ter no máximo 200 caracteres.")
+        String motivoOutro,
 
         @NotBlank(message = "Descreva o problema.")
         @Size(max = 5000, message = "A descrição deve ter no máximo 5000 caracteres.")
@@ -35,4 +38,8 @@ public record AbrirChamadoRequest(
         @Valid
         DadosDeLocalizacao localizacao
 ) {
+    public AbrirChamadoRequest(UUID solicitanteId, String motivoId, String contextoId, String descricao, String cliente,
+                               String telefone, String modelo, String placa, DadosDeLocalizacao localizacao) {
+        this(solicitanteId, motivoId, contextoId, null, descricao, cliente, telefone, modelo, placa, localizacao);
+    }
 }

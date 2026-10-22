@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.List;
 import java.util.Locale;
@@ -28,9 +30,11 @@ class SolicitanteController {
     }
 
     private final UsuarioRepository usuarios;
+    private final IdentificacaoDoUsuario identificacao;
 
-    SolicitanteController(UsuarioRepository usuarios) {
+    SolicitanteController(UsuarioRepository usuarios, IdentificacaoDoUsuario identificacao) {
         this.usuarios = usuarios;
+        this.identificacao = identificacao;
     }
 
     @GetMapping
@@ -42,10 +46,17 @@ class SolicitanteController {
     )
     List<SolicitanteResponse> buscar(
             @Parameter(description = "Trecho do nome ou do e-mail")
-            @RequestParam(required = false) String busca
+            @RequestParam(required = false) String busca,
+            @AuthenticationPrincipal Jwt token
     ) {
+        UsuarioAtual atual = identificacao.de(token);
+        if (!atual.fazTriagem() && !atual.perfis().contains("GESTOR_FROTA")) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN);
+        }
         String termo = "%" + (busca == null ? "" : busca.trim().toLowerCase(Locale.ROOT)) + "%";
         return usuarios.buscarAtivosComPerfis(PERFIS_DE_SOLICITANTE, termo, PageRequest.of(0, LIMITE_DE_RESULTADOS)).stream()
+                .filter(usuario -> atual.fazTriagem() || (atual.organizacaoId() != null && usuario.getOrganizacao() != null
+                        && atual.organizacaoId().equals(usuario.getOrganizacao().getId())))
                 .map(usuario -> new SolicitanteResponse(
                         usuario.getId(),
                         usuario.getNome(),

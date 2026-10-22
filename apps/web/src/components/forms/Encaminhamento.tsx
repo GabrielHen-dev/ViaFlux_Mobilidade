@@ -27,13 +27,15 @@ const labelClass = "block text-xs font-semibold text-[#475569] uppercase trackin
 const inputClass = "w-full px-3.5 py-2.5 rounded-lg border border-[#E2E8F0] bg-white text-sm text-brand-dark outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10";
 
 function EncaminhamentoConteudo({ chamado }: { chamado: Chamado }) {
-  const atende = usuarioTemPerfil(useUsuarioAutenticado(), PERFIS_QUE_ATENDEM);
+  const usuario = useUsuarioAutenticado();
+  const atende = usuarioTemPerfil(usuario, PERFIS_QUE_ATENDEM);
   const departamentos = useDepartamentos();
   const [destino, setDestino] = useState<TipoChamado | "">("");
-  const { valor: motivo, setValor: setMotivo, descartar: descartarMotivo } = useRascunho(`transferencia-${chamado.id}`, "");
+  const { valor: motivo, setValor: setMotivo, descartar: descartarMotivo } = useRascunho(`transferencia:${usuario.id}:${chamado.id}`, "");
   const [status, setStatus] = useState<Status>(chamado.status);
   const [motivoAguardando, setMotivoAguardando] = useState<MotivoAguardando | "">(chamado.motivoAguardando ?? "");
   const [observacao, setObservacao] = useState("");
+  const [resumoResolucao, setResumoResolucao] = useState("");
   const [confirmacao, setConfirmacao] = useState<string | null>(null);
 
   const transferencia = useAcaoNoChamado(chamado.id, (api, dados: DadosTransferencia) => transferirChamado(api, chamado.id, dados));
@@ -135,14 +137,18 @@ function EncaminhamentoConteudo({ chamado }: { chamado: Chamado }) {
                   </div>
                 </fieldset>
               )}
+              {status === "Resolvido" && <div className="mb-4">
+                <label htmlFor="status-resumo-resolucao" className={labelClass}>Resumo da solução *</label>
+                <textarea id="status-resumo-resolucao" className={`${inputClass} resize-none`} rows={4} maxLength={5000} value={resumoResolucao} onChange={(evento) => setResumoResolucao(evento.target.value)} placeholder="Descreva o que foi feito para resolver o chamado…" />
+              </div>}
               <label htmlFor="status-observacao" className="sr-only">Observação</label>
               <textarea id="status-observacao" className={`${inputClass} resize-none`} rows={2} placeholder="Observação (opcional)…" value={observacao} onChange={(evento) => setObservacao(evento.target.value)} />
               {mudancaDeStatus.isError && <div className="mt-3"><AvisoDeErro erro={mudancaDeStatus.error} /></div>}
               <button
                 type="button"
-                disabled={!statusMudou || precisaDeMotivoAguardando || mudancaDeStatus.isPending}
-                onClick={() => mudancaDeStatus.mutate({ status, motivoAguardando: status === "Aguardando" ? (motivoAguardando as MotivoAguardando) : null, observacao: observacao.trim() }, {
-                  onSuccess: (atualizado) => { setObservacao(""); setConfirmacao(`Status atualizado para ${atualizado.status}. O cliente foi notificado.`); },
+                disabled={!statusMudou || precisaDeMotivoAguardando || (status === "Resolvido" && resumoResolucao.trim().length < 10) || mudancaDeStatus.isPending}
+                onClick={() => mudancaDeStatus.mutate({ status, motivoAguardando: status === "Aguardando" ? (motivoAguardando as MotivoAguardando) : null, observacao: observacao.trim(), resumoResolucao: status === "Resolvido" ? resumoResolucao.trim() : undefined }, {
+                  onSuccess: (atualizado) => { setObservacao(""); setResumoResolucao(""); setConfirmacao(`Status atualizado para ${atualizado.status}. O cliente foi notificado.`); },
                 })}
                 className="alvo-toque mt-4 w-full rounded-xl bg-brand-blue py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
               >

@@ -122,7 +122,7 @@ function DetalhesConteudo({ chamado }: { chamado: Chamado }) {
               <Informacao rotulo="Telefone" valor={chamado.telefone} />
               <Informacao rotulo="Veículo" valor={chamado.modelo} />
               <Informacao rotulo="Placa" valor={chamado.placa} />
-              <Informacao rotulo="Tipo" valor={NOME_TIPO[chamado.tipo]} />
+              <Informacao rotulo="Tipo" valor={chamado.tipo ? NOME_TIPO[chamado.tipo] : "A classificar — revisão da Central"} />
               <Informacao rotulo="Última atualização" valor={formatarDataHora(chamado.atualizadoEm)} />
             </div>
             {chamado.descricao && (

@@ -94,7 +94,7 @@ function ConteudoDaFila() {
                       <div className="text-sm font-semibold text-brand-dark">{chamado.cliente}</div>
                       <div className="mt-0.5 text-xs text-[#94A3B8]">aberto em {formatarDataHora(chamado.abertura)}</div>
                     </td>
-                    <td className="px-5 py-4 text-sm text-[#475569]">{NOME_TIPO[chamado.tipo]}</td>
+                    <td className="px-5 py-4 text-sm text-[#475569]">{chamado.tipo ? NOME_TIPO[chamado.tipo] : "Exceção · Central"}</td>
                     <td className="px-5 py-4"><StatusBadge status={chamado.status} /></td>
                     <td className="px-5 py-4"><PrazoDaTriagem triagem={chamado.triagem} compacto /></td>
                     <td className="px-5 py-4 text-sm text-[#475569]">{chamado.triagem.responsavel?.nome ?? "—"}</td>

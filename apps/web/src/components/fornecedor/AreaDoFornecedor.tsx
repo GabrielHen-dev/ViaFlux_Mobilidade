@@ -6,7 +6,7 @@ import { MapPin } from "lucide-react";
 import { STATUS_SERVICO, type ServicoDoFornecedor, type StatusServico } from "@/types/chamado";
 import type { DadosAtualizacaoServico } from "@/services/api/contratos";
 import { atualizarServicoDoFornecedor } from "@/services/api/operacao";
-import { useApi } from "@/store/AuthContext";
+import { useApi, useUsuarioAutenticado } from "@/store/AuthContext";
 import { chaves, useServicosDoFornecedor } from "@/hooks/consultas";
 import { useRascunho } from "@/hooks/useRascunho";
 import PerfilRequerido from "@/components/auth/PerfilRequerido";
@@ -25,9 +25,10 @@ export function proximosStatus(atual: StatusServico) {
 
 function CartaoDoServico({ servico }: { servico: ServicoDoFornecedor }) {
   const api = useApi();
+  const usuario = useUsuarioAutenticado();
   const clienteDeConsultas = useQueryClient();
   const [status, setStatus] = useState<DadosAtualizacaoServico["status"] | null>(null);
-  const { valor: observacao, setValor: setObservacao, descartar } = useRascunho(`servico-${servico.id}`, "");
+  const { valor: observacao, setValor: setObservacao, descartar } = useRascunho(`servico:${usuario.id}:${servico.id}`, "");
   const atualizacao = useMutation({
     mutationFn: (dados: DadosAtualizacaoServico) => atualizarServicoDoFornecedor(api, servico.id, dados),
     onSuccess: () => {

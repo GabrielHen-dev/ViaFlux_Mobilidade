@@ -77,7 +77,7 @@ export default function SeletorDeArquivos({ aoAceitar, compacto = false, desabil
           </button>
         </div>
       )}
-      <p id={idDaDica} className="mt-2 text-xs text-slate-400">Fotos PNG ou JPG e documentos PDF · até {LIMITE_ANEXO_MB} MB por arquivo</p>
+      <p id={idDaDica} className="mt-2 text-xs text-slate-400">Fotos PNG ou JPG e documentos PDF · até {LIMITE_ANEXO_MB} MB por arquivo. Se a câmera não abrir ou a permissão for negada, use “Anexar arquivo” para escolher uma foto do dispositivo; anexar imagem é opcional.</p>
       {rejeicoes.length > 0 && (
         <ul role="alert" className="mt-2 space-y-1 text-xs font-medium text-red-600">
           {rejeicoes.map((mensagem) => <li key={mensagem}>{mensagem}</li>)}
