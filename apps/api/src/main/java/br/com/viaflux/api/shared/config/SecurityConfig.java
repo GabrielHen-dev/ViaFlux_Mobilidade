@@ -39,7 +39,7 @@ public class SecurityConfig {
     private static final String[] PERFIS_DE_TRIAGEM = {"ADMIN", "ATENDENTE"};
     private static final String[] PERFIS_DA_LIXEIRA = {"ADMIN", "ATENDENTE"};
     private static final String[] PERFIS_QUE_CONDUZEM = {"ADMIN", "ATENDENTE", "DEPARTAMENTO"};
-    private static final String[] PERFIS_QUE_ATENDEM = {"ADMIN", "DEPARTAMENTO"};
+    private static final String[] PERFIS_QUE_ATENDEM = {"ADMIN", "ATENDENTE", "DEPARTAMENTO"};
     private static final String[] PERFIS_DE_METRICAS = {"ADMIN", "LIDER_OPERACIONAL"};
     private static final String[] PERFIS_QUE_ABREM_CHAMADO = {"CLIENTE", "GESTOR_FROTA", "ADMIN", "ATENDENTE"};
     private static final String[] PERFIS_COM_ACESSO_A_CHAMADOS = {
@@ -76,7 +76,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/fornecedor/**").hasRole("FORNECEDOR")
                         .requestMatchers(HttpMethod.GET, "/api/fornecedores").hasAnyRole(PERFIS_QUE_CONDUZEM)
                         .requestMatchers(HttpMethod.GET, "/api/metricas", "/api/metricas/**").hasAnyRole(PERFIS_DE_METRICAS)
-                        .requestMatchers(HttpMethod.GET, "/api/solicitantes").hasAnyRole(PERFIS_DE_TRIAGEM)
+                        .requestMatchers(HttpMethod.GET, "/api/solicitantes").hasAnyRole("ADMIN", "ATENDENTE", "GESTOR_FROTA")
                         .requestMatchers(HttpMethod.POST, "/api/chamados").hasAnyRole(PERFIS_QUE_ABREM_CHAMADO)
                         .requestMatchers("/api/chamados/lixeira", "/api/chamados/lixeira/**").hasAnyRole(PERFIS_DA_LIXEIRA)
                         .requestMatchers(HttpMethod.DELETE, "/api/chamados/*").hasAnyRole(PERFIS_DA_LIXEIRA)

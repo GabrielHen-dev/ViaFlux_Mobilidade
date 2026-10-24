@@ -60,7 +60,9 @@ class AnexoService {
         String nome = validar(arquivo);
         OffsetDateTime agora = OffsetDateTime.now(relogio).withOffsetSameInstant(ZoneOffset.UTC);
         Autor autor = new Autor(usuario.id(), usuario.nome());
-        ChamadoAnexo anexo = anexos.save(new ChamadoAnexo(chamado, nome, arquivo.getContentType(), arquivo.getSize(), autor, chave, agora));
+        VisibilidadeDoConteudo visibilidade = usuario.temAlgum(UsuarioAtual.PERFIS_DE_CLIENTE)
+                ? VisibilidadeDoConteudo.SOLICITANTE : VisibilidadeDoConteudo.INTERNO;
+        ChamadoAnexo anexo = anexos.save(new ChamadoAnexo(chamado, nome, arquivo.getContentType(), arquivo.getSize(), autor, chave, agora, visibilidade));
         try (InputStream conteudo = arquivo.getInputStream()) {
             armazenamento.guardar(anexo.getArquivo(), conteudo);
         } catch (IOException erro) {
@@ -75,6 +77,9 @@ class AnexoService {
         Chamado chamado = acesso.visivel(codigo, usuario);
         ChamadoAnexo anexo = anexos.findByIdAndChamadoId(anexoId, chamado.getId())
                 .orElseThrow(() -> ErroDeChamado.naoEncontrado("Anexo não encontrado."));
+        if (usuario.apenasCliente() && anexo.getVisibilidade() != VisibilidadeDoConteudo.SOLICITANTE) {
+            throw ErroDeChamado.naoEncontrado("Anexo não encontrado.");
+        }
         return new Conteudo(anexo.getNome(), anexo.getTipoConteudo(), anexo.getTamanho(), armazenamento.abrir(anexo.getArquivo()));
     }
 

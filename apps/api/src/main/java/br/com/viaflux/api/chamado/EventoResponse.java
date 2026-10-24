@@ -10,7 +10,8 @@ public record EventoResponse(
         String detalhe,
         OffsetDateTime ocorridoEm,
         Autor autor,
-        boolean visivelCliente
+        boolean visivelCliente,
+        VisibilidadeDoConteudo visibilidade
 ) {
 
     static EventoResponse de(ChamadoEvento evento) {
@@ -21,7 +22,8 @@ public record EventoResponse(
                 evento.getDetalhe(),
                 Datas.local(evento.getOcorridoEm()),
                 evento.getAutor(),
-                evento.isVisivelCliente()
+                evento.isVisivelCliente(),
+                evento.getVisibilidade()
         );
     }
 }

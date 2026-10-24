@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { RefreshCw } from "lucide-react";
-import type { TipoChamado } from "@/types/chamado";
+import type { Status, TipoChamado } from "@/types/chamado";
 import { useUsuarioAutenticado } from "@/store/AuthContext";
 import { INTERVALO_DO_PAINEL_MS, useListaDeChamados, useResumoDeChamados } from "@/hooks/consultas";
 import { AvisoDeErro, Carregando, FalhaAoCarregar } from "@/components/feedback/EstadoDaConsulta";
@@ -16,6 +16,15 @@ import { useAgora } from "@/hooks/useAgora";
 import { PERFIS_COM_VISAO_GLOBAL, PERFIS_DA_LIXEIRA, PERFIS_DE_TRIAGEM, PERFIS_QUE_ABREM_CHAMADO, usuarioTemPerfil } from "@/utils/perfis";
 
 const TAMANHO_DA_PAGINA = 20;
+const STATUS_DA_FILA: readonly { status: Status; rotulo: string }[] = [
+  { status: "Aberto", rotulo: "Aberto" },
+  { status: "Em triagem", rotulo: "Em triagem" },
+  { status: "Na fila", rotulo: "Na fila" },
+  { status: "Em atendimento", rotulo: "Em atendimento" },
+  { status: "Aguardando", rotulo: "Aguardando" },
+  { status: "Resolvido", rotulo: "Resolvidos" },
+  { status: "Fechado", rotulo: "Fechados" },
+];
 
 function AtualizadoHa({ instante }: { instante: number }) {
   const agora = useAgora();
@@ -37,7 +46,8 @@ export default function Dashboard() {
   const [filtros, setFiltros] = useState<Filtros>({ ordenacao: "fila", departamento: departamentoDoUsuario });
   const [pagina, setPagina] = useState(0);
 
-  const { ordenacao, ...filtrosDoResumo } = filtros;
+  const { ordenacao } = filtros;
+  const filtrosDoResumo = { ...filtros, status: undefined, etapa: undefined };
   const lista = useListaDeChamados({ ...filtros, page: pagina, size: TAMANHO_DA_PAGINA });
   const resumo = useResumoDeChamados(filtrosDoResumo);
 
@@ -74,6 +84,24 @@ export default function Dashboard() {
       {resumo.data && <AlertaDeP1 resumo={resumo.data} />}
       {resumo.data && visaoGlobal && <ContadoresDaTriagem resumo={resumo.data} comLink={fazTriagem} />}
       {resumo.isError && <div className="mb-5"><AvisoDeErro erro={resumo.error} /></div>}
+
+      {resumo.data && (
+        <nav aria-label="Recortes da fila" className="mb-4 flex gap-2 overflow-x-auto pb-1">
+          <button type="button" aria-pressed={!filtros.status && !filtros.etapa} onClick={() => filtrar({ status: undefined, etapa: undefined })} className={`alvo-toque shrink-0 rounded-lg px-3 py-2 text-xs font-semibold ${!filtros.status && !filtros.etapa ? "bg-brand-navy text-white" : "bg-white text-slate-600 ring-1 ring-slate-200"}`}>
+            Fila de atendimento ({["Na fila", "Em atendimento", "Aguardando"].reduce((total, status) => total + (resumo.data?.porStatus[status as Status] ?? 0), 0)})
+          </button>
+          {fazTriagem && (
+            <button type="button" aria-pressed={filtros.etapa === "TRIAGEM"} onClick={() => filtrar({ status: undefined, etapa: "TRIAGEM" })} className={`alvo-toque shrink-0 rounded-lg px-3 py-2 text-xs font-semibold ${filtros.etapa === "TRIAGEM" ? "bg-amber-700 text-white" : "bg-amber-50 text-amber-800 ring-1 ring-amber-200"}`}>
+              Exceções da Central sem classificação ({(resumo.data?.triagem.aguardando ?? 0) + (resumo.data?.triagem.emAndamento ?? 0)})
+            </button>
+          )}
+          {STATUS_DA_FILA.map(({ status, rotulo }) => (
+            <button key={status} type="button" aria-pressed={filtros.status === status && !filtros.etapa} onClick={() => filtrar({ status, etapa: undefined })} className={`alvo-toque shrink-0 rounded-lg px-3 py-2 text-xs font-semibold ${filtros.status === status && !filtros.etapa ? "bg-brand-navy text-white" : "bg-white text-slate-600 ring-1 ring-slate-200"}`}>
+              {rotulo} ({resumo.data?.porStatus[status] ?? 0})
+            </button>
+          ))}
+        </nav>
+      )}
 
       <FiltrosDoPainel filtros={filtros} departamentoFixo={departamentoDoUsuario} comFiltroDeEtapa={visaoGlobal} aoFiltrar={filtrar} />
 

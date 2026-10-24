@@ -57,8 +57,8 @@ public class ChamadoController {
     @PostMapping
     @Operation(
             summary = "Abrir chamado",
-            description = "CLIENTE e GESTOR_FROTA abrem em nome próprio; ADMIN e ATENDENTE abrem pela Central informando o solicitanteId. "
-                    + "O chamado entra na fila de triagem, sem classificação automática.",
+            description = "CLIENTE e GESTOR_FROTA abrem em nome próprio; GESTOR_FROTA pode indicar solicitante da própria organização e ATENDENTE abre pela Central. "
+                    + "Motivos catalogados recebem classificação e roteamento V1; Outro entra na fila de exceções sem score.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     ResponseEntity<ChamadoResponse> abrir(
@@ -80,8 +80,10 @@ public class ChamadoController {
     @GetMapping
     @Operation(
             summary = "Listar chamados",
-            description = "Clientes veem os próprios chamados; departamentos, os da sua fila; ADMIN, ATENDENTE e LIDER_OPERACIONAL, todos. "
-                    + "etapa=TRIAGEM lista só os que aguardam triagem.",
+            description = "Clientes veem os próprios chamados; departamentos, os da sua fila; ADMIN e ATENDENTE têm visão global; "
+                    + "LIDER_OPERACIONAL acompanha todos os chamados sem alterar. "
+                    + "A fila normal exclui chamados sem classificação; etapa=TRIAGEM lista a fila de exceções aguardando classificação. "
+                    + "ordenacao=ativos_recentes inclui todo o histórico, com chamados ativos primeiro e depois os mais recentemente atualizados.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     ChamadosPageResponse listar(
@@ -89,14 +91,15 @@ public class ChamadoController {
             @Parameter(description = "Rótulo do status, por exemplo: Na fila") @RequestParam(required = false) String status,
             @Parameter(description = "P1, P2, P3 ou P4") @RequestParam(required = false) String prioridade,
             @RequestParam(required = false) String departamento,
+            @RequestParam(required = false) String tipo,
             @Parameter(description = "NO_PRAZO, EM_RISCO ou VIOLADO") @RequestParam(required = false) String sla,
             @Parameter(description = "TRIAGEM ou ATENDIMENTO") @RequestParam(required = false) String etapa,
-            @Parameter(description = "fila ou recentes") @RequestParam(required = false) String ordenacao,
+            @Parameter(description = "fila, recentes ou ativos_recentes") @RequestParam(required = false) String ordenacao,
             @Min(0) @RequestParam(defaultValue = "0") int page,
             @Min(1) @Max(100) @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal Jwt token
     ) {
-        FiltrosDeChamados filtros = FiltrosDeChamados.de(busca, status, prioridade, departamento, sla, etapa, ordenacao);
+        FiltrosDeChamados filtros = FiltrosDeChamados.de(busca, status, prioridade, departamento, tipo, sla, etapa, ordenacao);
         return consulta.listar(filtros, page, size, identificacao.de(token));
     }
 
@@ -112,11 +115,12 @@ public class ChamadoController {
             @RequestParam(required = false) String busca,
             @RequestParam(required = false) String prioridade,
             @RequestParam(required = false) String departamento,
+            @RequestParam(required = false) String tipo,
             @RequestParam(required = false) String sla,
             @RequestParam(required = false) String etapa,
             @AuthenticationPrincipal Jwt token
     ) {
-        FiltrosDeChamados filtros = FiltrosDeChamados.de(busca, null, prioridade, departamento, sla, etapa, null);
+        FiltrosDeChamados filtros = FiltrosDeChamados.de(busca, null, prioridade, departamento, tipo, sla, etapa, null);
         return consulta.resumir(filtros, identificacao.de(token));
     }
 
@@ -192,8 +196,8 @@ public class ChamadoController {
             summary = "Alterar status de um chamado já triado",
             description = "Status aceitos: Na fila, Em atendimento, Aguardando, Resolvido e Fechado. Aberto e Em triagem não podem ser "
                     + "definidos à mão, e antes da triagem a resposta é 409. Aguardando exige motivoAguardando (CLIENTE pausa o SLA "
-                    + "de resolução); Fechado só depois de Resolvido; Na fila libera o responsável pelo atendimento. O cliente é "
-                    + "notificado. Perfis: ADMIN e DEPARTAMENTO (só a própria fila).",
+                    + "de resolução); Resolvido exige resumoResolucao; Fechado só depois de Resolvido; Na fila libera o responsável "
+                    + "pelo atendimento. O cliente é notificado. Perfis: ADMIN, ATENDENTE e DEPARTAMENTO (só a própria fila).",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     ChamadoResponse alterarStatus(@PathVariable String codigo, @Valid @RequestBody AlterarStatusRequest request, @AuthenticationPrincipal Jwt token) {
@@ -205,7 +209,7 @@ public class ChamadoController {
             summary = "Assumir o atendimento",
             description = "O departamento responsável assume o chamado triado, que vai para Em atendimento com a pessoa registrada como responsável. "
                     + "Outra pessoa da fila pode assumir no lugar. Chamados resolvidos ou fechados não podem ser assumidos (409). "
-                    + "Perfis: ADMIN e DEPARTAMENTO (só a própria fila).",
+                    + "Perfis: ADMIN, ATENDENTE e DEPARTAMENTO (só a própria fila).",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     ChamadoResponse assumir(@PathVariable String codigo, @AuthenticationPrincipal Jwt token) {

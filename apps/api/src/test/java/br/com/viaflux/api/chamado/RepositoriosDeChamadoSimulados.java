@@ -24,6 +24,11 @@ public class RepositoriosDeChamadoSimulados {
     }
 
     @Bean
+    ConcessaoAcessoChamadoRepository concessaoAcessoChamadoRepository() {
+        return mock(ConcessaoAcessoChamadoRepository.class);
+    }
+
+    @Bean
     ServicoTerceiroRepository servicoTerceiroRepository() {
         return mock(ServicoTerceiroRepository.class);
     }

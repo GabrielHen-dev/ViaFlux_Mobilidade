@@ -60,6 +60,7 @@ class MontagemDeChamado {
                 .map(EventoResponse::de)
                 .toList();
         List<AnexoResponse> anexosDoChamado = anexos.findByChamadoIdOrderByEnviadoEmAsc(chamado.getId()).stream()
+                .filter(anexo -> !visaoDeCliente || anexo.getVisibilidade() == VisibilidadeDoConteudo.SOLICITANTE)
                 .map(AnexoResponse::de)
                 .toList();
         ServicoTerceiroResponse servico = visaoDeCliente ? null : servicos.findByChamadoIdAndCanceladoFalseOrderByAtualizadoEmDesc(chamado.getId())
@@ -93,7 +94,14 @@ class MontagemDeChamado {
                 chamado.getLocalizacao().informada() ? chamado.getLocalizacao().paraDados() : null,
                 timeline,
                 anexosDoChamado,
-                servico
+                servico,
+                chamado.getMotivoOutro(),
+                chamado.getAbertoPorNome(),
+                chamado.getClassificacaoVersao(),
+                chamado.getRoteamentoVersao(),
+                chamado.getSlaVersao(),
+                chamado.getResolucaoResumo(),
+                chamado.getClassificacaoEstado()
         );
     }
 }

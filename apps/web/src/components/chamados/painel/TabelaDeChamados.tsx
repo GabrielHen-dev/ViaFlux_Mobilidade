@@ -14,8 +14,9 @@ import { SlaResumo } from "@/components/ui/SlaIndicador";
 import { PrazoDaTriagem } from "@/components/triagem/PrazoDaTriagem";
 import { AvisoDeErro } from "@/components/feedback/EstadoDaConsulta";
 import { cn } from "@/utils/cn";
+import { NOME_TIPO } from "@/utils/prioridade";
 
-const COLUNAS = ["Protocolo", "Cliente / Veículo", "Departamento", "Status", "Prioridade", "Prazo", "Ações"];
+const COLUNAS = ["Protocolo", "Cliente / Veículo", "Departamento / Tipo", "Status", "Prioridade", "Prazo", "Ações"];
 
 function slaCritico(chamado: ChamadoResumo) {
   return chamado.sla !== null && [chamado.sla.primeiraResposta.situacao, chamado.sla.resolucao.situacao].some((situacao) => situacao === "VIOLADO" || situacao === "EM_RISCO");
@@ -81,7 +82,10 @@ export default function TabelaDeChamados({ resultado, pagina, podeExcluir, podeT
                   <div className="text-sm font-semibold text-brand-dark">{chamado.cliente}</div>
                   <div className="mt-0.5 text-xs text-[#94A3B8]">{[chamado.modelo, chamado.placa].filter(Boolean).join(" · ")}</div>
                 </td>
-                <td className="px-5 py-4 text-sm text-[#475569]">{chamado.departamento?.nome ?? (chamado.prioridade === null ? "Triagem" : "—")}</td>
+                <td className="px-5 py-4 text-sm text-[#475569]">
+                  <div>{chamado.departamento?.nome ?? (chamado.prioridade === null ? "Exceção · Central" : "—")}</div>
+                  <div className="mt-0.5 text-xs text-[#94A3B8]">{chamado.tipo ? `Tipo: ${NOME_TIPO[chamado.tipo]}` : "A classificar — revisão da Central"}</div>
+                </td>
                 <td className="px-5 py-4">
                   <StatusBadge status={chamado.status} />
                   {chamado.atendimento && <div className="mt-1 text-xs text-[#94A3B8]">com {chamado.atendimento.responsavel.nome}</div>}

@@ -10,6 +10,7 @@ import IconeDoEvento from "@/components/ui/IconeDoEvento";
 import { AvisoDeErro } from "@/components/feedback/EstadoDaConsulta";
 import { formatarDataHora } from "@/utils/date";
 import { cn } from "@/utils/cn";
+import { useUsuarioAutenticado } from "@/store/AuthContext";
 
 interface Props {
   chamado: Chamado;
@@ -18,7 +19,8 @@ interface Props {
 }
 
 export default function TimelineChamado({ chamado, visaoDeCliente = false, somenteLeitura = false }: Props) {
-  const { valor: texto, setValor: setTexto, descartar } = useRascunho(`atualizacao-${chamado.id}`, "");
+  const usuario = useUsuarioAutenticado();
+  const { valor: texto, setValor: setTexto, descartar } = useRascunho(`atualizacao:${usuario.id}:${chamado.id}`, "");
   const [visivelCliente, setVisivelCliente] = useState(false);
   const [somentePublicos, setSomentePublicos] = useState(false);
   const atualizacao = useAcaoNoChamado(chamado.id, (api, dados: { texto: string; visivelCliente: boolean }) => registrarAtualizacao(api, chamado.id, dados));

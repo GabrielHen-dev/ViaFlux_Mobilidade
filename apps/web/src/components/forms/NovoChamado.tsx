@@ -4,16 +4,17 @@ import Link from "next/link";
 import { useRef } from "react";
 import { ChevronLeft, CircleAlert } from "lucide-react";
 import { useUsuarioAutenticado } from "@/store/AuthContext";
+import type { UsuarioAutenticado } from "@/types/auth";
 import { PERFIS_DE_CLIENTE, PERFIS_QUE_ABREM_PELA_CENTRAL, usuarioTemPerfil } from "@/utils/perfis";
 import { ID_DO_CAMPO, ROTULO_DO_CAMPO, type CampoDoFormulario } from "@/components/forms/novo-chamado/formulario";
 import { useAberturaDeChamado } from "@/components/forms/novo-chamado/useAberturaDeChamado";
 import { SecaoDeAnexos, SecaoDoProblema, SecaoDoSolicitante, SecaoDoVeiculoELocal } from "@/components/forms/novo-chamado/SecoesDoFormulario";
 import ConfirmacaoDeAbertura from "@/components/forms/novo-chamado/ConfirmacaoDeAbertura";
 
-export default function NovoChamado() {
-  const usuario = useUsuarioAutenticado();
+function FormularioDoChamado({ usuario }: { usuario: UsuarioAutenticado }) {
   const ehCliente = usuarioTemPerfil(usuario, PERFIS_DE_CLIENTE);
   const abrePelaCentral = !ehCliente && usuarioTemPerfil(usuario, PERFIS_QUE_ABREM_PELA_CENTRAL);
+  const gestorFrota = usuarioTemPerfil(usuario, ["GESTOR_FROTA"]);
   const resumoDosErros = useRef<HTMLDivElement>(null);
   const avisoDeFalha = useRef<HTMLDivElement>(null);
   const abertura = useAberturaDeChamado({ abrePelaCentral, nomeInicial: abrePelaCentral ? "" : usuario.nome, resumoDosErros, avisoDeFalha });
@@ -73,7 +74,7 @@ export default function NovoChamado() {
 
         <form noValidate onSubmit={abertura.enviar} className="space-y-5">
           <SecaoDoProblema campos={campos} erros={erros} alterar={alterar} escolherMotivo={abertura.escolherMotivo} />
-          <SecaoDoSolicitante campos={campos} erros={erros} alterar={alterar} abrePelaCentral={abrePelaCentral} escolherSolicitante={abertura.escolherSolicitante} />
+          <SecaoDoSolicitante campos={campos} erros={erros} alterar={alterar} abrePelaCentral={abrePelaCentral} gestorFrota={gestorFrota} escolherSolicitante={abertura.escolherSolicitante} />
           <SecaoDoVeiculoELocal campos={campos} erros={erros} alterar={alterar} />
           <SecaoDeAnexos arquivos={abertura.arquivos} aoAdicionar={abertura.adicionarArquivos} aoRemover={abertura.removerArquivo} />
 
@@ -84,4 +85,9 @@ export default function NovoChamado() {
       </div>
     </main>
   );
+}
+
+export default function NovoChamado() {
+  const usuario = useUsuarioAutenticado();
+  return <FormularioDoChamado key={usuario.id} usuario={usuario} />;
 }

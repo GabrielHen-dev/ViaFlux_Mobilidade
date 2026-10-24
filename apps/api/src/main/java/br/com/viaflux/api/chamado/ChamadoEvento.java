@@ -43,6 +43,10 @@ class ChamadoEvento {
     @Column(name = "visivel_cliente", nullable = false)
     private boolean visivelCliente;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private VisibilidadeDoConteudo visibilidade = VisibilidadeDoConteudo.INTERNO;
+
     @Column(name = "ocorrido_em", nullable = false, updatable = false)
     private OffsetDateTime ocorridoEm;
 
@@ -61,6 +65,7 @@ class ChamadoEvento {
         this.autorId = autor == null ? null : autor.id();
         this.autorNome = autor == null ? null : autor.nome();
         this.visivelCliente = visivelCliente;
+        this.visibilidade = visivelCliente ? VisibilidadeDoConteudo.SOLICITANTE : VisibilidadeDoConteudo.INTERNO;
         this.ocorridoEm = ocorridoEm;
     }
 
@@ -91,6 +96,8 @@ class ChamadoEvento {
     boolean isVisivelCliente() {
         return visivelCliente;
     }
+
+    VisibilidadeDoConteudo getVisibilidade() { return visibilidade; }
 
     OffsetDateTime getOcorridoEm() {
         return ocorridoEm;

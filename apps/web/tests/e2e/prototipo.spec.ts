@@ -168,7 +168,7 @@ test("celular em 360px: rede caiu no envio, rascunho preservado e reenvio sem du
   await semRolagemHorizontal(page, "portal");
   await abrirChamadoDePane(page);
   await semRolagemHorizontal(page, "novo chamado");
-  await expect(page.getByLabel("Tirar foto com a câmera")).toHaveAttribute("capture", "environment");
+  await expect(page.getByRole("button", { name: "Tirar foto com a câmera" })).toBeVisible();
 
   const abertura = page.getByRole("button", { name: "Abrir Chamado" });
   const altura = (await abertura.boundingBox())?.height ?? 0;

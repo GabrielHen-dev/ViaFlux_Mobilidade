@@ -85,6 +85,7 @@ export interface EventoTimeline {
   ocorridoEm: string;
   autor: Autor | null;
   visivelCliente: boolean;
+  visibilidade?: "INTERNO" | "SOLICITANTE" | "FORNECEDOR";
 }
 
 export interface Anexo {
@@ -94,6 +95,7 @@ export interface Anexo {
   tamanho: number;
   enviadoEm: string;
   autor: Autor | null;
+  visibilidade?: "INTERNO" | "SOLICITANTE" | "FORNECEDOR";
 }
 
 export interface Localizacao {
@@ -191,7 +193,7 @@ export interface ChamadoResumo {
   status: Status;
   prioridade: CodigoPrioridade | null;
   score: number | null;
-  tipo: TipoChamado;
+  tipo: TipoChamado | null;
   departamento: Departamento | null;
   abertura: string;
   atualizadoEm: string;
@@ -201,6 +203,13 @@ export interface ChamadoResumo {
 }
 
 export interface Chamado extends ChamadoResumo {
+  motivoOutro?: string | null;
+  abertoPorNome?: string | null;
+  classificacaoVersao?: string | null;
+  roteamentoVersao?: string | null;
+  slaVersao?: string | null;
+  resolucaoResumo?: string | null;
+  estadoClassificacao?: "CLASSIFICADA" | "PENDENTE_CLASSIFICACAO" | "PENDENTE_ROTEAMENTO";
   telefone: string;
   descricao: string;
   motivo: Motivo | null;

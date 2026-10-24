@@ -6,7 +6,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -26,8 +25,9 @@ public class IdentificacaoDoUsuario {
         Usuario usuario = usuarios.findById(id)
                 .filter(Usuario::isAtivo)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não encontrado ou inativo."));
-        List<String> perfisDoToken = token.getClaimAsStringList("perfis");
-        Set<String> perfis = perfisDoToken == null ? Set.of() : Set.copyOf(perfisDoToken);
+        Set<String> perfis = usuario.getPerfis().stream()
+                .map(Perfil::getCodigo)
+                .collect(Collectors.toUnmodifiableSet());
         Set<String> departamentos = usuario.getDepartamentos().stream()
                 .map(Departamento::getCodigo)
                 .collect(Collectors.toUnmodifiableSet());

@@ -74,8 +74,38 @@ class Chamado {
     private Contexto contexto;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "tipo_declarado", nullable = false, length = 40)
+    @Column(name = "tipo_declarado", length = 40)
     private TipoChamado tipoDeclarado;
+
+    @Column(name = "motivo_outro", length = 200)
+    private String motivoOutro;
+
+    @Column(name = "classificacao_estado", nullable = false, length = 30)
+    private String classificacaoEstado = "PENDENTE_CLASSIFICACAO";
+
+    @Column(name = "classificacao_versao", length = 40)
+    private String classificacaoVersao;
+
+    @Column(name = "roteamento_versao", length = 40)
+    private String roteamentoVersao;
+
+    @Column(name = "sla_versao", length = 40)
+    private String slaVersao;
+
+    @Column(name = "aberto_por_id")
+    private UUID abertoPorId;
+
+    @Column(name = "aberto_por_nome", length = 150)
+    private String abertoPorNome;
+
+    @Column(name = "resolucao_resumo", columnDefinition = "text")
+    private String resolucaoResumo;
+
+    @Column(name = "fechado_em")
+    private OffsetDateTime fechadoEm;
+
+    @Column(name = "episodio", nullable = false)
+    private int episodio = 1;
 
     @Column(name = "urgencia_declarada")
     private Integer urgenciaDeclarada;
@@ -182,8 +212,12 @@ class Chamado {
         this.solicitante = dados.solicitante();
         this.motivo = dados.motivo();
         this.contexto = dados.contexto();
-        this.tipoDeclarado = dados.motivo().getTipo();
-        this.urgenciaDeclarada = dados.contexto().getUrgencia();
+        this.tipoDeclarado = dados.motivo() == null ? null : dados.motivo().getTipo();
+        this.motivoOutro = dados.motivoOutro();
+        this.classificacaoEstado = "PENDENTE_CLASSIFICACAO";
+        this.abertoPorId = dados.abertoPorId();
+        this.abertoPorNome = dados.abertoPorNome();
+        this.urgenciaDeclarada = dados.contexto() == null ? null : dados.contexto().getUrgencia();
         this.triagemPrazoMinutos = dados.prazoDeTriagemMinutos();
         this.triagemLimite = abertoEm.plusMinutes(dados.prazoDeTriagemMinutos());
         this.chaveIdempotencia = dados.chaveIdempotencia();
@@ -222,6 +256,7 @@ class Chamado {
         }
         classificar(tipo, severidade, urgencia);
         this.departamento = destino;
+        this.classificacaoEstado = "CLASSIFICADA";
         this.status = StatusChamado.NA_FILA;
         if (triagemIniciadaEm == null) {
             this.triagemIniciadaEm = agora;
@@ -231,6 +266,8 @@ class Chamado {
         this.triadoEm = agora;
         this.triadoPorId = autor.id();
         this.triadoPorNome = autor.nome();
+        this.roteamentoVersao = "roteamento-v1";
+        this.slaVersao = "sla-v1";
         tocar(agora);
     }
 
@@ -247,6 +284,51 @@ class Chamado {
         this.classificacaoTipo = tipo;
         this.severidade = severidade;
         this.urgencia = urgencia;
+        this.classificacaoEstado = "CLASSIFICADA";
+        this.classificacaoVersao = "classificacao-v1";
+    }
+
+    void classificarAutomaticamente(TipoChamado tipo, int severidade, int urgencia, TipoChamado destino, OffsetDateTime agora) {
+        if (triado()) return;
+        classificar(tipo, severidade, urgencia);
+        this.departamento = destino;
+        this.status = StatusChamado.NA_FILA;
+        this.triagemIniciadaEm = agora;
+        this.triadoEm = agora;
+        this.triadoPorNome = "Classificação automática V1";
+        this.roteamentoVersao = "roteamento-v1";
+        this.slaVersao = "sla-v1";
+        tocar(agora);
+    }
+
+    void marcarPendenteRoteamento(OffsetDateTime agora) {
+        this.departamento = null;
+        this.classificacaoEstado = "PENDENTE_ROTEAMENTO";
+        this.classificacaoVersao = "classificacao-v1";
+        this.roteamentoVersao = "roteamento-v1";
+        this.status = StatusChamado.ABERTO;
+        this.triadoEm = null;
+        tocar(agora);
+    }
+
+    void resolverComResumo(String resumo, Autor autor, OffsetDateTime agora) {
+        exigirTriagemConcluida();
+        if (resumo == null || resumo.isBlank()) throw ErroDeChamado.campoInvalido("resumoResolucao", "Informe o resumo da solução.");
+        if (status == StatusChamado.FECHADO) throw ErroDeChamado.conflito("Chamados fechados não podem ser resolvidos.");
+        this.resolucaoResumo = resumo.trim();
+        this.status = StatusChamado.RESOLVIDO;
+        this.resolvidoEm = agora;
+        this.triadoPorId = triadoPorId == null ? autor.id() : triadoPorId;
+        this.triadoPorNome = triadoPorNome == null ? autor.nome() : triadoPorNome;
+        registrarPrimeiraResposta(agora);
+        tocar(agora);
+    }
+
+    void fecharAutomaticamente(OffsetDateTime agora) {
+        if (status != StatusChamado.RESOLVIDO) return;
+        status = StatusChamado.FECHADO;
+        fechadoEm = agora;
+        tocar(agora);
     }
 
     void definirOverride(Prioridade prioridade, String justificativa, Autor autor, OffsetDateTime agora) {
@@ -285,6 +367,10 @@ class Chamado {
             throw ErroDeChamado.campoInvalido("motivoAguardando", "Informe quem está sendo aguardado: cliente, fornecedor ou outro departamento.");
         }
         StatusChamado anterior = status;
+        if (anterior == StatusChamado.FECHADO) throw ErroDeChamado.conflito("Chamados fechados não podem mudar de status.");
+        if (anterior == StatusChamado.RESOLVIDO && novo != StatusChamado.FECHADO) {
+            throw ErroDeChamado.conflito("Reabertura exige o fluxo específico de reabertura.");
+        }
         boolean mesmoMotivo = novo != StatusChamado.AGUARDANDO || motivo == motivoAguardando;
         if (anterior == novo && mesmoMotivo) {
             throw ErroDeChamado.conflito("O chamado já está " + novo.getRotulo() + ".");
@@ -306,8 +392,8 @@ class Chamado {
         }
         if (novo == StatusChamado.RESOLVIDO) {
             this.resolvidoEm = agora;
-        } else if (novo != StatusChamado.FECHADO) {
-            this.resolvidoEm = null;
+        } else if (novo == StatusChamado.FECHADO) {
+            this.fechadoEm = agora;
         }
         tocar(agora);
         return anterior;
@@ -324,6 +410,7 @@ class Chamado {
         TipoChamado origem = departamento;
         encerrarPausa(agora);
         this.departamento = destino;
+        this.classificacaoEstado = "CLASSIFICADA";
         this.motivoAguardando = null;
         liberarResponsavel();
         if (status != StatusChamado.RESOLVIDO) {
@@ -559,6 +646,17 @@ class Chamado {
     OffsetDateTime getExcluidoEm() {
         return excluidoEm;
     }
+
+    String getMotivoOutro() { return motivoOutro; }
+    String getClassificacaoEstado() { return classificacaoEstado; }
+    UUID getAbertoPorId() { return abertoPorId; }
+    String getAbertoPorNome() { return abertoPorNome; }
+    String getResolucaoResumo() { return resolucaoResumo; }
+    OffsetDateTime getFechadoEm() { return fechadoEm; }
+    int getEpisodio() { return episodio; }
+    String getClassificacaoVersao() { return classificacaoVersao; }
+    String getRoteamentoVersao() { return roteamentoVersao; }
+    String getSlaVersao() { return slaVersao; }
 
     List<PausaDoChamado> getPausas() {
         return List.copyOf(pausas);

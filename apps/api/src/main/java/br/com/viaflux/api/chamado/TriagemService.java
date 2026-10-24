@@ -61,7 +61,7 @@ class TriagemService {
         boolean destinoEscolhido = request.departamento() != null && !request.departamento().isBlank();
         TipoChamado destino = destinoEscolhido
                 ? TipoChamado.deCodigo(request.departamento(), "departamento")
-                : roteamento.destino(tipo, prioridade, agora.toInstant());
+                : roteamento.destino(tipo, prioridade, request.urgencia(), agora.toInstant());
         Autor autor = autor(usuario);
         chamado.concluirTriagem(tipo, request.severidade(), request.urgencia(), destino, autor, agora);
 
@@ -73,7 +73,7 @@ class TriagemService {
                         + " · em " + minutos + " min, " + prazo + " (" + chamado.getTriagemPrazoMinutos() + " min)" + observacao,
                 autor, agora);
         historico.registrarParaTodos(chamado, TipoEvento.ROTEAMENTO, "Encaminhado para " + destino.getNome(),
-                descreverEncaminhamento(tipo, destino, destinoEscolhido), autor, agora);
+                descreverEncaminhamento(tipo, destino, destinoEscolhido, prioridade, request.urgencia()), autor, agora);
         aviso.avisar(chamado, StatusChamado.NA_FILA.getRotulo(),
                 "O chamado " + chamado.getCodigo() + " foi analisado e encaminhado para " + destino.getNome() + ".", agora);
         return montagem.completo(chamado, false);
@@ -148,11 +148,12 @@ class TriagemService {
                 + Prioridade.rotuloDoPeso(urgencia) + " (" + urgencia + ") = score " + score + " · " + prioridade + " " + prioridade.getRotulo();
     }
 
-    private static String descreverEncaminhamento(TipoChamado tipo, TipoChamado destino, boolean destinoEscolhido) {
+    private static String descreverEncaminhamento(TipoChamado tipo, TipoChamado destino, boolean destinoEscolhido, Prioridade prioridade, int urgencia) {
         if (destinoEscolhido || destino == tipo) {
             return "Chamado direcionado para a fila de " + destino.getNome() + ".";
         }
-        return "P1 fora do horário comercial: chamado direcionado ao Plantão da " + destino.getNome() + ".";
+        return prioridade + (urgencia == 5 ? " com urgência imediata" : "")
+                + " fora do horário comercial: chamado direcionado ao Plantão da " + destino.getNome() + ".";
     }
 
     private OffsetDateTime agora() {

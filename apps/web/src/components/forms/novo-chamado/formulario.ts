@@ -3,21 +3,29 @@ import type { Localizacao } from "@/types/chamado";
 import { LOCALIZACAO_VAZIA } from "@/utils/endereco";
 import { gerarId } from "@/utils/id";
 
-export const esquemaDeAbertura = z.object({
+const esquemaBase = z.object({
   solicitanteId: z.string(),
   cliente: z.string().trim().min(1, "Informe o nome do solicitante.").max(150, "Use no máximo 150 caracteres."),
   telefone: z.string().trim().max(30, "Use no máximo 30 caracteres."),
   motivoId: z.string().min(1, "Selecione o motivo da solicitação."),
-  contextoId: z.string().min(1, "Selecione o contexto situacional."),
+  contextoId: z.string(),
+  motivoOutro: z.string().max(200, "Use no máximo 200 caracteres."),
   descricao: z.string().trim().min(10, "Descreva o problema com pelo menos 10 caracteres."),
   modelo: z.string().trim().max(120, "Use no máximo 120 caracteres."),
   placa: z.string().trim().max(20, "Use no máximo 20 caracteres."),
   endereco: z.string().trim().max(255, "Use no máximo 255 caracteres."),
 });
 
-export const esquemaDaCentral = esquemaDeAbertura.extend({
+function validarMotivoOutro(dados: z.infer<typeof esquemaBase>, contexto: z.RefinementCtx) {
+  if (dados.motivoId === "OUTRO" && !dados.motivoOutro.trim()) contexto.addIssue({ code: "custom", path: ["motivoOutro"], message: "Descreva brevemente o motivo para a Central classificar." });
+  if (dados.motivoId !== "OUTRO" && !dados.contextoId) contexto.addIssue({ code: "custom", path: ["contextoId"], message: "Selecione o contexto situacional." });
+}
+
+export const esquemaDeAbertura = esquemaBase.superRefine(validarMotivoOutro);
+
+export const esquemaDaCentral = esquemaBase.extend({
   solicitanteId: z.string().min(1, "Selecione o cliente solicitante."),
-});
+}).superRefine(validarMotivoOutro);
 
 export type CampoDoFormulario = keyof z.infer<typeof esquemaDeAbertura>;
 export type ErrosDoFormulario = Partial<Record<CampoDoFormulario, string>>;
@@ -28,6 +36,7 @@ export const ROTULO_DO_CAMPO: Record<CampoDoFormulario, string> = {
   telefone: "Telefone",
   motivoId: "Motivo",
   contextoId: "Contexto situacional",
+  motivoOutro: "Outro motivo",
   descricao: "Descrição",
   modelo: "Modelo do veículo",
   placa: "Placa",
@@ -40,6 +49,7 @@ export const ID_DO_CAMPO: Record<CampoDoFormulario, string> = {
   telefone: "novo-telefone",
   motivoId: "novo-motivo",
   contextoId: "novo-contexto",
+  motivoOutro: "novo-motivo-outro",
   descricao: "novo-descricao",
   modelo: "novo-modelo",
   placa: "novo-placa",
@@ -52,6 +62,7 @@ export interface CamposDoRascunho {
   telefone: string;
   motivoId: string;
   contextoId: string;
+  motivoOutro: string;
   descricao: string;
   modelo: string;
   placa: string;
@@ -77,7 +88,7 @@ export const inputClass = "w-full px-3.5 py-2.5 rounded-lg border border-[#E2E8F
 
 export function rascunhoVazio(nome: string): Rascunho {
   return {
-    campos: { solicitanteId: "", cliente: nome, telefone: "", motivoId: "", contextoId: "", descricao: "", modelo: "", placa: "", localizacao: LOCALIZACAO_VAZIA },
+    campos: { solicitanteId: "", cliente: nome, telefone: "", motivoId: "", contextoId: "", motivoOutro: "", descricao: "", modelo: "", placa: "", localizacao: LOCALIZACAO_VAZIA },
     chaveIdempotencia: gerarId(),
   };
 }

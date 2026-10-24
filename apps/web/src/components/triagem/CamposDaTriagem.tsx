@@ -14,18 +14,19 @@ export function justificativaValida(texto: string) {
   return texto.trim().length >= TAMANHO_MINIMO_DA_JUSTIFICATIVA;
 }
 
-export function SeletorDeTipo({ id, rotulo, valor, aoAlterar }: { id: string; rotulo: string; valor: TipoChamado; aoAlterar: (tipo: TipoChamado) => void }) {
+export function SeletorDeTipo({ id, rotulo, valor, aoAlterar }: { id: string; rotulo: string; valor: TipoChamado | ""; aoAlterar: (tipo: TipoChamado | "") => void }) {
   return (
     <div>
       <label htmlFor={id} className={labelClass}>{rotulo}</label>
-      <select id={id} className={inputClass} value={valor} onChange={(evento) => aoAlterar(evento.target.value as TipoChamado)}>
+      <select id={id} className={inputClass} value={valor} onChange={(evento) => aoAlterar(evento.target.value as TipoChamado | "")}>
+        <option value="">Selecione o tipo após classificar</option>
         {TIPOS_CHAMADO.map((opcao) => <option key={opcao} value={opcao}>{NOME_TIPO[opcao]}</option>)}
       </select>
     </div>
   );
 }
 
-export function SeletorDePeso({ nome, rotulo, valor, aoAlterar }: { nome: string; rotulo: string; valor: Peso; aoAlterar: (peso: Peso) => void }) {
+export function SeletorDePeso({ nome, rotulo, valor, aoAlterar }: { nome: string; rotulo: string; valor: Peso | ""; aoAlterar: (peso: Peso) => void }) {
   return (
     <fieldset>
       <legend className={labelClass}>{rotulo}</legend>
@@ -41,7 +42,8 @@ export function SeletorDePeso({ nome, rotulo, valor, aoAlterar }: { nome: string
   );
 }
 
-export function ResultadoDoScore({ severidade, urgencia, children }: { severidade: Peso; urgencia: Peso; children?: React.ReactNode }) {
+export function ResultadoDoScore({ severidade, urgencia, children }: { severidade: Peso | ""; urgencia: Peso | ""; children?: React.ReactNode }) {
+  if (!severidade || !urgencia) return <div className="rounded-xl bg-slate-50 p-3 text-sm text-slate-500">Aguardando classificação para calcular prioridade.</div>;
   const score = calcularScore(severidade, urgencia);
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 p-3 text-sm" aria-live="polite">

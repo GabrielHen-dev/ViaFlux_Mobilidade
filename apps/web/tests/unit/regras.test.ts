@@ -52,8 +52,8 @@ describe("sugestão da triagem", () => {
     expect(sugestaoDoCliente(chamado)).toEqual({ tipo: "MANUTENCAO", severidade: 3, urgencia: 5 });
   });
 
-  it("usa pesos médios quando o chamado não tem motivo nem contexto", () => {
-    expect(sugestaoDoCliente({ tipo: "TI", motivo: null, contexto: null } as Chamado)).toEqual({ tipo: "TI", severidade: 3, urgencia: 3 });
+  it("não inventa pesos quando o chamado não tem motivo nem contexto", () => {
+    expect(sugestaoDoCliente({ tipo: "TI", motivo: null, contexto: null } as Chamado)).toEqual({ tipo: "TI", severidade: null, urgencia: null });
   });
 });
 

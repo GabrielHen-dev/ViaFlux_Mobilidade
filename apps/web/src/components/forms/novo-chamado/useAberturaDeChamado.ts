@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, type FormEvent, type RefObject } from "react";
+import { useMemo, useState, type FormEvent, type RefObject } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Chamado } from "@/types/chamado";
 import { abrirChamado, enviarAnexo } from "@/services/api/chamados";
 import { ErroApi } from "@/services/api/cliente";
-import { useApi } from "@/store/AuthContext";
+import { useApi, useUsuarioAutenticado } from "@/store/AuthContext";
 import { invalidarListas } from "@/hooks/consultas";
 import { useRascunho } from "@/hooks/useRascunho";
 import { mensagemDeErro } from "@/components/feedback/EstadoDaConsulta";
-import { completarLocalizacao, temCoordenadas, temEnderecoEstruturado } from "@/utils/endereco";
+import { completarLocalizacao, LOCALIZACAO_VAZIA, temCoordenadas, temEnderecoEstruturado } from "@/utils/endereco";
 import { gerarId } from "@/utils/id";
 import {
   type AlterarCampo, type ArquivoPendente, type CampoDoFormulario, type CamposDoRascunho, type ErrosDoFormulario, type Rascunho,
@@ -23,11 +23,17 @@ interface Opcoes {
   avisoDeFalha: RefObject<HTMLDivElement | null>;
 }
 
+function sanitizarRascunho(rascunho: Rascunho): Rascunho {
+  return { ...rascunho, campos: { ...rascunho.campos, localizacao: LOCALIZACAO_VAZIA } };
+}
+
 export function useAberturaDeChamado({ abrePelaCentral, nomeInicial, resumoDosErros, avisoDeFalha }: Opcoes) {
   const api = useApi();
+  const usuario = useUsuarioAutenticado();
   const clienteDeConsultas = useQueryClient();
-  const { valor: rascunho, setValor: setRascunho, restaurado, descartar } = useRascunho<Rascunho>("novo-chamado", rascunhoVazio(nomeInicial));
-  const campos: CamposDoRascunho = { ...rascunho.campos, localizacao: completarLocalizacao(rascunho.campos.localizacao) };
+  const rascunhoInicial = useMemo(() => rascunhoVazio(nomeInicial), [nomeInicial]);
+  const { valor: rascunho, setValor: setRascunho, restaurado, descartar } = useRascunho<Rascunho>(`novo-chamado:${usuario.id}`, rascunhoInicial, sanitizarRascunho);
+  const campos: CamposDoRascunho = { ...rascunho.campos, motivoOutro: rascunho.campos.motivoOutro ?? "", localizacao: completarLocalizacao(rascunho.campos.localizacao) };
   const [arquivos, setArquivos] = useState<ArquivoPendente[]>([]);
   const [erros, setErros] = useState<ErrosDoFormulario>({});
   const [falhaDoEnvio, setFalhaDoEnvio] = useState<string | null>(null);
@@ -87,9 +93,10 @@ export function useAberturaDeChamado({ abrePelaCentral, nomeInicial, resumoDosEr
       const dados = validacao.data;
       const informouLocalizacao = dados.endereco !== "" || temCoordenadas(campos.localizacao) || temEnderecoEstruturado(campos.localizacao);
       const chamado = await abrirChamado(api, {
-        solicitanteId: abrePelaCentral ? dados.solicitanteId : undefined,
+        solicitanteId: dados.solicitanteId || undefined,
         motivoId: dados.motivoId,
-        contextoId: dados.contextoId,
+          contextoId: dados.motivoId === "OUTRO" ? null : dados.contextoId,
+          motivoOutro: dados.motivoId === "OUTRO" ? dados.motivoOutro.trim() : undefined,
         descricao: dados.descricao,
         cliente: dados.cliente,
         telefone: dados.telefone,
