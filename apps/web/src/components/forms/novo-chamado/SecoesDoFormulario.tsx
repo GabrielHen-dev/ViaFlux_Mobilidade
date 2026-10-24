@@ -107,7 +107,7 @@ export function SecaoDoSolicitante({ campos, erros, alterar, abrePelaCentral, ge
     <Secao numero={2} titulo="Solicitante">
       {(abrePelaCentral || gestorFrota) && (
         <div className="mb-4">
-          <label htmlFor={ID_DO_CAMPO.solicitanteId} className={labelClass}>Motorista da frota {abrePelaCentral ? "*" : "(opcional)"}</label>
+          <label htmlFor={ID_DO_CAMPO.solicitanteId} className={labelClass}>{abrePelaCentral ? "Cliente solicitante *" : "Motorista da frota (opcional)"}</label>
           <SeletorDeSolicitante
             id={ID_DO_CAMPO.solicitanteId}
             valor={campos.solicitanteId}
@@ -117,7 +117,7 @@ export function SecaoDoSolicitante({ campos, erros, alterar, abrePelaCentral, ge
             aoEscolher={escolherSolicitante}
           />
           <ErroDoCampo campo="solicitanteId" erros={erros} />
-          <p className="mt-1 text-xs text-slate-500">A lista é limitada à organização vinculada à sua conta.</p>
+          <p className="mt-1 text-xs text-slate-500">{abrePelaCentral ? "Selecione o cliente validado para esta abertura." : "A lista é limitada à organização vinculada à sua conta."}</p>
         </div>
       )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

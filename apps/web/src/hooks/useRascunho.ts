@@ -49,6 +49,8 @@ export function useRascunho<T>(chave: string, inicial: T, sanitizar: (valor: T) 
 
   useEffect(() => {
     const salvo = ler<T>(chave);
+    // A restauração ocorre após a hidratação para evitar divergência entre o HTML do servidor e o armazenamento local.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEstado({ chave, valor: salvo === null ? inicial : sanitizar(salvo.valor), restaurado: salvo !== null, expiraEm: salvo === null ? null : salvo.salvoEm + RETENCAO_MAXIMA_MS });
   }, [chave, inicial, sanitizar]);
 
