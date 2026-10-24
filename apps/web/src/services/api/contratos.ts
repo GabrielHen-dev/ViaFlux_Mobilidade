@@ -23,7 +23,7 @@ export interface FiltrosChamados {
   tipo?: TipoChamado;
   sla?: SituacaoSlaFiltravel;
   etapa?: Etapa;
-  ordenacao?: "fila" | "recentes";
+  ordenacao?: "fila" | "recentes" | "ativos_recentes";
   page?: number;
   size?: number;
 }

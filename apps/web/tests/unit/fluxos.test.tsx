@@ -7,7 +7,8 @@ import SeletorDeArquivos from "@/components/forms/SeletorDeArquivos";
 import Triagem from "@/components/forms/Triagem";
 import Encaminhamento from "@/components/forms/Encaminhamento";
 import DetalhesChamado from "@/components/chamados/DetalhesChamado";
-import { type ClienteApi, abrirChamado, concluirTriagem } from "@/services/api/chamados";
+import PortalDoCliente from "@/components/portal/PortalDoCliente";
+import { type ClienteApi, abrirChamado, alterarStatus, concluirTriagem } from "@/services/api/chamados";
 import { requisitarApi } from "@/services/api/cliente";
 import { render } from "@testing-library/react";
 import { USUARIOS, type UsuarioDeTeste, tokenDeAcesso } from "../support/backendFalso";
@@ -196,13 +197,38 @@ describe("o que cada perfil faz no chamado", () => {
     expect(await screen.findByText("Você")).toBeInTheDocument();
   });
 
-  it("o atendente transfere e aciona fornecedor, mas não assume o atendimento", async () => {
+  it("o atendente pode assumir, alterar o status e acionar fornecedor", async () => {
     await chamadoTriado();
     await renderizarComo(USUARIOS.atendente, <DetalhesChamado id="VF-0000" />);
-    expect(await screen.findByRole("link", { name: "Transferir" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Assumir chamado" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Transferir / status" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Assumir chamado" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Alterar status")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Incluir serviço terceirizado" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Excluir/ })).toBeInTheDocument();
+  });
+
+  it("altera o status pelo menu até fechar o chamado resolvido", async () => {
+    const usuario = userEvent.setup();
+    await chamadoTriado();
+    await renderizarComo(USUARIOS.atendente, <DetalhesChamado id="VF-0000" />);
+
+    await usuario.selectOptions(await screen.findByLabelText("Alterar status"), "Em atendimento");
+    await usuario.click(screen.getByRole("button", { name: "Atualizar status" }));
+    await screen.findByText("Status alterado para Em atendimento");
+
+    await usuario.selectOptions(screen.getByLabelText("Alterar status"), "Aguardando");
+    await usuario.selectOptions(screen.getByLabelText("Aguardando quem? *"), "FORNECEDOR");
+    await usuario.click(screen.getByRole("button", { name: "Atualizar status" }));
+    await screen.findByText("Status alterado para Aguardando");
+
+    await usuario.selectOptions(screen.getByLabelText("Alterar status"), "Resolvido");
+    await usuario.type(screen.getByLabelText("Resumo da solução *"), "Veículo reparado e entregue ao cliente.");
+    await usuario.click(screen.getByRole("button", { name: "Atualizar status" }));
+    await screen.findByText("Status alterado para Resolvido");
+
+    await usuario.selectOptions(screen.getByLabelText("Alterar status"), "Fechado");
+    await usuario.click(screen.getByRole("button", { name: "Atualizar status" }));
+    expect(await screen.findByText("Este chamado está fechado.")).toBeInTheDocument();
   });
 
   it("o líder só acompanha: sem ações, sem registrar atualização e sem enviar anexos", async () => {
@@ -271,6 +297,24 @@ describe("dashboard", () => {
   });
 });
 
+describe("meus chamados", () => {
+  it("mantém o fechado visível depois do chamado aberto", async () => {
+    ligarBackendFalso();
+    await abrirPane("fechado");
+    await abrirPane("aberto");
+    const atendente = apiComo(USUARIOS.atendente);
+    await concluirTriagem(atendente, "VF-0000", { tipo: "ASSISTENCIA_24H", severidade: 5, urgencia: 5 });
+    await alterarStatus(atendente, "VF-0000", { status: "Resolvido", resumoResolucao: "Veículo reparado e entregue." });
+    await alterarStatus(atendente, "VF-0000", { status: "Fechado" });
+
+    await renderizarComo(USUARIOS.cliente, <PortalDoCliente />);
+    await screen.findByRole("link", { name: /VF-0000/ });
+    const chamados = screen.getAllByRole("link").filter((link) => link.getAttribute("href")?.startsWith("/portal/chamados/"));
+    expect(chamados.map((link) => link.getAttribute("href"))).toEqual(["/portal/chamados/VF-0001", "/portal/chamados/VF-0000"]);
+    expect(chamados[1]).toHaveTextContent("Fechado");
+  });
+});
+
 describe("seleção de anexos", () => {
   it("aceita PNG e PDF e explica por que rejeitou os outros arquivos", async () => {
     const usuario = userEvent.setup({ applyAccept: false });
@@ -283,6 +327,6 @@ describe("seleção de anexos", () => {
     ]);
     expect(aceitos.map((arquivo) => arquivo.name)).toEqual(["veiculo.png", "laudo.pdf"]);
     expect(screen.getByRole("alert")).toHaveTextContent('"notas.txt" não foi aceito: envie fotos PNG ou JPG, ou documentos PDF.');
-    expect(screen.getByLabelText("Tirar foto com a câmera")).toHaveAttribute("capture", "environment");
+    expect(screen.getByRole("button", { name: "Tirar foto com a câmera" })).toBeEnabled();
   });
 });

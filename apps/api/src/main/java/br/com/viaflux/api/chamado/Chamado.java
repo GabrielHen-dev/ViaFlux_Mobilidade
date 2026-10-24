@@ -378,9 +378,6 @@ class Chamado {
         if (novo == StatusChamado.FECHADO && anterior != StatusChamado.RESOLVIDO) {
             throw ErroDeChamado.conflito("Só é possível fechar um chamado depois de resolvido.");
         }
-        if (novo == StatusChamado.FECHADO) {
-            throw ErroDeChamado.conflito("O fechamento depende da confirmação ou do prazo de aceite do solicitante.");
-        }
         encerrarPausa(agora);
         this.status = novo;
         this.motivoAguardando = novo == StatusChamado.AGUARDANDO ? motivo : null;

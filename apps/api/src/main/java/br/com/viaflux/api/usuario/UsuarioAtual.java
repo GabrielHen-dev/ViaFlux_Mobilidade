@@ -6,11 +6,11 @@ import java.util.UUID;
 
 public record UsuarioAtual(UUID id, String nome, Set<String> perfis, Set<String> departamentos, UUID organizacaoId) {
 
-    public static final Set<String> PERFIS_COM_VISAO_GLOBAL = Set.of("ADMIN", "ATENDENTE");
+    public static final Set<String> PERFIS_COM_VISAO_GLOBAL = Set.of("ADMIN", "ATENDENTE", "LIDER_OPERACIONAL");
     public static final Set<String> PERFIS_DA_CENTRAL = Set.of("ADMIN", "ATENDENTE", "DEPARTAMENTO", "LIDER_OPERACIONAL");
-    public static final Set<String> PERFIS_DE_TRIAGEM = Set.of("ATENDENTE");
-    public static final Set<String> PERFIS_QUE_CONDUZEM_QUALQUER_FILA = Set.of("ATENDENTE");
-    public static final Set<String> PERFIS_QUE_ATENDEM_QUALQUER_FILA = Set.of("ATENDENTE");
+    public static final Set<String> PERFIS_DE_TRIAGEM = Set.of("ADMIN", "ATENDENTE");
+    public static final Set<String> PERFIS_QUE_CONDUZEM_QUALQUER_FILA = Set.of("ADMIN", "ATENDENTE");
+    public static final Set<String> PERFIS_QUE_ATENDEM_QUALQUER_FILA = Set.of("ADMIN", "ATENDENTE");
     public static final Set<String> PERFIS_DE_CLIENTE = Set.of("CLIENTE", "GESTOR_FROTA");
 
     public boolean temAlgum(Collection<String> esperados) {

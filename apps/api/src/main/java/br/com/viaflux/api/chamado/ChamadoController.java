@@ -80,9 +80,10 @@ public class ChamadoController {
     @GetMapping
     @Operation(
             summary = "Listar chamados",
-            description = "Clientes veem os próprios chamados; departamentos, os da sua fila; ATENDENTE tem visão global; "
-                    + "LIDER_OPERACIONAL acompanha os chamados permitidos; ADMIN precisa de concessão excepcional válida por 15 minutos. "
-                    + "A fila normal exclui chamados sem classificação; etapa=TRIAGEM lista a fila de exceções aguardando classificação.",
+            description = "Clientes veem os próprios chamados; departamentos, os da sua fila; ADMIN e ATENDENTE têm visão global; "
+                    + "LIDER_OPERACIONAL acompanha todos os chamados sem alterar. "
+                    + "A fila normal exclui chamados sem classificação; etapa=TRIAGEM lista a fila de exceções aguardando classificação. "
+                    + "ordenacao=ativos_recentes inclui todo o histórico, com chamados ativos primeiro e depois os mais recentemente atualizados.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     ChamadosPageResponse listar(
@@ -93,7 +94,7 @@ public class ChamadoController {
             @RequestParam(required = false) String tipo,
             @Parameter(description = "NO_PRAZO, EM_RISCO ou VIOLADO") @RequestParam(required = false) String sla,
             @Parameter(description = "TRIAGEM ou ATENDIMENTO") @RequestParam(required = false) String etapa,
-            @Parameter(description = "fila ou recentes") @RequestParam(required = false) String ordenacao,
+            @Parameter(description = "fila, recentes ou ativos_recentes") @RequestParam(required = false) String ordenacao,
             @Min(0) @RequestParam(defaultValue = "0") int page,
             @Min(1) @Max(100) @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal Jwt token
@@ -195,8 +196,8 @@ public class ChamadoController {
             summary = "Alterar status de um chamado já triado",
             description = "Status aceitos: Na fila, Em atendimento, Aguardando, Resolvido e Fechado. Aberto e Em triagem não podem ser "
                     + "definidos à mão, e antes da triagem a resposta é 409. Aguardando exige motivoAguardando (CLIENTE pausa o SLA "
-                    + "de resolução); Fechado só depois de Resolvido; Na fila libera o responsável pelo atendimento. O cliente é "
-                    + "notificado. Perfis: ADMIN e DEPARTAMENTO (só a própria fila).",
+                    + "de resolução); Resolvido exige resumoResolucao; Fechado só depois de Resolvido; Na fila libera o responsável "
+                    + "pelo atendimento. O cliente é notificado. Perfis: ADMIN, ATENDENTE e DEPARTAMENTO (só a própria fila).",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     ChamadoResponse alterarStatus(@PathVariable String codigo, @Valid @RequestBody AlterarStatusRequest request, @AuthenticationPrincipal Jwt token) {
@@ -208,7 +209,7 @@ public class ChamadoController {
             summary = "Assumir o atendimento",
             description = "O departamento responsável assume o chamado triado, que vai para Em atendimento com a pessoa registrada como responsável. "
                     + "Outra pessoa da fila pode assumir no lugar. Chamados resolvidos ou fechados não podem ser assumidos (409). "
-                    + "Perfis: ADMIN e DEPARTAMENTO (só a própria fila).",
+                    + "Perfis: ADMIN, ATENDENTE e DEPARTAMENTO (só a própria fila).",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     ChamadoResponse assumir(@PathVariable String codigo, @AuthenticationPrincipal Jwt token) {

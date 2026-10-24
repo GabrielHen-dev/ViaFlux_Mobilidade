@@ -3,26 +3,21 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ArrowRightLeft, Check, ChevronLeft, ClipboardList } from "lucide-react";
-import { MOTIVOS_AGUARDANDO, STATUS_DEFINIVEIS, type Chamado, type MotivoAguardando, type Status, type TipoChamado } from "@/types/chamado";
-import type { DadosStatus, DadosTransferencia } from "@/services/api/contratos";
-import { alterarStatus, transferirChamado } from "@/services/api/chamados";
+import { type Chamado, type TipoChamado } from "@/types/chamado";
+import type { DadosTransferencia } from "@/services/api/contratos";
+import { transferirChamado } from "@/services/api/chamados";
 import { useAcaoNoChamado, useDepartamentos } from "@/hooks/consultas";
 import { useRascunho } from "@/hooks/useRascunho";
 import ComChamado from "@/components/chamados/ComChamado";
 import PerfilRequerido from "@/components/auth/PerfilRequerido";
-import { APARENCIA_DO_STATUS, PrioridadeIndicador, StatusBadge } from "@/components/ui/StatusBadge";
+import AlteracaoDeStatus from "@/components/chamados/AlteracaoDeStatus";
+import { PrioridadeIndicador, StatusBadge } from "@/components/ui/StatusBadge";
 import { AvisoDeErro } from "@/components/feedback/EstadoDaConsulta";
 import { formatarDataHora } from "@/utils/date";
 import { useUsuarioAutenticado } from "@/store/AuthContext";
 import { PERFIS_DE_TRIAGEM, PERFIS_QUE_ATENDEM, PERFIS_QUE_CONDUZEM, usuarioTemPerfil } from "@/utils/perfis";
-import { cn } from "@/utils/cn";
 
 const TAMANHO_MINIMO_DO_MOTIVO = 10;
-const ROTULO_DO_AGUARDANDO: Record<MotivoAguardando, string> = {
-  CLIENTE: "Cliente (pausa o relógio de resolução)",
-  FORNECEDOR: "Fornecedor (SLA continua contando)",
-  OUTRO_DEPARTAMENTO: "Outro departamento (SLA continua contando)",
-};
 const labelClass = "block text-xs font-semibold text-[#475569] uppercase tracking-wide mb-2";
 const inputClass = "w-full px-3.5 py-2.5 rounded-lg border border-[#E2E8F0] bg-white text-sm text-brand-dark outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10";
 
@@ -32,19 +27,12 @@ function EncaminhamentoConteudo({ chamado }: { chamado: Chamado }) {
   const departamentos = useDepartamentos();
   const [destino, setDestino] = useState<TipoChamado | "">("");
   const { valor: motivo, setValor: setMotivo, descartar: descartarMotivo } = useRascunho(`transferencia:${usuario.id}:${chamado.id}`, "");
-  const [status, setStatus] = useState<Status>(chamado.status);
-  const [motivoAguardando, setMotivoAguardando] = useState<MotivoAguardando | "">(chamado.motivoAguardando ?? "");
-  const [observacao, setObservacao] = useState("");
-  const [resumoResolucao, setResumoResolucao] = useState("");
   const [confirmacao, setConfirmacao] = useState<string | null>(null);
 
   const transferencia = useAcaoNoChamado(chamado.id, (api, dados: DadosTransferencia) => transferirChamado(api, chamado.id, dados));
-  const mudancaDeStatus = useAcaoNoChamado(chamado.id, (api, dados: DadosStatus) => alterarStatus(api, chamado.id, dados));
   const transferencias = chamado.timeline.filter((evento) => evento.tipo === "TRANSFERENCIA" || evento.tipo === "ROTEAMENTO");
   const destinosValidos = (departamentos.data ?? []).filter((departamento) => departamento.codigo !== chamado.departamento?.codigo);
   const podeTransferir = destino !== "" && motivo.trim().length >= TAMANHO_MINIMO_DO_MOTIVO;
-  const precisaDeMotivoAguardando = status === "Aguardando" && motivoAguardando === "";
-  const statusMudou = status !== chamado.status || (status === "Aguardando" && motivoAguardando !== chamado.motivoAguardando);
 
   return (
     <main id="conteudo" className="p-4 md:p-8">
@@ -111,50 +99,7 @@ function EncaminhamentoConteudo({ chamado }: { chamado: Chamado }) {
               </div>
             </section>
 
-            {atende && <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5 md:p-6">
-              <h2 className="mb-4 font-display text-sm font-semibold text-brand-navy">Status do chamado</h2>
-              <div className="mb-4 flex flex-wrap gap-2" role="radiogroup" aria-label="Novo status">
-                {STATUS_DEFINIVEIS.map((opcao) => {
-                  const { texto } = APARENCIA_DO_STATUS[opcao];
-                  const selecionado = status === opcao;
-                  return (
-                    <button key={opcao} type="button" role="radio" aria-checked={selecionado} onClick={() => setStatus(opcao)} className="alvo-toque rounded-lg border-2 px-3.5 py-2 text-xs font-semibold transition-all" style={{ borderColor: selecionado ? texto : "#E2E8F0", color: selecionado ? texto : "#64748B", background: selecionado ? `${texto}14` : "white" }}>
-                      {opcao}
-                    </button>
-                  );
-                })}
-              </div>
-              {status === "Aguardando" && (
-                <fieldset className="mb-4">
-                  <legend className={labelClass}>Aguardando quem? *</legend>
-                  <div className="space-y-2">
-                    {MOTIVOS_AGUARDANDO.map((opcao) => (
-                      <label key={opcao} className={cn("alvo-toque flex cursor-pointer items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm", motivoAguardando === opcao ? "border-brand-blue bg-blue-50" : "border-[#E2E8F0]")}>
-                        <input type="radio" name="motivo-aguardando" checked={motivoAguardando === opcao} onChange={() => setMotivoAguardando(opcao)} />
-                        {ROTULO_DO_AGUARDANDO[opcao]}
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
-              )}
-              {status === "Resolvido" && <div className="mb-4">
-                <label htmlFor="status-resumo-resolucao" className={labelClass}>Resumo da solução *</label>
-                <textarea id="status-resumo-resolucao" className={`${inputClass} resize-none`} rows={4} maxLength={5000} value={resumoResolucao} onChange={(evento) => setResumoResolucao(evento.target.value)} placeholder="Descreva o que foi feito para resolver o chamado…" />
-              </div>}
-              <label htmlFor="status-observacao" className="sr-only">Observação</label>
-              <textarea id="status-observacao" className={`${inputClass} resize-none`} rows={2} placeholder="Observação (opcional)…" value={observacao} onChange={(evento) => setObservacao(evento.target.value)} />
-              {mudancaDeStatus.isError && <div className="mt-3"><AvisoDeErro erro={mudancaDeStatus.error} /></div>}
-              <button
-                type="button"
-                disabled={!statusMudou || precisaDeMotivoAguardando || (status === "Resolvido" && resumoResolucao.trim().length < 10) || mudancaDeStatus.isPending}
-                onClick={() => mudancaDeStatus.mutate({ status, motivoAguardando: status === "Aguardando" ? (motivoAguardando as MotivoAguardando) : null, observacao: observacao.trim(), resumoResolucao: status === "Resolvido" ? resumoResolucao.trim() : undefined }, {
-                  onSuccess: (atualizado) => { setObservacao(""); setResumoResolucao(""); setConfirmacao(`Status atualizado para ${atualizado.status}. O cliente foi notificado.`); },
-                })}
-                className="alvo-toque mt-4 w-full rounded-xl bg-brand-blue py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
-              >
-                {mudancaDeStatus.isPending ? "Atualizando…" : "Atualizar status"}
-              </button>
-            </section>}
+            {atende && <AlteracaoDeStatus key={`${chamado.id}:${chamado.status}:${chamado.motivoAguardando ?? ""}`} chamado={chamado} />}
           </div>
 
           <aside className="space-y-4">

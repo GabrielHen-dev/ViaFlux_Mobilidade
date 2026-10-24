@@ -10,6 +10,7 @@ import { assumirAtendimento, moverParaLixeira } from "@/services/api/chamados";
 import { useApi, useUsuarioAutenticado } from "@/store/AuthContext";
 import { invalidarListas, useAcaoNoChamado } from "@/hooks/consultas";
 import ComChamado from "@/components/chamados/ComChamado";
+import AlteracaoDeStatus from "@/components/chamados/AlteracaoDeStatus";
 import TimelineChamado from "@/components/chamados/TimelineChamado";
 import AnexosDoChamado from "@/components/chamados/AnexosDoChamado";
 import LocalizacaoDoChamado from "@/components/chamados/LocalizacaoDoChamado";
@@ -137,6 +138,7 @@ function DetalhesConteudo({ chamado }: { chamado: Chamado }) {
         </div>
 
         <div className="min-w-0 space-y-5">
+          {atende && triado && <AlteracaoDeStatus key={`${chamado.id}:${chamado.status}:${chamado.motivoAguardando ?? ""}`} chamado={chamado} />}
           <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5">
             <h3 className="mb-4 font-display text-xs font-semibold uppercase tracking-wide text-brand-navy">Situação</h3>
             <dl className="space-y-3 text-sm">

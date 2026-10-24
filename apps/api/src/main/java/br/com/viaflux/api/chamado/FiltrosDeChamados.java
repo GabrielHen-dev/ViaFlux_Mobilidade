@@ -17,7 +17,7 @@ record FiltrosDeChamados(
 
     enum Etapa { TRIAGEM, ATENDIMENTO }
 
-    enum Ordenacao { FILA, RECENTES }
+    enum Ordenacao { FILA, RECENTES, ATIVOS_RECENTES }
 
     FiltrosDeChamados(String busca, StatusChamado status, Prioridade prioridade, TipoChamado departamento,
                       SituacaoPrazo sla, Etapa etapa, Ordenacao ordenacao) {

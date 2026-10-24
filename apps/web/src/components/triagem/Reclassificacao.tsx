@@ -30,7 +30,7 @@ export default function Reclassificacao({ chamado, vigente, aoConcluir }: Props)
     <section className={cartaoClass}>
       <h2 className="mb-4 font-display text-sm font-semibold text-brand-navy">Reclassificar</h2>
       <div className="space-y-4">
-        <SeletorDeTipo id="triagem-tipo" rotulo="Tipo" valor={tipo} aoAlterar={setTipo} />
+        <SeletorDeTipo id="triagem-tipo" rotulo="Tipo" valor={tipo} aoAlterar={(novoTipo) => { if (novoTipo) setTipo(novoTipo); }} />
         <SeletorDePeso nome="severidade" rotulo="Severidade (impacto)" valor={severidade} aoAlterar={setSeveridade} />
         <SeletorDePeso nome="urgencia" rotulo="Urgência (contexto)" valor={urgencia} aoAlterar={setUrgencia} />
         <ResultadoDoScore severidade={severidade} urgencia={urgencia} />

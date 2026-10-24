@@ -36,12 +36,12 @@ import java.util.List;
 public class SecurityConfig {
 
     private static final String[] PERFIS_DA_CENTRAL = {"ADMIN", "ATENDENTE", "DEPARTAMENTO", "LIDER_OPERACIONAL"};
-    private static final String[] PERFIS_DE_TRIAGEM = {"ATENDENTE"};
-    private static final String[] PERFIS_DA_LIXEIRA = {"ATENDENTE"};
-    private static final String[] PERFIS_QUE_CONDUZEM = {"ATENDENTE", "DEPARTAMENTO"};
-    private static final String[] PERFIS_QUE_ATENDEM = {"ATENDENTE", "DEPARTAMENTO"};
+    private static final String[] PERFIS_DE_TRIAGEM = {"ADMIN", "ATENDENTE"};
+    private static final String[] PERFIS_DA_LIXEIRA = {"ADMIN", "ATENDENTE"};
+    private static final String[] PERFIS_QUE_CONDUZEM = {"ADMIN", "ATENDENTE", "DEPARTAMENTO"};
+    private static final String[] PERFIS_QUE_ATENDEM = {"ADMIN", "ATENDENTE", "DEPARTAMENTO"};
     private static final String[] PERFIS_DE_METRICAS = {"ADMIN", "LIDER_OPERACIONAL"};
-    private static final String[] PERFIS_QUE_ABREM_CHAMADO = {"CLIENTE", "GESTOR_FROTA", "ATENDENTE"};
+    private static final String[] PERFIS_QUE_ABREM_CHAMADO = {"CLIENTE", "GESTOR_FROTA", "ADMIN", "ATENDENTE"};
     private static final String[] PERFIS_COM_ACESSO_A_CHAMADOS = {
             "ADMIN", "ATENDENTE", "DEPARTAMENTO", "LIDER_OPERACIONAL", "CLIENTE", "GESTOR_FROTA"
     };

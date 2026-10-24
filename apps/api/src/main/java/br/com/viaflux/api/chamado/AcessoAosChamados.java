@@ -5,37 +5,18 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Locale;
-import java.time.Clock;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @Component
 class AcessoAosChamados {
 
     private final ChamadoRepository chamados;
-    private final ConcessaoAcessoChamadoRepository concessoes;
-    private final Clock clock;
-
-    @Autowired
-    AcessoAosChamados(ChamadoRepository chamados, ConcessaoAcessoChamadoRepository concessoes, Clock clock) {
-        this.chamados = chamados;
-        this.concessoes = concessoes;
-        this.clock = clock;
-    }
-
     AcessoAosChamados(ChamadoRepository chamados) {
         this.chamados = chamados;
-        this.concessoes = null;
-        this.clock = Clock.systemUTC();
     }
 
     boolean podeVer(Chamado chamado, UsuarioAtual usuario) {
-        if (usuario.perfis().contains("ATENDENTE")) {
+        if (usuario.visaoGlobal()) {
             return true;
-        }
-        if (usuario.perfis().contains("ADMIN")) {
-            return concessoes != null && concessoes.temAcessoAtivo(chamado.getId(), usuario.id(), OffsetDateTime.now(clock).withOffsetSameInstant(ZoneOffset.UTC));
         }
         if (chamado.getDepartamento() != null && usuario.atuaNoDepartamento(chamado.getDepartamento().name())) {
             return true;
