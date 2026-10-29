@@ -30,10 +30,10 @@ class TriagemController {
 
     @PostMapping("/triagem/inicio")
     @Operation(
-            summary = "Assumir a triagem do chamado",
-            description = "Coloca o chamado em Em triagem e registra o atendente como responsável pela triagem. Outro atendente pode "
-                    + "assumir no lugar, sem mudar o início da triagem. Se a triagem já foi concluída, a resposta é 409. Perfis: "
-                    + "ADMIN e ATENDENTE.",
+            summary = "Assumir a análise do chamado",
+            description = "Registra o atendente como responsável pela análise. Chamados sem classificação passam a Em triagem; chamados "
+                    + "classificados pelo relato mantêm o status e a fila. Outro atendente pode assumir no lugar. Se não houver análise "
+                    + "pendente, a resposta é 409. Perfis: ADMIN e ATENDENTE.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     ChamadoResponse iniciar(@PathVariable String codigo, @AuthenticationPrincipal Jwt token) {
@@ -62,6 +62,18 @@ class TriagemController {
     )
     ChamadoResponse reclassificar(@PathVariable String codigo, @Valid @RequestBody ReclassificacaoRequest request, @AuthenticationPrincipal Jwt token) {
         return triagem.reclassificar(codigo, request, identificacao.de(token));
+    }
+
+    @PostMapping("/classificacao/confirmacao")
+    @Operation(
+            summary = "Confirmar a classificação automática",
+            description = "Encerra a revisão de um chamado classificado automaticamente pelo relato do motivo \"Outro\", mantendo tipo, "
+                    + "severidade e urgência. Para alterar a classificação, use a reclassificação: durante a revisão, se o chamado ainda "
+                    + "estiver Na fila, ele é reencaminhado ao departamento do novo tipo. Perfis: ADMIN e ATENDENTE.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    ChamadoResponse confirmarClassificacao(@PathVariable String codigo, @AuthenticationPrincipal Jwt token) {
+        return triagem.confirmarClassificacao(codigo, identificacao.de(token));
     }
 
     @PutMapping("/override")

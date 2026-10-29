@@ -238,6 +238,7 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
       concluidaEm: concluidaEm ? horarioDeSaoPaulo(concluidaEm) : null,
       concluidaPor,
       situacao: prazo(limite, concluidaEm).situacao,
+      revisaoPendente: false,
     };
   }
 
@@ -258,6 +259,7 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
       sla: sla(chamado),
       triagem: triagem(chamado),
       atendimento: chamado.atendimento ? { responsavel: chamado.atendimento.responsavel, assumidoEm: horarioDeSaoPaulo(chamado.atendimento.assumidoEm) } : null,
+      escalonamento: null,
     };
   }
 
@@ -466,8 +468,13 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
           if (chave) total[chave] = (total[chave] ?? 0) + 1;
           return total;
         }, {});
-      const contadores = (qual: "primeiraResposta" | "resolucao") => {
-        const situacoes = visiveis.map((chamado) => sla(chamado)?.[qual].situacao).filter(Boolean);
+      const contadores = (qual: "primeiraResposta" | "resolucao" | "vigente") => {
+        const situacoes = visiveis.map((chamado) => {
+          const atual = sla(chamado);
+          if (!atual) return undefined;
+          if (qual === "vigente") return (atual.primeiraResposta.cumpridoEm === null ? atual.primeiraResposta : atual.resolucao).situacao;
+          return atual[qual].situacao;
+        }).filter(Boolean);
         return { noPrazo: situacoes.filter((situacao) => situacao === "NO_PRAZO").length, emRisco: situacoes.filter((situacao) => situacao === "EM_RISCO").length, violado: situacoes.filter((situacao) => situacao === "VIOLADO").length };
       };
       const naTriagem = visiveis.filter((chamado) => !triado(chamado));
@@ -477,7 +484,7 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
         porStatus: contar((chamado) => chamado.status),
         porPrioridade: contar(prioridadeEfetiva),
         porDepartamento: contar((chamado) => chamado.departamento),
-        sla: { primeiraResposta: contadores("primeiraResposta"), resolucao: contadores("resolucao") },
+        sla: { primeiraResposta: contadores("primeiraResposta"), resolucao: contadores("resolucao"), vigente: contadores("vigente") },
         p1SemPrimeiraResposta: visiveis
           .filter((chamado) => prioridadeEfetiva(chamado) === "P1" && !chamado.primeiraRespostaEm && chamado.status !== "Resolvido" && chamado.status !== "Fechado")
           .map((chamado) => chamado.id),
@@ -487,7 +494,9 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
           emRisco: 0,
           atrasados: naTriagem.filter((chamado) => chamado.triagem.limite.getTime() < agora().getTime()).length,
           proximoLimite: proximo === undefined ? null : horarioDeSaoPaulo(new Date(proximo)),
+          aguardandoRevisao: 0,
         },
+        escalonados: 0,
       });
     }
 

@@ -17,7 +17,7 @@ const esquemaBase = z.object({
 });
 
 function validarMotivoOutro(dados: z.infer<typeof esquemaBase>, contexto: z.RefinementCtx) {
-  if (dados.motivoId === "OUTRO" && !dados.motivoOutro.trim()) contexto.addIssue({ code: "custom", path: ["motivoOutro"], message: "Descreva brevemente o motivo para a Central classificar." });
+  if (dados.motivoId === "OUTRO" && !dados.motivoOutro.trim()) contexto.addIssue({ code: "custom", path: ["motivoOutro"], message: "Descreva brevemente o motivo." });
   if (dados.motivoId !== "OUTRO" && !dados.contextoId) contexto.addIssue({ code: "custom", path: ["contextoId"], message: "Selecione o contexto situacional." });
 }
 

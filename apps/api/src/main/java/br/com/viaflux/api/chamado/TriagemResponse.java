@@ -11,6 +11,7 @@ public record TriagemResponse(
         Autor responsavel,
         OffsetDateTime concluidaEm,
         Autor concluidaPor,
-        SituacaoPrazo situacao
+        SituacaoPrazo situacao,
+        boolean revisaoPendente
 ) {
 }

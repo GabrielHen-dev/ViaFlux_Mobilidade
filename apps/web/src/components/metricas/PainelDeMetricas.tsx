@@ -9,12 +9,18 @@ import { useApi } from "@/store/AuthContext";
 import { useFornecedores, useMetricas } from "@/hooks/consultas";
 import PerfilRequerido from "@/components/auth/PerfilRequerido";
 import { APARENCIA_DA_PRIORIDADE } from "@/components/ui/StatusBadge";
+import Select, { type OpcaoDoSelect } from "@/components/ui/Select";
 import { AvisoDeErro, Carregando, FalhaAoCarregar, mensagemDeErro } from "@/components/feedback/EstadoDaConsulta";
 import { NOME_TIPO, ROTULO_PRIORIDADE } from "@/utils/prioridade";
 import { formatarDuracao, hojeNaOperacao } from "@/utils/date";
 import { PERFIS_DE_METRICAS } from "@/utils/perfis";
 
 const DIAS_DO_PERIODO_PADRAO = 30;
+const OPCOES_DE_PRIORIDADE: OpcaoDoSelect[] = [
+  { valor: "", rotulo: "Todas" },
+  ...CODIGOS_PRIORIDADE.map((codigo) => ({ valor: codigo, rotulo: `${codigo} · ${ROTULO_PRIORIDADE[codigo]}` })),
+];
+const OPCOES_DE_TIPO: OpcaoDoSelect[] = [{ valor: "", rotulo: "Todos" }, ...TIPOS_CHAMADO.map((tipo) => ({ valor: tipo, rotulo: NOME_TIPO[tipo] }))];
 const campoClass = "alvo-toque w-full rounded-lg border border-[#E2E8F0] bg-white px-3 py-2 text-sm outline-none focus:border-brand-blue";
 
 function valorFormatado(indicador: IndicadorMetrica) {
@@ -74,7 +80,7 @@ function ConteudoDasMetricas() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold text-brand-navy">Métricas operacionais</h1>
-          <p className="text-sm text-slate-500">Calculadas a partir do histórico dos chamados e dos fornecedores. A exportação não inclui dados pessoais.</p>
+          <p className="text-sm text-slate-500">Indicadores do período selecionado. A exportação não inclui dados pessoais.</p>
         </div>
         <button type="button" onClick={exportar} disabled={exportando || periodoInvalido} className="alvo-toque inline-flex items-center gap-2 rounded-xl bg-brand-blue px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40">
           <Download size={14} aria-hidden /> {exportando ? "Exportando…" : "Exportar CSV"}
@@ -89,30 +95,28 @@ function ConteudoDasMetricas() {
         <label className="text-xs font-semibold text-slate-500">Até
           <input type="date" className={campoClass} value={filtros.ate} min={filtros.de} onChange={(evento) => setFiltros({ ...filtros, ate: evento.target.value })} />
         </label>
-        <label className="text-xs font-semibold text-slate-500">Prioridade
-          <select className={campoClass} value={filtros.prioridade ?? ""} onChange={(evento) => setFiltros({ ...filtros, prioridade: (evento.target.value || undefined) as CodigoPrioridade | undefined })}>
-            <option value="">Todas</option>
-            {CODIGOS_PRIORIDADE.map((codigo) => <option key={codigo} value={codigo}>{codigo} · {ROTULO_PRIORIDADE[codigo]}</option>)}
-          </select>
-        </label>
-        <label className="text-xs font-semibold text-slate-500">Tipo
-          <select className={campoClass} value={filtros.tipo ?? ""} onChange={(evento) => setFiltros({ ...filtros, tipo: (evento.target.value || undefined) as TipoChamado | undefined })}>
-            <option value="">Todos</option>
-            {TIPOS_CHAMADO.map((tipo) => <option key={tipo} value={tipo}>{NOME_TIPO[tipo]}</option>)}
-          </select>
-        </label>
-        <label className="text-xs font-semibold text-slate-500">Departamento
-          <select className={campoClass} value={filtros.departamento ?? ""} onChange={(evento) => setFiltros({ ...filtros, departamento: (evento.target.value || undefined) as TipoChamado | undefined })}>
-            <option value="">Todos</option>
-            {TIPOS_CHAMADO.map((tipo) => <option key={tipo} value={tipo}>{NOME_TIPO[tipo]}</option>)}
-          </select>
-        </label>
-        <label className="text-xs font-semibold text-slate-500">Fornecedor
-          <select className={campoClass} value={filtros.fornecedor ?? ""} onChange={(evento) => setFiltros({ ...filtros, fornecedor: evento.target.value || undefined })}>
-            <option value="">Todos</option>
-            {fornecedores.data?.map((fornecedor) => <option key={fornecedor.id} value={fornecedor.id}>{fornecedor.nome}</option>)}
-          </select>
-        </label>
+        <div className="text-xs font-semibold text-slate-500">
+          <label htmlFor="metricas-prioridade">Prioridade</label>
+          <Select id="metricas-prioridade" className="alvo-toque px-3 py-2" value={filtros.prioridade ?? ""} onChange={(valor) => setFiltros({ ...filtros, prioridade: (valor || undefined) as CodigoPrioridade | undefined })} opcoes={OPCOES_DE_PRIORIDADE} />
+        </div>
+        <div className="text-xs font-semibold text-slate-500">
+          <label htmlFor="metricas-tipo">Tipo</label>
+          <Select id="metricas-tipo" className="alvo-toque px-3 py-2" value={filtros.tipo ?? ""} onChange={(valor) => setFiltros({ ...filtros, tipo: (valor || undefined) as TipoChamado | undefined })} opcoes={OPCOES_DE_TIPO} />
+        </div>
+        <div className="text-xs font-semibold text-slate-500">
+          <label htmlFor="metricas-departamento">Departamento</label>
+          <Select id="metricas-departamento" className="alvo-toque px-3 py-2" value={filtros.departamento ?? ""} onChange={(valor) => setFiltros({ ...filtros, departamento: (valor || undefined) as TipoChamado | undefined })} opcoes={OPCOES_DE_TIPO} />
+        </div>
+        <div className="text-xs font-semibold text-slate-500">
+          <label htmlFor="metricas-fornecedor">Fornecedor</label>
+          <Select
+            id="metricas-fornecedor"
+            className="alvo-toque px-3 py-2"
+            value={filtros.fornecedor ?? ""}
+            onChange={(valor) => setFiltros({ ...filtros, fornecedor: valor || undefined })}
+            opcoes={[{ valor: "", rotulo: "Todos" }, ...(fornecedores.data ?? []).map((fornecedor) => ({ valor: fornecedor.id, rotulo: fornecedor.nome }))]}
+          />
+        </div>
       </div>
 
       {periodoInvalido ? <AvisoDeErro erro={new Error("A data inicial deve ser anterior ou igual à final.")} /> : metricas.isPending ? <Carregando texto="Calculando métricas…" /> : metricas.isError ? (

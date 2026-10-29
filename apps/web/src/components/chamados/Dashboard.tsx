@@ -13,7 +13,7 @@ import { AlertaDeP1, ContadoresDaOperacao } from "@/components/chamados/painel/A
 import { NOME_TIPO } from "@/utils/prioridade";
 import { formatarHora } from "@/utils/date";
 import { useAgora } from "@/hooks/useAgora";
-import { PERFIS_COM_VISAO_GLOBAL, PERFIS_DA_LIXEIRA, PERFIS_DE_TRIAGEM, PERFIS_QUE_ABREM_CHAMADO, usuarioTemPerfil } from "@/utils/perfis";
+import { PERFIS_COM_VISAO_GLOBAL, PERFIS_DA_LIXEIRA, PERFIS_DE_TRIAGEM, PERFIS_QUE_ABREM_CHAMADO, PERFIS_QUE_ATENDEM, usuarioTemPerfil } from "@/utils/perfis";
 
 const TAMANHO_DA_PAGINA = 20;
 const STATUS_DA_FILA: readonly { status: Status; rotulo: string }[] = [
@@ -66,7 +66,7 @@ export default function Dashboard() {
           <h1 className="font-display text-2xl font-bold text-brand-navy">{departamentoDoUsuario ? `Fila · ${NOME_TIPO[departamentoDoUsuario]}` : "Dashboard"}</h1>
           <p className="mt-0.5 flex items-center gap-2 text-sm text-[#64748B]">
             {atualizadoEm > 0 ? <AtualizadoHa instante={atualizadoEm} /> : "Carregando…"}
-            <span className="hidden sm:inline">· atualização automática a cada {INTERVALO_DO_PAINEL_MS / 1000} s</span>
+            <span className="hidden sm:inline">· a cada {INTERVALO_DO_PAINEL_MS / 1000} s</span>
           </p>
         </div>
         <div className="flex gap-2">
@@ -75,7 +75,7 @@ export default function Dashboard() {
           </button>
           {podeAbrir && (
             <Link href="/chamados/novo" className="alvo-toque inline-flex items-center gap-2 rounded-xl bg-brand-green px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-90">
-              Novo Chamado
+              Novo chamado
             </Link>
           )}
         </div>
@@ -92,7 +92,7 @@ export default function Dashboard() {
           </button>
           {fazTriagem && (
             <button type="button" aria-pressed={filtros.etapa === "TRIAGEM"} onClick={() => filtrar({ status: undefined, etapa: "TRIAGEM" })} className={`alvo-toque shrink-0 rounded-lg px-3 py-2 text-xs font-semibold ${filtros.etapa === "TRIAGEM" ? "bg-amber-700 text-white" : "bg-amber-50 text-amber-800 ring-1 ring-amber-200"}`}>
-              Exceções da Central sem classificação ({(resumo.data?.triagem.aguardando ?? 0) + (resumo.data?.triagem.emAndamento ?? 0)})
+              Pendentes de análise ({(resumo.data?.triagem.aguardando ?? 0) + (resumo.data?.triagem.emAndamento ?? 0) + (resumo.data?.triagem.aguardandoRevisao ?? 0)})
             </button>
           )}
           {STATUS_DA_FILA.map(({ status, rotulo }) => (
@@ -113,7 +113,7 @@ export default function Dashboard() {
         {lista.isPending ? <Carregando texto="Carregando chamados…" /> : lista.isError ? (
           <div className="p-5"><FalhaAoCarregar erro={lista.error} aoTentarDeNovo={() => void lista.refetch()} /></div>
         ) : (
-          <TabelaDeChamados resultado={lista.data} pagina={pagina} podeExcluir={usuarioTemPerfil(usuario, PERFIS_DA_LIXEIRA)} podeTriar={fazTriagem} aoMudarDePagina={setPagina} />
+          <TabelaDeChamados resultado={lista.data} pagina={pagina} podeExcluir={usuarioTemPerfil(usuario, PERFIS_DA_LIXEIRA)} podeTriar={fazTriagem} podeAtender={usuarioTemPerfil(usuario, PERFIS_QUE_ATENDEM)} aoMudarDePagina={setPagina} />
         )}
       </section>
     </main>

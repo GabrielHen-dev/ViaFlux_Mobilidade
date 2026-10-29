@@ -5,7 +5,7 @@ import Link from "next/link";
 import { cadastrarConta } from "@/services/api/conta";
 import { ErroApi } from "@/services/api/cliente";
 import CartaoDeAcesso, {
-  AvisoDeAcesso, ErroDeAcesso, ErroDoCampo, botaoDeAcessoClass, campoDeAcessoClass, labelDeAcessoClass, linkDeAcessoClass,
+  ErroDeAcesso, ErroDoCampo, botaoDeAcessoClass, campoDeAcessoClass, labelDeAcessoClass, linkDeAcessoClass,
 } from "@/components/auth/CartaoDeAcesso";
 
 const SENHA_MINIMA = 8;
@@ -65,12 +65,11 @@ export default function CadastroForm() {
 
   if (concluido) {
     return (
-      <CartaoDeAcesso titulo="Confirme seu e-mail" subtitulo="Falta só um passo para abrir chamados.">
-        <AvisoDeAcesso mensagem={concluido} />
+      <CartaoDeAcesso titulo="Confirme seu e-mail" subtitulo={concluido}>
         <p className="mb-6 text-sm text-slate-600">
-          Abra o link que enviamos para <strong>{email.trim()}</strong>. Ele vale por 24 horas. Você já pode entrar, mas só consegue abrir chamados depois de confirmar o e-mail.
+          Verifique a caixa de entrada de <strong>{email.trim()}</strong>. A abertura de chamados é liberada após a confirmação.
         </p>
-        <Link href="/login" className={`${botaoDeAcessoClass} block text-center`}>Ir para o login</Link>
+        <Link href="/login" className={`${botaoDeAcessoClass} block text-center`}>Acessar conta</Link>
       </CartaoDeAcesso>
     );
   }
@@ -78,8 +77,7 @@ export default function CadastroForm() {
   return (
     <CartaoDeAcesso
       titulo="Criar conta"
-      subtitulo="Para clientes e motoristas. Gestores de frota e parceiros recebem o acesso da ViaFlux."
-      rodape={<>Já tem conta? <Link href="/login" className="font-semibold text-brand-green underline-offset-2 hover:underline">Entrar</Link></>}
+      rodape={<>Já tem uma conta? <Link href="/login" className="font-semibold text-brand-green underline-offset-2 hover:underline">Entrar</Link></>}
     >
       <form noValidate onSubmit={enviar} className="space-y-4">
         <div>
@@ -110,7 +108,7 @@ export default function CadastroForm() {
         <div>
           <label className="flex items-start gap-2 text-sm text-slate-600">
             <input {...propriedadesDoCampo("aceiteDosTermos", erros)} type="checkbox" className="mt-0.5 h-4 w-4 accent-brand-green" checked={aceite} onChange={(e) => setAceite(e.target.checked)} />
-            <span>Li e aceito os termos de uso e a política de privacidade do ViaFlux.</span>
+            <span>Li e aceito os termos de uso e a política de privacidade.</span>
           </label>
           <ErroDoCampo id="cadastro-aceiteDosTermos-erro" mensagem={erros.aceiteDosTermos} />
         </div>
@@ -121,7 +119,7 @@ export default function CadastroForm() {
           {enviando ? "Criando conta…" : "Criar conta"}
         </button>
         <p className="text-center text-xs text-slate-500">
-          Não recebeu o e-mail de uma conta anterior? <Link href="/verificar-email" className={linkDeAcessoClass}>Reenviar confirmação</Link>
+          <Link href="/verificar-email" className={linkDeAcessoClass}>Reenviar e-mail de confirmação</Link>
         </p>
       </form>
     </CartaoDeAcesso>

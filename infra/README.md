@@ -43,12 +43,20 @@ cp infra/.env.example infra/.env
 | `TRIAGEM_URGENCIA_BAIXA_MINUTOS` | API | Prazo da triagem para urgência baixa. Padrão `40`. |
 | `ANEXO_DIR` | API | Pasta onde a API grava fotos e documentos dos chamados. Padrão `./data/anexos`, relativo a `apps/api`. Em produção o Compose usa `VIAFLUX_ANEXO_DIR=/var/viaflux/anexos`, montado no volume `anexos`. |
 | `ANEXO_LIMITE_MB` | API | Tamanho máximo de cada anexo, em MB. Padrão `10`. Mantenha igual a `NEXT_PUBLIC_ANEXO_LIMITE_MB` do frontend, se definido. |
+| `ANEXO_ARMAZENAMENTO` | API | Onde os anexos ficam: `disco` (padrão, pasta `ANEXO_DIR`) ou `s3` (bucket compatível com S3, como Cloudflare R2, AWS S3 ou MinIO). Com `s3`, a API não sobe se faltar `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID` ou `S3_SECRET_ACCESS_KEY`. Veja [Anexos no Cloudflare R2](#anexos-no-cloudflare-r2). |
+| `S3_ENDPOINT` | API | Endereço da API S3 do provedor. No R2, `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`, sem o nome do bucket no final. |
+| `S3_REGIAO` | API | Região do bucket. Padrão `auto`, que é o valor exigido pelo R2. Na AWS, use a região real, por exemplo `sa-east-1`. |
+| `S3_BUCKET` | API | Nome do bucket. O bucket continua privado: os downloads passam sempre pela API, que confere quem pode ver o chamado. |
+| `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | API | Credenciais com permissão de leitura e escrita de objetos no bucket. São segredo: nunca versione os valores reais. A API não registra esses valores no log. |
+| `S3_PREFIXO` | API | Prefixo opcional das chaves dentro do bucket, por exemplo `anexos/`. Vazio grava na raiz do bucket. |
+| `S3_PATH_STYLE` | API | `true` (padrão) monta as URLs como `endpoint/bucket/chave`, formato aceito pelo R2 e pelo MinIO. Use `false` só se o provedor exigir o estilo `bucket.endpoint`. |
 | `PORTAL_URL` | API | Endereço público do frontend, usado para montar os links de verificação de e-mail e de redefinição de senha. Padrão `http://localhost:5261`. Obrigatória no Compose de produção. |
 | `MAIL_HOST` | API | Servidor SMTP. Em desenvolvimento é o Mailpit do Compose, em `localhost`. Obrigatória no Compose de produção. |
 | `MAIL_PORT` | API | Porta SMTP. Padrão `1025` (Mailpit) em desenvolvimento e `587` no Compose de produção. |
 | `MAIL_USERNAME` / `MAIL_PASSWORD` | API | Credenciais do provedor SMTP. Vazias no Mailpit. São segredo: nunca versione os valores reais. |
 | `MAIL_SMTP_AUTH` / `MAIL_STARTTLS` | API | `true` para provedores reais, que exigem autenticação e TLS. `false` no Mailpit. |
 | `MAIL_REMETENTE` | API | Remetente dos e-mails de conta. Padrão `ViaFlux Mobilidade <nao-responda@viaflux.local>`. |
+| `VALIDADE_CONVITE` | API | Validade do link de convite enviado quando um administrador cadastra um usuário, no formato ISO-8601 de duração. Padrão `P7D` (7 dias). O link abre `PORTAL_URL/aceitar-convite`. |
 | `NEXT_PUBLIC_API_URL` | Frontend | URL da API vista pelo navegador. Em produção é o domínio público da `api`, por exemplo `https://api.viaflux.seudominio.com`. |
 
 > ⚠️ `NEXT_PUBLIC_*` é embutido no bundle do frontend e **fica visível para qualquer usuário**. Nunca coloque segredo nessa variável, porque ela existe só para endereço público.
@@ -161,6 +169,43 @@ O deploy usa um serviço do tipo **Compose** no Dokploy apontando para este repo
 > `NEXT_PUBLIC_API_URL` é embutida no frontend durante o build. Se o domínio da API mudar, altere a variável e faça um novo deploy, não basta reiniciar.
 
 Os serviços usam a rede própria `viaflux`, e a API encontra o banco pelo alias `viaflux-db`. Isso evita colisão com serviços chamados `db` de outros projetos que também estejam na `dokploy-network`.
+
+## Anexos no Cloudflare R2
+
+Por padrão a API grava os anexos em disco, no volume `anexos`. Para usar um bucket do Cloudflare R2:
+
+1. **Criar o bucket.** No painel da Cloudflare, abra *R2 Object Storage* → *Create bucket*, dê um nome (por exemplo `viaflux-anexos`) e mantenha o acesso público desligado. A API serve os arquivos depois de conferir a permissão de quem pede, então o bucket não precisa nem deve ser público.
+2. **Criar o token de acesso.** Em *R2 Object Storage* → *Manage R2 API Tokens* → *Create API token*, escolha a permissão **Object Read & Write** e, em *Specify bucket(s)*, restrinja ao bucket criado. Ao confirmar, copie o **Access Key ID** e o **Secret Access Key**: o segredo só aparece uma vez.
+3. **Descobrir o endpoint.** O **Account ID** aparece na página inicial do R2 e também nas configurações do bucket, no campo *S3 API*. O endpoint é `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`, sem o nome do bucket no final. Buckets criados com jurisdição específica usam outro host, por exemplo `https://<ACCOUNT_ID>.eu.r2.cloudflarestorage.com`; nesse caso, copie o endereço exibido no campo *S3 API*.
+4. **Preencher as variáveis.** Na aba *Environment* do Dokploy (ou no `infra/.env`, em desenvolvimento):
+
+   ```
+   ANEXO_ARMAZENAMENTO=s3
+   S3_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+   S3_REGIAO=auto
+   S3_BUCKET=viaflux-anexos
+   S3_ACCESS_KEY_ID=<Access Key ID>
+   S3_SECRET_ACCESS_KEY=<Secret Access Key>
+   S3_PREFIXO=anexos/
+   ```
+
+5. **Reiniciar a API.** Faça um novo deploy (ou reinicie o serviço `api`). Se alguma variável obrigatória estiver vazia, a API não sobe e o log informa qual falta.
+
+A troca **não migra** os arquivos que já estão em disco: os anexos antigos continuam registrados no banco, mas passam a responder `404` até serem copiados para o bucket. Cada anexo é gravado com a chave `<S3_PREFIXO><id do arquivo>`, o mesmo nome que ele tem dentro de `ANEXO_DIR`, então basta sincronizar a pasta inteira para o prefixo configurado. Com o AWS CLI, a partir de `apps/api` (em produção, use a pasta do volume `anexos`, indicada por `docker volume inspect`):
+
+```bash
+AWS_ACCESS_KEY_ID=<Access Key ID> AWS_SECRET_ACCESS_KEY=<Secret Access Key> AWS_REQUEST_CHECKSUM_CALCULATION=when_required \
+  aws s3 sync ./data/anexos s3://viaflux-anexos/anexos/ --endpoint-url https://<ACCOUNT_ID>.r2.cloudflarestorage.com --region auto
+```
+
+Ou com o `rclone`, sem arquivo de configuração:
+
+```bash
+rclone copy ./data/anexos :s3:viaflux-anexos/anexos --s3-provider Cloudflare --s3-endpoint https://<ACCOUNT_ID>.r2.cloudflarestorage.com \
+  --s3-access-key-id <Access Key ID> --s3-secret-access-key <Secret Access Key> --s3-no-check-bucket
+```
+
+Troque `anexos/` pelo valor de `S3_PREFIXO` (ou deixe só o nome do bucket, se o prefixo estiver vazio). Para não perder envios feitos durante a troca, rode a cópia antes de reiniciar a API e repita logo depois: as duas ferramentas só enviam o que ainda não está no bucket. Mantenha o volume `anexos` até conferir que os downloads funcionam.
 
 ## Backup
 

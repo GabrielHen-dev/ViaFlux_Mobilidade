@@ -9,6 +9,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -92,17 +93,31 @@ class AberturaDeChamadoServiceTests {
     }
 
     @Test
-    void outroMotivoFicaNasExcecoesDaCentralSemScore() {
+    void outroMotivoEhClassificadoPeloRelatoEFicaPendenteDeRevisao() {
+        given(motivos.findAllByOrderByTipoAscOrdemAsc()).willReturn(List.of(
+                motivoDescrito("M-FIN", TipoChamado.FINANCEIRO, "Contestação de cobrança de multa, pedágio ou avaria", 3),
+                motivoDescrito("M-PANE", TipoChamado.ASSISTENCIA_24H, "Veículo não liga / Pane elétrica ou mecânica", 5)));
         AbrirChamadoRequest outro = new AbrirChamadoRequest(null, "OUTRO", null, "Cobrança de pedágio em outro estado",
-                "Problema que não está na lista", "Ana Cliente", null, null, null, null);
+                "Recebi a cobrança de um pedágio que não passei", "Ana Cliente", null, null, null, null);
 
         ChamadoResponse resposta = servico.abrir(outro, cliente(ANA), null).chamado();
 
-        assertThat(resposta.status()).isEqualTo("Aberto");
-        assertThat(resposta.prioridade()).isNull();
-        assertThat(resposta.score()).isNull();
-        assertThat(resposta.departamento()).isNull();
-        assertThat(chamadoSalvo().getMotivoOutro()).isEqualTo("Cobrança de pedágio em outro estado");
+        Chamado salvo = chamadoSalvo();
+        assertThat(resposta.status()).isEqualTo("Na fila");
+        assertThat(resposta.classificacao().tipo()).isEqualTo(TipoChamado.FINANCEIRO);
+        assertThat(resposta.classificacao().severidade()).isEqualTo(3);
+        assertThat(resposta.departamento().codigo()).isEqualTo(TipoChamado.FINANCEIRO);
+        assertThat(resposta.triagem().revisaoPendente()).isTrue();
+        assertThat(salvo.getClassificacaoEstado()).isEqualTo(Chamado.ESTADO_REVISAO_PENDENTE);
+        assertThat(salvo.getMotivoOutro()).isEqualTo("Cobrança de pedágio em outro estado");
+        assertThat(ambiente.unicoEventoDoTipo(TipoEvento.CLASSIFICACAO).getDetalhe()).contains("pedágio");
+    }
+
+    private static Motivo motivoDescrito(String id, TipoChamado tipo, String descricao, int severidade) {
+        Motivo motivo = motivo(tipo, severidade);
+        ReflectionTestUtils.setField(motivo, "id", id);
+        ReflectionTestUtils.setField(motivo, "descricao", descricao);
+        return motivo;
     }
 
     @Test

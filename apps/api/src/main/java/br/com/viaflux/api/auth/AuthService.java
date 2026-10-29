@@ -19,6 +19,7 @@ class AuthService {
 
     private static final String CREDENCIAIS_INVALIDAS = "E-mail ou senha inválidos.";
     private static final String SESSAO_EXPIRADA = "Sessão expirada. Entre novamente.";
+    static final String CONVITE_PENDENTE = "Seu acesso ainda não foi ativado. Use o link do convite enviado para o seu e-mail.";
 
     private final UsuarioRepository usuarios;
     private final PasswordEncoder passwordEncoder;
@@ -47,7 +48,8 @@ class AuthService {
                 .map(this::abrirSessao);
         if (sessao.isEmpty()) {
             limite.registrar(chaveDoLimite);
-            throw naoAutorizado(CREDENCIAIS_INVALIDAS);
+            boolean convitePendente = encontrado.filter(Usuario::isAtivo).filter(Usuario::convitePendente).isPresent();
+            throw naoAutorizado(convitePendente ? CONVITE_PENDENTE : CREDENCIAIS_INVALIDAS);
         }
         limite.esquecer(chaveDoLimite);
         return sessao.get();

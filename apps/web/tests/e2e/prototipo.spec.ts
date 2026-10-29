@@ -32,6 +32,11 @@ async function entrarComo(page: Page, usuario: UsuarioDeTeste) {
   await expect(page.getByRole("button", { name: "Sair" })).toBeVisible();
 }
 
+async function escolher(page: Page, rotuloDoCampo: string, textoDaOpcao: string | RegExp) {
+  await page.getByLabel(rotuloDoCampo, { exact: true }).click();
+  await page.getByRole("option", { name: textoDaOpcao }).click();
+}
+
 async function sair(page: Page) {
   await page.getByRole("button", { name: "Sair" }).click();
   await expect(page).toHaveURL(/\/login$/);
@@ -39,8 +44,8 @@ async function sair(page: Page) {
 
 async function abrirChamadoDePane(page: Page) {
   await page.getByRole("navigation").getByRole("link", { name: "Novo Chamado" }).click();
-  await page.getByLabel("Motivo *").selectOption({ label: "Veículo não liga / Pane elétrica ou mecânica" });
-  await page.getByLabel("Contexto situacional *").selectOption({ label: "Veículo parado em rodovia, via rápida ou local de risco" });
+  await escolher(page, "Motivo *", "Veículo não liga / Pane elétrica ou mecânica");
+  await escolher(page, "Contexto situacional *", "Veículo parado em rodovia, via rápida ou local de risco");
   await page.getByLabel("Descrição *").fill("Caminhão parou no acostamento e não liga mais.");
   await page.getByLabel("Modelo").fill("Volvo FH 460");
 }
@@ -65,9 +70,9 @@ test("ciclo completo: cliente abre, atendente tria, central atende, fornecedor a
   await expect(page.getByText(/GPS registrado|Localização encontrada/)).toHaveCount(0);
   await page.getByLabel("Selecionar anexos").setInputFiles({ name: "painel.png", mimeType: "image/png", buffer: Buffer.from("png") });
   await page.getByRole("button", { name: "Abrir Chamado" }).click();
-  await expect(page.getByRole("heading", { name: "Chamado aberto!" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Chamado aberto" })).toBeVisible();
   await expect(page.getByTestId("protocolo")).toHaveText("VF-0000");
-  await expect(page.getByText("Aguardando triagem")).toBeVisible();
+  await expect(page.getByText("Aguardando classificação")).toBeVisible();
   await expect(page.getByTestId("previsao-da-triagem")).toBeVisible();
   await expect(page.getByText("Enviado")).toBeVisible();
   await sair(page);
@@ -96,13 +101,13 @@ test("ciclo completo: cliente abre, atendente tria, central atende, fornecedor a
   await expect(page.getByText("Anotação interna: cliente com contrato corporativo")).toBeVisible();
 
   await page.getByRole("button", { name: "Incluir serviço terceirizado" }).click();
-  await page.getByLabel("Fornecedor credenciado *").selectOption({ label: "Guincho Teste · Fornecedor cadastrado" });
+  await escolher(page, "Fornecedor credenciado *", /Guincho Teste/);
   await page.getByRole("button", { name: "Remoção do veículo", exact: true }).click();
   await page.getByRole("button", { name: "Acionar fornecedor" }).click();
   await expect(page.getByText("Serviço: Solicitado")).toBeVisible();
 
   await page.getByRole("link", { name: "Transferir / status" }).click();
-  await page.getByLabel("Departamento de destino *").selectOption({ label: "Manutenção" });
+  await escolher(page, "Departamento de destino *", "Manutenção");
   await page.getByLabel("Motivo da transferência *").fill("Precisa de oficina depois da remoção");
   await page.getByRole("button", { name: "Transferir", exact: true }).click();
   await expect(page.getByText("Chamado transferido para Manutenção.")).toBeVisible();
@@ -177,15 +182,15 @@ test("celular em 360px: rede caiu no envio, rascunho preservado e reenvio sem du
   rede.online = false;
   await abertura.click();
   await expect(page.getByText("Envio não confirmado: a abertura não foi registrada.")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Chamado aberto!" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Chamado aberto" })).toHaveCount(0);
 
   rede.online = true;
   await page.reload();
-  await expect(page.getByText(/Recuperamos o rascunho/)).toBeVisible();
+  await expect(page.getByText(/Rascunho restaurado/)).toBeVisible();
   await expect(page.getByLabel("Descrição *")).toHaveValue("Caminhão parou no acostamento e não liga mais.");
 
   await page.getByRole("button", { name: "Abrir Chamado" }).click();
-  await expect(page.getByRole("heading", { name: "Chamado aberto!" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Chamado aberto" })).toBeVisible();
   expect(backend.contagem.aberturas).toBe(1);
 
   await page.getByRole("link", { name: "Acompanhar chamado" }).click();

@@ -21,7 +21,7 @@ function AcompanhamentoConteudo({ chamado, servico }: { chamado: Chamado; servic
           </Link>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-[#94A3B8]">#{chamado.id} · Serviço terceirizado</p>
-            <h1 className="font-display text-xl font-bold text-brand-navy">Acompanhamento do Serviço</h1>
+            <h1 className="font-display text-xl font-bold text-brand-navy">Acompanhamento do serviço</h1>
           </div>
         </div>
 
@@ -32,18 +32,18 @@ function AcompanhamentoConteudo({ chamado, servico }: { chamado: Chamado; servic
             <div className="text-xs text-slate-500">{servico.fornecedor.especialidade} · {servico.tipoServico}</div>
           </div>
           <div>
-            <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">Último status informado</div>
+            <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">Status do serviço</div>
             <StatusServicoBadge status={servico.status} />
             <div className="mt-1 text-xs text-slate-500">em {formatarDataHora(servico.atualizadoEm)}</div>
           </div>
           <div className="sm:col-span-2">
-            <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">Status do chamado (independente do serviço)</div>
+            <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">Status do chamado</div>
             <StatusBadge status={chamado.status} />
           </div>
         </section>
 
         <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5 md:p-6">
-          <h2 className="mb-4 font-display text-sm font-semibold text-brand-navy">Histórico de atualizações do fornecedor</h2>
+          <h2 className="mb-4 font-display text-sm font-semibold text-brand-navy">Histórico do fornecedor</h2>
           <ol className="space-y-4">
             {historico.map((registro) => (
               <li key={`${registro.status}-${registro.registradoEm}`} className="border-l-2 border-[#E2E8F0] pl-3">
@@ -56,9 +56,7 @@ function AcompanhamentoConteudo({ chamado, servico }: { chamado: Chamado; servic
               </li>
             ))}
           </ol>
-          <p className="mt-5 rounded-xl bg-emerald-50 p-3 text-xs text-emerald-800">
-            Cada atualização do fornecedor também entra na timeline do chamado #{chamado.id}. A atualização do serviço não pausa o SLA do chamado.
-          </p>
+          <p className="mt-5 text-xs text-slate-500">As atualizações do fornecedor não pausam o SLA do chamado.</p>
         </section>
       </div>
     </main>

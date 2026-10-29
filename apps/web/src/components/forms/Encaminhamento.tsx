@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowRightLeft, Check, ChevronLeft, ClipboardList } from "lucide-react";
+import { ArrowRightLeft, ChevronLeft, ClipboardList } from "lucide-react";
+import { toast } from "sonner";
 import { type Chamado, type TipoChamado } from "@/types/chamado";
 import type { DadosTransferencia } from "@/services/api/contratos";
 import { transferirChamado } from "@/services/api/chamados";
@@ -13,6 +14,7 @@ import PerfilRequerido from "@/components/auth/PerfilRequerido";
 import AlteracaoDeStatus from "@/components/chamados/AlteracaoDeStatus";
 import { PrioridadeIndicador, StatusBadge } from "@/components/ui/StatusBadge";
 import { AvisoDeErro } from "@/components/feedback/EstadoDaConsulta";
+import Select from "@/components/ui/Select";
 import { formatarDataHora } from "@/utils/date";
 import { useUsuarioAutenticado } from "@/store/AuthContext";
 import { PERFIS_DE_TRIAGEM, PERFIS_QUE_ATENDEM, PERFIS_QUE_CONDUZEM, usuarioTemPerfil } from "@/utils/perfis";
@@ -27,7 +29,6 @@ function EncaminhamentoConteudo({ chamado }: { chamado: Chamado }) {
   const departamentos = useDepartamentos();
   const [destino, setDestino] = useState<TipoChamado | "">("");
   const { valor: motivo, setValor: setMotivo, descartar: descartarMotivo } = useRascunho(`transferencia:${usuario.id}:${chamado.id}`, "");
-  const [confirmacao, setConfirmacao] = useState<string | null>(null);
 
   const transferencia = useAcaoNoChamado(chamado.id, (api, dados: DadosTransferencia) => transferirChamado(api, chamado.id, dados));
   const transferencias = chamado.timeline.filter((evento) => evento.tipo === "TRANSFERENCIA" || evento.tipo === "ROTEAMENTO");
@@ -43,15 +44,9 @@ function EncaminhamentoConteudo({ chamado }: { chamado: Chamado }) {
           </Link>
           <div>
             <h1 className="font-display text-2xl font-bold text-brand-navy">Transferência — #{chamado.id}</h1>
-            <p className="mt-0.5 text-sm text-[#64748B]">O histórico e os anexos acompanham o chamado. O SLA não reinicia.</p>
+            <p className="mt-0.5 text-sm text-[#64748B]">Histórico, anexos e SLA são mantidos.</p>
           </div>
         </div>
-
-        {confirmacao && (
-          <p role="status" className="mb-4 flex items-center gap-2 rounded-2xl bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">
-            <Check size={18} aria-hidden /> {confirmacao}
-          </p>
-        )}
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           <div className="space-y-5 lg:col-span-2">
@@ -71,15 +66,19 @@ function EncaminhamentoConteudo({ chamado }: { chamado: Chamado }) {
               <div className="space-y-4">
                 <div>
                   <label htmlFor="transferencia-destino" className={labelClass}>Departamento de destino *</label>
-                  <select id="transferencia-destino" className={inputClass} value={destino} onChange={(evento) => setDestino(evento.target.value as TipoChamado | "")}>
-                    <option value="">Selecione</option>
-                    {destinosValidos.map((departamento) => <option key={departamento.codigo} value={departamento.codigo}>{departamento.nome}</option>)}
-                  </select>
+                  <Select
+                    id="transferencia-destino"
+                    value={destino}
+                    onChange={(valor) => setDestino(valor as TipoChamado | "")}
+                    opcoes={destinosValidos.map((departamento) => ({ valor: departamento.codigo, rotulo: departamento.nome }))}
+                    placeholder={departamentos.isPending ? "Carregando departamentos…" : "Selecione"}
+                    disabled={departamentos.isPending}
+                  />
                 </div>
                 <div>
                   <label htmlFor="transferencia-motivo" className={labelClass}>Motivo da transferência *</label>
                   <textarea id="transferencia-motivo" className={`${inputClass} resize-none`} rows={2} value={motivo} onChange={(evento) => setMotivo(evento.target.value)} placeholder="Por que este departamento deve assumir?" />
-                  <p className="mt-1 text-xs text-slate-400">Obrigatório, com pelo menos {TAMANHO_MINIMO_DO_MOTIVO} caracteres.</p>
+                  <p className="mt-1 text-xs text-slate-400">Mínimo de {TAMANHO_MINIMO_DO_MOTIVO} caracteres.</p>
                 </div>
                 {transferencia.isError && <AvisoDeErro erro={transferencia.error} />}
                 <button
@@ -89,7 +88,7 @@ function EncaminhamentoConteudo({ chamado }: { chamado: Chamado }) {
                     onSuccess: (atualizado) => {
                       setDestino("");
                       descartarMotivo("");
-                      setConfirmacao(`Chamado transferido para ${atualizado.departamento?.nome}.`);
+                      toast.success(`Chamado transferido para ${atualizado.departamento?.nome}.`);
                     },
                   })}
                   className="alvo-toque w-full rounded-xl bg-brand-green py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
@@ -133,11 +132,11 @@ function AguardandoTriagem({ chamado }: { chamado: Chamado }) {
       <div className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center">
         <ClipboardList size={28} className="mx-auto mb-3 text-amber-600" aria-hidden />
         <h1 className="mb-2 text-xl font-bold text-brand-navy">Transferência — #{chamado.id}</h1>
-        <p className="mb-6 text-sm text-slate-500">Este chamado ainda não passou pela triagem. Status e transferência ficam disponíveis depois que o atendente classificar e encaminhar.</p>
+        <p className="mb-6 text-sm text-slate-500">Disponível após a classificação do chamado.</p>
         <div className="flex flex-wrap justify-center gap-2">
           <Link href={`/chamados/${chamado.id}`} className="alvo-toque rounded-xl border border-[#E2E8F0] px-4 py-2.5 text-sm font-semibold text-[#475569]">Voltar ao chamado</Link>
           {usuarioTemPerfil(usuario, PERFIS_DE_TRIAGEM) && (
-            <Link href={`/chamados/${chamado.id}/triagem`} className="alvo-toque rounded-xl bg-brand-green px-4 py-2.5 text-sm font-semibold text-white">Fazer triagem</Link>
+            <Link href={`/chamados/${chamado.id}/triagem`} className="alvo-toque rounded-xl bg-brand-green px-4 py-2.5 text-sm font-semibold text-white">Classificar</Link>
           )}
         </div>
       </div>

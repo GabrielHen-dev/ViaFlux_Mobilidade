@@ -86,7 +86,11 @@ class AberturaDeChamadoService {
         Usuario solicitante = pelaCentral ? solicitanteInformado(request.solicitanteId(), usuario) : usuarios.getReferenceById(usuario.id());
 
         OffsetDateTime agora = OffsetDateTime.now(relogio).withOffsetSameInstant(ZoneOffset.UTC);
-        int prazoDeTriagem = politicaDeTriagem.prazoEmMinutos(contexto == null ? 1 : contexto.getUrgencia());
+        ClassificacaoPorTexto.Sugestao sugestao = outro
+                ? ClassificacaoPorTexto.sugerir(request.motivoOutro() + " " + textoOuVazio(request.descricao()), motivos.findAllByOrderByTipoAscOrdemAsc())
+                : null;
+        int urgenciaDeclarada = outro ? sugestao.urgencia() : contexto.getUrgencia();
+        int prazoDeTriagem = politicaDeTriagem.prazoEmMinutos(urgenciaDeclarada);
         String modelo = request.modelo() == null || request.modelo().isBlank() ? MODELO_QUANDO_NAO_HA_VEICULO : request.modelo().trim();
         String nomeSolicitante = solicitante == null ? request.cliente() : solicitante.getNome();
         DadosDeAbertura dados = new DadosDeAbertura(
@@ -103,36 +107,44 @@ class AberturaDeChamadoService {
                     : "Chamado registrado pela Central ViaFlux por " + usuario.nome() + ".")
                 : "Chamado registrado pelo portal ViaFlux.";
         historico.registrarParaTodos(chamado, TipoEvento.ABERTURA, "Chamado aberto", detalheDaAbertura, autor, agora);
-        if (outro) {
-            historico.registrarInterno(chamado, TipoEvento.TRIAGEM, "Exceção de classificação — revisão da Central",
-                    "Motivo informado: " + request.motivoOutro().trim(), autor, agora);
-        } else {
-            int severidade = motivo.getSeveridade();
-            int urgencia = contexto.getUrgencia();
-            Prioridade prioridade = Prioridade.porScore(Prioridade.score(severidade, urgencia));
-            TipoChamado destino;
-            try {
-                destino = roteamento.destino(motivo.getTipo(), prioridade, urgencia, agora.toInstant());
-            } catch (RuntimeException falhaRoteamento) {
-                chamado.marcarPendenteRoteamento(agora);
-                historico.registrarInterno(chamado, TipoEvento.ROTEAMENTO, "Pendente de roteamento — fila de exceções",
-                        "O protocolo foi persistido; o roteamento automático falhou e requer intervenção da Central.", Autor.SISTEMA, agora);
-                return new Resultado(montagem.completo(chamado, usuario.apenasCliente()), true);
-            }
-            chamado.classificarAutomaticamente(motivo.getTipo(), severidade, urgencia, destino, agora);
-            historico.registrarInterno(chamado, TipoEvento.CLASSIFICACAO, "Classificação automática V1",
-                    TriagemService.descreverClassificacao(motivo.getTipo(), severidade, urgencia), Autor.SISTEMA, agora);
-            historico.registrarParaTodos(chamado, TipoEvento.ROTEAMENTO, "Encaminhado para " + destino.getNome(),
-                    "Classificação e destino aplicados automaticamente conforme regras V1.", Autor.SISTEMA, agora);
+
+        TipoChamado tipo = outro ? sugestao.tipo() : motivo.getTipo();
+        int severidade = outro ? sugestao.severidade() : motivo.getSeveridade();
+        Prioridade prioridade = Prioridade.porScore(Prioridade.score(severidade, urgenciaDeclarada));
+        TipoChamado destino;
+        try {
+            destino = roteamento.destino(tipo, prioridade, urgenciaDeclarada, agora.toInstant());
+        } catch (RuntimeException falhaRoteamento) {
+            chamado.marcarPendenteRoteamento(agora);
+            historico.registrarInterno(chamado, TipoEvento.ROTEAMENTO, "Pendente de roteamento",
+                    "Protocolo registrado. O roteamento automático não foi concluído e o chamado aguarda análise da Central.", Autor.SISTEMA, agora);
+            return new Resultado(montagem.completo(chamado, usuario.apenasCliente()), true);
         }
+        if (outro) {
+            chamado.classificarPorTexto(tipo, severidade, urgenciaDeclarada, destino, agora);
+            historico.registrarInterno(chamado, TipoEvento.CLASSIFICACAO, "Classificação automática pelo relato",
+                    TriagemService.descreverClassificacao(tipo, severidade, urgenciaDeclarada) + " · " + sugestao.descrever()
+                            + " · aguardando revisão do atendente",
+                    Autor.SISTEMA, agora);
+        } else {
+            chamado.classificarAutomaticamente(tipo, severidade, urgenciaDeclarada, destino, agora);
+            historico.registrarInterno(chamado, TipoEvento.CLASSIFICACAO, "Classificação automática",
+                    TriagemService.descreverClassificacao(tipo, severidade, urgenciaDeclarada), Autor.SISTEMA, agora);
+        }
+        historico.registrarParaTodos(chamado, TipoEvento.ROTEAMENTO, "Encaminhado para " + destino.getNome(),
+                "Chamado direcionado para a fila de " + destino.getNome() + ".", Autor.SISTEMA, agora);
         return new Resultado(montagem.completo(chamado, usuario.apenasCliente()), true);
+    }
+
+    private static String textoOuVazio(String valor) {
+        return valor == null ? "" : valor;
     }
 
     private static void validarClassificacaoDeclarada(Motivo motivo, Contexto contexto, boolean outro, String motivoOutro, UsuarioAtual usuario) {
         Map<String, String> erros = new LinkedHashMap<>();
         if (outro) {
-            if (motivoOutro == null || motivoOutro.isBlank()) erros.put("motivoOutro", "Descreva brevemente o motivo para a Central classificar.");
-            if (contexto != null) erros.put("contextoId", "Outro motivo não recebe contexto ou prioridade antes da classificação da Central.");
+            if (motivoOutro == null || motivoOutro.isBlank()) erros.put("motivoOutro", "Descreva o motivo da solicitação.");
+            if (contexto != null) erros.put("contextoId", "O contexto não se aplica a outros motivos.");
         } else if (motivo == null) {
             erros.put("motivoId", "Selecione o motivo da solicitação.");
         } else if (usuario.temAlgum(UsuarioAtual.PERFIS_DE_CLIENTE) && !usuario.fazTriagem() && motivo.getTipo() == TipoChamado.TI) {

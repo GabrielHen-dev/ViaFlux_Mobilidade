@@ -15,7 +15,7 @@ export default function AreaProtegida({ children }: { children: ReactNode }) {
   if (estado.status !== "autenticado") {
     return (
       <div role="status" className="flex min-h-screen items-center justify-center bg-brand-light text-sm text-slate-500">
-        Verificando sessão…
+        Carregando…
       </div>
     );
   }

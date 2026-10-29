@@ -2,17 +2,25 @@
 
 import { useState } from "react";
 import { CircleCheck, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
 import type { Chamado } from "@/types/chamado";
 import { confirmarResolucao, contestarResolucao, reabrirChamado } from "@/services/api/chamados";
 import { useAcaoNoChamado } from "@/hooks/consultas";
 import { useAgora } from "@/hooks/useAgora";
-import { AvisoDeErro } from "@/components/feedback/EstadoDaConsulta";
+import { mensagemDeErro } from "@/components/feedback/EstadoDaConsulta";
 import { formatarDataHora } from "@/utils/date";
 
 const MOTIVO_MINIMO = 10;
 const cartaoClass = "rounded-2xl border p-5";
 const botaoPrincipalClass = "alvo-toque inline-flex items-center justify-center gap-2 rounded-xl bg-brand-green px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-40";
 const botaoSecundarioClass = "alvo-toque inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40";
+
+function avisarResultado(acao: Promise<unknown>, sucesso: { titulo: string; descricao?: string }, falha: string) {
+  acao.then(
+    () => toast.success(sucesso.titulo, { description: sucesso.descricao }),
+    (erro: unknown) => toast.error(falha, { description: mensagemDeErro(erro) }),
+  );
+}
 
 function CampoDeMotivo({ id, rotulo, enviando, rotuloDoEnvio, aoEnviar, aoCancelar }: {
   id: string;
@@ -34,7 +42,7 @@ function CampoDeMotivo({ id, rotulo, enviando, rotuloDoEnvio, aoEnviar, aoCancel
         value={motivo}
         onChange={(evento) => setMotivo(evento.target.value)}
         className="w-full resize-none rounded-lg border border-[#E2E8F0] bg-white px-3.5 py-2.5 text-sm text-brand-dark outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10"
-        placeholder={`Conte em pelo menos ${MOTIVO_MINIMO} caracteres o que está acontecendo.`}
+        placeholder={`Mínimo de ${MOTIVO_MINIMO} caracteres.`}
       />
       <div className="flex flex-wrap gap-2">
         <button type="button" disabled={enviando || curtoDemais} onClick={() => aoEnviar(motivo.trim())} className={botaoPrincipalClass}>
@@ -62,30 +70,28 @@ function ConfirmacaoDaSolucao({ chamado }: { chamado: Chamado }) {
       )}
       {chamado.confirmacaoAte && (
         <p className="mt-2 text-xs text-emerald-800">
-          Responda até {formatarDataHora(chamado.confirmacaoAte)}. Sem resposta, o chamado é fechado automaticamente.
+          Prazo para resposta: {formatarDataHora(chamado.confirmacaoAte)}. Sem resposta, o chamado será fechado automaticamente.
         </p>
       )}
       {contestando ? (
         <CampoDeMotivo
           id={`contestacao-${chamado.id}`}
-          rotulo="O que ainda não foi resolvido?"
+          rotulo="Motivo da contestação"
           enviando={enviando}
-          rotuloDoEnvio="Enviar e voltar ao atendimento"
-          aoEnviar={(motivo) => contestar.mutate(motivo)}
+          rotuloDoEnvio="Enviar contestação"
+          aoEnviar={(motivo) => avisarResultado(contestar.mutateAsync(motivo), { titulo: "Solução contestada", descricao: "O chamado retornou para atendimento." }, "Não foi possível enviar a contestação")}
           aoCancelar={() => setContestando(false)}
         />
       ) : (
         <div className="mt-4 flex flex-wrap gap-2">
-          <button type="button" disabled={enviando} onClick={() => confirmar.mutate()} className={botaoPrincipalClass}>
+          <button type="button" disabled={enviando} onClick={() => avisarResultado(confirmar.mutateAsync(), { titulo: "Solução confirmada" }, "Não foi possível confirmar a solução")} className={botaoPrincipalClass}>
             {confirmar.isPending ? "Confirmando…" : "Confirmar solução"}
           </button>
           <button type="button" disabled={enviando} onClick={() => setContestando(true)} className={botaoSecundarioClass}>
-            Ainda não resolveu
+            Contestar solução
           </button>
         </div>
       )}
-      {confirmar.isError && <div className="mt-3"><AvisoDeErro erro={confirmar.error} /></div>}
-      {contestar.isError && <div className="mt-3"><AvisoDeErro erro={contestar.error} /></div>}
     </section>
   );
 }
@@ -100,21 +106,20 @@ function ReaberturaDoChamado({ chamado, limite }: { chamado: Chamado; limite: st
         <RotateCcw size={16} aria-hidden /> O problema voltou?
       </h2>
       <p className="mt-2 text-xs text-slate-500">
-        Você pode reabrir este chamado até {formatarDataHora(limite)}, mantendo o protocolo e todo o histórico.
+        Reabertura disponível até {formatarDataHora(limite)}.
       </p>
       {reabrindo ? (
         <CampoDeMotivo
           id={`reabertura-${chamado.id}`}
-          rotulo="Por que reabrir?"
+          rotulo="Motivo da reabertura"
           enviando={reabrir.isPending}
           rotuloDoEnvio="Reabrir chamado"
-          aoEnviar={(motivo) => reabrir.mutate(motivo)}
+          aoEnviar={(motivo) => avisarResultado(reabrir.mutateAsync(motivo), { titulo: "Chamado reaberto" }, "Não foi possível reabrir o chamado")}
           aoCancelar={() => setReabrindo(false)}
         />
       ) : (
         <button type="button" onClick={() => setReabrindo(true)} className={`${botaoSecundarioClass} mt-4`}>Reabrir chamado</button>
       )}
-      {reabrir.isError && <div className="mt-3"><AvisoDeErro erro={reabrir.error} /></div>}
     </section>
   );
 }
@@ -126,7 +131,7 @@ export default function EncerramentoPeloSolicitante({ chamado }: { chamado: Cham
   if (new Date(chamado.reaberturaAte) > agora) return <ReaberturaDoChamado chamado={chamado} limite={chamado.reaberturaAte} />;
   return (
     <p className="rounded-2xl border border-[#E2E8F0] bg-white p-4 text-xs text-slate-500">
-      O prazo para reabrir este chamado terminou. Se o problema voltou, abra um novo chamado citando o protocolo {chamado.id}.
+      Prazo de reabertura encerrado. Para uma nova ocorrência, abra outro chamado informando o protocolo {chamado.id}.
     </p>
   );
 }

@@ -8,6 +8,7 @@ import { reclassificarChamado } from "@/services/api/chamados";
 import { useAcaoNoChamado } from "@/hooks/consultas";
 import { AvisoDeErro } from "@/components/feedback/EstadoDaConsulta";
 import { Justificativa, ResultadoDoScore, SeletorDePeso, SeletorDeTipo, cartaoClass, justificativaValida } from "@/components/triagem/CamposDaTriagem";
+import { NOME_TIPO } from "@/utils/prioridade";
 
 interface Props {
   chamado: Chamado;
@@ -23,6 +24,7 @@ export default function Reclassificacao({ chamado, vigente, aoConcluir }: Props)
   const reclassificacao = useAcaoNoChamado(chamado.id, (api, dados: DadosReclassificacao) => reclassificarChamado(api, chamado.id, dados));
 
   const departamentoAtual = chamado.departamento;
+  const reencaminha = chamado.triagem.revisaoPendente && chamado.status === "Na fila";
   const mudou = tipo !== vigente.tipo || severidade !== vigente.severidade || urgencia !== vigente.urgencia;
   const valida = mudou && justificativaValida(justificativa);
 
@@ -35,10 +37,14 @@ export default function Reclassificacao({ chamado, vigente, aoConcluir }: Props)
         <SeletorDePeso nome="urgencia" rotulo="Urgência (contexto)" valor={urgencia} aoAlterar={setUrgencia} />
         <ResultadoDoScore severidade={severidade} urgencia={urgencia} />
         {departamentoAtual && tipo !== departamentoAtual.codigo && (
-          <p className="text-xs text-slate-500">
-            A reclassificação não muda a fila: o chamado continua em {departamentoAtual.nome}.{" "}
-            <Link href={`/chamados/${chamado.id}/encaminhamento`} className="font-semibold text-brand-blue underline">Transferir o chamado</Link> se outro departamento deve assumir.
-          </p>
+          reencaminha ? (
+            <p className="rounded-xl bg-blue-50 px-3 py-2 text-xs font-medium text-blue-800">O chamado será encaminhado para {NOME_TIPO[tipo]}.</p>
+          ) : (
+            <p className="text-xs text-slate-500">
+              O chamado permanece em {departamentoAtual.nome}.{" "}
+              <Link href={`/chamados/${chamado.id}/encaminhamento`} className="font-semibold text-brand-blue underline">Transferir</Link>
+            </p>
+          )
         )}
         <Justificativa id="triagem-justificativa" valor={justificativa} aoAlterar={setJustificativa} />
         {reclassificacao.isError && <AvisoDeErro erro={reclassificacao.error} />}
@@ -48,7 +54,7 @@ export default function Reclassificacao({ chamado, vigente, aoConcluir }: Props)
           onClick={() => reclassificacao.mutate({ tipo, severidade, urgencia, justificativa: justificativa.trim() }, {
             onSuccess: (atualizado) => {
               setJustificativa("");
-              aoConcluir(`Chamado reclassificado: score ${atualizado.classificacao?.score} · ${atualizado.classificacao?.prioridade}.`);
+              aoConcluir(`Chamado reclassificado · ${atualizado.classificacao?.prioridade} (score ${atualizado.classificacao?.score})`);
             },
           })}
           className="alvo-toque w-full rounded-xl bg-brand-green py-3 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 disabled:opacity-40"

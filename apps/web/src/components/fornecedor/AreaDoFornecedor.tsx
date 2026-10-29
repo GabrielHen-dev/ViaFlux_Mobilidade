@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { MapPin } from "lucide-react";
+import { toast } from "sonner";
 import { STATUS_SERVICO, type ServicoDoFornecedor, type StatusServico } from "@/types/chamado";
 import type { DadosAtualizacaoServico } from "@/services/api/contratos";
 import { atualizarServicoDoFornecedor } from "@/services/api/operacao";
@@ -11,7 +12,7 @@ import { chaves, useServicosDoFornecedor } from "@/hooks/consultas";
 import { useRascunho } from "@/hooks/useRascunho";
 import PerfilRequerido from "@/components/auth/PerfilRequerido";
 import { APARENCIA_DO_STATUS_DO_SERVICO, StatusServicoBadge } from "@/components/ui/StatusServico";
-import { AvisoDeErro, Carregando, FalhaAoCarregar } from "@/components/feedback/EstadoDaConsulta";
+import { Carregando, FalhaAoCarregar, mensagemDeErro } from "@/components/feedback/EstadoDaConsulta";
 import { enderecoNoMapa } from "@/components/chamados/LocalizacaoDoChamado";
 import { formatarDataHora } from "@/utils/date";
 import { PERFIS_DE_FORNECEDOR } from "@/utils/perfis";
@@ -35,7 +36,9 @@ function CartaoDoServico({ servico }: { servico: ServicoDoFornecedor }) {
       setStatus(null);
       descartar("");
       void clienteDeConsultas.invalidateQueries({ queryKey: chaves.servicosDoFornecedor });
+      toast.success("Atualização registrada", { description: `Chamado ${servico.chamadoId}` });
     },
+    onError: (erro) => toast.error("Não foi possível registrar a atualização", { description: mensagemDeErro(erro) }),
   });
   const concluido = servico.status === "CONCLUIDO";
 
@@ -68,9 +71,8 @@ function CartaoDoServico({ servico }: { servico: ServicoDoFornecedor }) {
           </fieldset>
           <label htmlFor={`observacao-${servico.id}`} className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Observação</label>
           <textarea id={`observacao-${servico.id}`} rows={2} value={observacao} onChange={(evento) => setObservacao(evento.target.value)} className="w-full resize-none rounded-lg border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-brand-blue" placeholder="Ex.: guincho a caminho, previsão 30 min" />
-          {atualizacao.isError && <AvisoDeErro erro={atualizacao.error} />}
           <button type="button" disabled={!status || atualizacao.isPending} onClick={() => status && atualizacao.mutate({ status, observacao: observacao.trim() })} className="alvo-toque w-full rounded-xl bg-brand-green py-3 text-sm font-semibold text-white disabled:opacity-40">
-            {atualizacao.isPending ? "Enviando…" : "Registrar atualização"}
+            {atualizacao.isPending ? "Registrando…" : "Registrar atualização"}
           </button>
         </div>
       )}
@@ -98,11 +100,11 @@ function ConteudoDoFornecedor() {
     <main id="conteudo" className="p-4 md:p-8">
       <div className="mx-auto max-w-3xl">
         <h1 className="font-display text-2xl font-bold text-brand-navy">Meus serviços</h1>
-        <p className="mb-6 text-sm text-slate-500">Somente os serviços vinculados à sua empresa. Cada atualização fica registrada com data, hora e fornecedor.</p>
+        <p className="mb-6 text-sm text-slate-500">Serviços vinculados à sua empresa.</p>
         {servicos.isPending ? <Carregando texto="Carregando serviços…" /> : servicos.isError ? (
           <FalhaAoCarregar erro={servicos.error} aoTentarDeNovo={() => void servicos.refetch()} />
         ) : servicos.data.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-slate-300 p-10 text-center text-sm text-slate-500">Nenhum serviço vinculado à sua empresa no momento.</p>
+          <p className="rounded-2xl border border-dashed border-slate-300 p-10 text-center text-sm text-slate-500">Nenhum serviço vinculado.</p>
         ) : (
           <div className="space-y-4">{servicos.data.map((servico) => <CartaoDoServico key={servico.id} servico={servico} />)}</div>
         )}

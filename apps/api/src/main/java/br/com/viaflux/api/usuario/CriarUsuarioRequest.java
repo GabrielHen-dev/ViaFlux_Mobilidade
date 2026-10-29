@@ -16,9 +16,6 @@ public record CriarUsuarioRequest(
         @Email(message = "Informe um e-mail válido.")
         @Size(max = 254, message = "O e-mail deve ter no máximo 254 caracteres.")
         String email,
-        @NotBlank(message = "A senha inicial é obrigatória.")
-        @Size(min = 8, max = 100, message = "A senha deve ter entre 8 e 100 caracteres.")
-        String senha,
         @NotEmpty(message = "Informe ao menos um perfil.")
         Set<@NotBlank(message = "O código do perfil não pode ficar vazio.") String> perfis,
         UUID organizacaoId,

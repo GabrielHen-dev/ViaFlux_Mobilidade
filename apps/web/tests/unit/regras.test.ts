@@ -27,7 +27,7 @@ describe("matriz de prioridade (RN06)", () => {
 
 describe("prazo da triagem", () => {
   const triagem = (mudancas: Partial<Triagem> = {}): Triagem => ({
-    limite: "2026-10-19T10:20:00-03:00", prazoMinutos: 20, iniciadaEm: null, responsavel: null, concluidaEm: null, concluidaPor: null, situacao: "NO_PRAZO", ...mudancas,
+    limite: "2026-10-19T10:20:00-03:00", prazoMinutos: 20, iniciadaEm: null, responsavel: null, concluidaEm: null, concluidaPor: null, situacao: "NO_PRAZO", revisaoPendente: false, ...mudancas,
   });
 
   it("fica verde até a metade do prazo, amarelo depois e vermelho ao estourar", () => {
@@ -62,7 +62,7 @@ describe("menu por perfil", () => {
   const rotulos = (perfis: Partial<PerfisDoMenu>) => itensDeMenuPara({ ...nenhum, ...perfis }).map((item) => item.rotulo);
 
   it("mostra a fila de triagem só para quem faz triagem", () => {
-    expect(rotulos({ central: true, global: true, triagem: true, abrePelaCentral: true })).toEqual(["Dashboard", "Triagem", "Novo Chamado"]);
+    expect(rotulos({ central: true, global: true, triagem: true, abrePelaCentral: true })).toEqual(["Dashboard", "Classificação", "Novo Chamado"]);
     expect(rotulos({ central: true, global: true, metricas: true })).toEqual(["Dashboard", "Métricas"]);
     expect(rotulos({ central: true })).toEqual(["Fila do departamento"]);
   });

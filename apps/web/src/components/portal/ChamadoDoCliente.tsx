@@ -30,7 +30,7 @@ function ConteudoDoChamado({ chamado }: { chamado: Chamado }) {
 
         <section className="grid grid-cols-1 gap-4 rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:grid-cols-3">
           <div>
-            <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">Status atual</div>
+            <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">Status</div>
             <StatusBadge status={chamado.status} />
           </div>
           <div>

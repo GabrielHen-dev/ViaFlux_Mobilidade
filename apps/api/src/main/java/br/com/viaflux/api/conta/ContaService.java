@@ -1,7 +1,8 @@
 package br.com.viaflux.api.conta;
 
+import br.com.viaflux.api.shared.email.CaixaDeSaida;
 import br.com.viaflux.api.shared.seguranca.LimiteDeTentativas;
-import br.com.viaflux.api.usuario.ContaCriadaPeloAdmin;
+import br.com.viaflux.api.usuario.ConviteSolicitado;
 import br.com.viaflux.api.usuario.Perfil;
 import br.com.viaflux.api.usuario.PerfilRepository;
 import br.com.viaflux.api.usuario.Usuario;
@@ -17,14 +18,17 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Comparator;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 class ContaService {
 
     static final String PERFIL_CLIENTE = "CLIENTE";
     static final String LINK_INVALIDO = "Este link é inválido, já foi usado ou expirou. Peça um novo.";
+    static final String CONVIDANTE_PADRAO = "A equipe ViaFlux";
 
     private final UsuarioRepository usuarios;
     private final PerfilRepository perfis;
@@ -86,6 +90,7 @@ class ContaService {
         limite.consumir("verificacao-origem:" + origem);
         usuarios.findByEmail(email)
                 .filter(Usuario::isAtivo)
+                .filter(usuario -> !usuario.convitePendente())
                 .filter(usuario -> !usuario.emailVerificado())
                 .ifPresent(this::enviarVerificacao);
     }
@@ -118,12 +123,55 @@ class ContaService {
         caixaDeSaida.enviar(mensagens.senhaAlterada(usuario));
     }
 
+    @Transactional(readOnly = true)
+    ContaController.ConviteResponse consultarConvite(String token) {
+        Usuario convidado = conviteUtilizavel(token).getUsuario();
+        return new ContaController.ConviteResponse(
+                convidado.getNome(),
+                convidado.getEmail(),
+                convidado.getPerfis().stream()
+                        .sorted(Comparator.comparing(Perfil::getDescricao))
+                        .map(perfil -> new ContaController.PerfilDoConvite(perfil.getCodigo(), perfil.getDescricao()))
+                        .toList()
+        );
+    }
+
+    @Transactional
+    void aceitarConvite(String token, String senha) {
+        TokenDeConta convite = conviteUtilizavel(token);
+        Usuario convidado = convite.getUsuario();
+        OffsetDateTime agora = agora();
+        convidado.atualizarSenhaHash(passwordEncoder.encode(senha));
+        convidado.confirmarEmail(agora);
+        convite.usar(agora);
+    }
+
     @TransactionalEventListener
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    void aoCriarContaPeloAdmin(ContaCriadaPeloAdmin evento) {
+    void aoSolicitarConvite(ConviteSolicitado evento) {
         usuarios.findById(evento.usuarioId())
-                .filter(usuario -> !usuario.emailVerificado())
-                .ifPresent(this::enviarVerificacao);
+                .filter(Usuario::isAtivo)
+                .filter(Usuario::convitePendente)
+                .ifPresent(convidado -> {
+                    String token = emitir(convidado, FinalidadeDoToken.CONVITE, propriedades.validadeDoConvite().toMinutes());
+                    caixaDeSaida.enviar(mensagens.convite(convidado, token, nomeDoConvidante(evento.convidanteId())));
+                });
+    }
+
+    private String nomeDoConvidante(UUID convidanteId) {
+        return Optional.ofNullable(convidanteId)
+                .flatMap(usuarios::findById)
+                .map(Usuario::getNome)
+                .orElse(CONVIDANTE_PADRAO);
+    }
+
+    private TokenDeConta conviteUtilizavel(String token) {
+        TokenDeConta convite = tokenUtilizavel(token, FinalidadeDoToken.CONVITE);
+        Usuario convidado = convite.getUsuario();
+        if (!convidado.isAtivo() || !convidado.convitePendente()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, LINK_INVALIDO);
+        }
+        return convite;
     }
 
     private void enviarVerificacao(Usuario usuario) {

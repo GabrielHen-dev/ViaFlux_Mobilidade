@@ -69,7 +69,8 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/cadastro", "/auth/verificacao", "/auth/verificacao/reenvio",
-                                "/auth/senha/recuperacao", "/auth/senha/redefinicao").permitAll()
+                                "/auth/senha/recuperacao", "/auth/senha/redefinicao", "/auth/convite/consulta",
+                                "/auth/convite/aceite").permitAll()
                         .requestMatchers(HttpMethod.GET, "/auth/me").authenticated()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/dev/**").hasRole("ADMIN")
@@ -86,7 +87,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/chamados/*/restauracao").hasAnyRole(PERFIS_DA_LIXEIRA)
                         .requestMatchers(HttpMethod.GET, "/api/chamados/resumo").hasAnyRole(PERFIS_DA_CENTRAL)
                         .requestMatchers("/api/chamados/*/triagem", "/api/chamados/*/triagem/**").hasAnyRole(PERFIS_DE_TRIAGEM)
-                        .requestMatchers("/api/chamados/*/classificacao", "/api/chamados/*/override").hasAnyRole(PERFIS_DE_TRIAGEM)
+                        .requestMatchers("/api/chamados/*/classificacao", "/api/chamados/*/classificacao/**", "/api/chamados/*/override").hasAnyRole(PERFIS_DE_TRIAGEM)
+                        .requestMatchers(HttpMethod.POST, "/api/chamados/*/escalonamento").hasAnyRole(PERFIS_QUE_ATENDEM)
                         .requestMatchers(HttpMethod.PATCH, "/api/chamados/*/status").hasAnyRole(PERFIS_QUE_ATENDEM)
                         .requestMatchers(HttpMethod.POST, "/api/chamados/*/atendimento").hasAnyRole(PERFIS_QUE_ATENDEM)
                         .requestMatchers(HttpMethod.POST, "/api/chamados/*/transferencias").hasAnyRole(PERFIS_QUE_CONDUZEM)

@@ -1,7 +1,9 @@
 package br.com.viaflux.api.conta;
 
+import br.com.viaflux.api.shared.email.CaixaDeSaida;
+import br.com.viaflux.api.shared.email.ModelosDeEmail;
 import br.com.viaflux.api.shared.seguranca.LimiteDeTentativas;
-import br.com.viaflux.api.usuario.ContaCriadaPeloAdmin;
+import br.com.viaflux.api.usuario.ConviteSolicitado;
 import br.com.viaflux.api.usuario.Perfil;
 import br.com.viaflux.api.usuario.PerfilRepository;
 import br.com.viaflux.api.usuario.Usuario;
@@ -21,12 +23,14 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
@@ -42,7 +46,7 @@ class ContaServiceTests {
     private static final Instant AGORA = Instant.parse("2026-10-29T12:00:00Z");
     private static final Pattern TOKEN_NO_LINK = Pattern.compile("token=([A-Za-z0-9_-]+)");
     private static final ContaProperties PROPRIEDADES = new ContaProperties("http://localhost:5261/", "ViaFlux <nao-responda@viaflux.local>",
-            "termos-v1", Duration.ofHours(24), Duration.ofMinutes(30), 5, Duration.ofMinutes(15));
+            "termos-v1", Duration.ofHours(24), Duration.ofMinutes(30), Duration.ofDays(7), 5, Duration.ofMinutes(15));
 
     private final RelogioAjustavel relogio = new RelogioAjustavel(AGORA);
     private final UsuarioRepository usuarios = mock(UsuarioRepository.class);
@@ -86,8 +90,8 @@ class ContaServiceTests {
                 .filter(token -> token.getFinalidade() == invocacao.getArgument(1))
                 .filter(token -> token.getUsadoEm() == null)
                 .toList());
-        servico = new ContaService(usuarios, perfis, tokens, new GeradorDeTokens(), new MensagensDeConta(PROPRIEDADES), enviadas::add,
-                passwordEncoder, new LimiteDeTentativas(5, Duration.ofMinutes(15), relogio), PROPRIEDADES, relogio);
+        servico = new ContaService(usuarios, perfis, tokens, new GeradorDeTokens(), new MensagensDeConta(PROPRIEDADES, new ModelosDeEmail()),
+                enviadas::add, passwordEncoder, new LimiteDeTentativas(5, Duration.ofMinutes(15), relogio), PROPRIEDADES, relogio);
     }
 
     @Test
@@ -104,8 +108,9 @@ class ContaServiceTests {
         assertThat(passwordEncoder.matches("senha-forte-1", ana.getSenhaHash())).isTrue();
         CaixaDeSaida.Mensagem mensagem = enviadas.getFirst();
         assertThat(mensagem.para()).isEqualTo("ana@exemplo.com");
-        assertThat(mensagem.assunto()).isEqualTo("Confirme seu e-mail no ViaFlux");
+        assertThat(mensagem.assunto()).isEqualTo("Confirme seu e-mail");
         assertThat(mensagem.texto()).contains("http://localhost:5261/verificar-email?token=").contains("24 horas");
+        assertThat(mensagem.html()).contains("href=\"http://localhost:5261/verificar-email?token=").contains("Confirmar e-mail");
         assertThat(ReflectionTestUtils.getField(emitidos.getFirst(), "hashDoToken")).isNotEqualTo(tokenDe(mensagem));
     }
 
@@ -119,7 +124,8 @@ class ContaServiceTests {
         assertThat(cadastrados).hasSize(1);
         assertThat(enviadas).singleElement().satisfies(mensagem -> {
             assertThat(mensagem.para()).isEqualTo("ana@exemplo.com");
-            assertThat(mensagem.assunto()).isEqualTo("Tentativa de cadastro com o seu e-mail");
+            assertThat(mensagem.assunto()).isEqualTo("Tentativa de cadastro com seu e-mail");
+            assertThat(mensagem.html()).contains("http://localhost:5261/esqueci-a-senha").contains("http://localhost:5261/login");
         });
     }
 
@@ -173,7 +179,7 @@ class ContaServiceTests {
         int versaoAnterior = ana.getVersaoDaSessao();
         servico.solicitarRedefinicao("ana@exemplo.com", "10.0.0.1");
         CaixaDeSaida.Mensagem pedido = enviadas.get(1);
-        assertThat(pedido.assunto()).isEqualTo("Redefinição de senha do ViaFlux");
+        assertThat(pedido.assunto()).isEqualTo("Redefinição de senha");
         assertThat(pedido.texto()).contains("http://localhost:5261/redefinir-senha?token=").contains("30 minutos");
 
         servico.redefinirSenha(tokenDe(pedido), "senha-nova-2");
@@ -181,7 +187,7 @@ class ContaServiceTests {
         assertThat(passwordEncoder.matches("senha-nova-2", ana.getSenhaHash())).isTrue();
         assertThat(ana.getVersaoDaSessao()).isEqualTo(versaoAnterior + 1);
         assertThat(ana.emailVerificado()).isTrue();
-        assertThat(enviadas.getLast().assunto()).isEqualTo("Sua senha do ViaFlux foi alterada");
+        assertThat(enviadas.getLast().assunto()).isEqualTo("Sua senha foi alterada");
         assertThat(linkInvalido(() -> servico.redefinirSenha(tokenDe(pedido), "outra-senha-3"))).isEqualTo(ContaService.LINK_INVALIDO);
     }
 
@@ -224,13 +230,110 @@ class ContaServiceTests {
     }
 
     @Test
-    void contaCriadaPeloAdminRecebeOLinkDeVerificacao() {
-        Usuario paula = new Usuario("Paula Atendente", "paula@viaflux.local", "hash", Set.of(perfil("ATENDENTE")));
-        usuarios.save(paula);
+    void conviteInformaQuemConvidouOsPerfisEOLinkDeAceite() {
+        Usuario carla = usuarios.save(new Usuario("Carla Admin", "carla@viaflux.local", "hash", Set.of(perfil("ADMIN"))));
+        Usuario paula = convidar("Paula Atendente", "paula@viaflux.local", "ATENDENTE", "LIDER_OPERACIONAL");
 
-        servico.aoCriarContaPeloAdmin(new ContaCriadaPeloAdmin(paula.getId()));
+        servico.aoSolicitarConvite(new ConviteSolicitado(paula.getId(), carla.getId()));
 
-        assertThat(enviadas).singleElement().satisfies(mensagem -> assertThat(mensagem.para()).isEqualTo("paula@viaflux.local"));
+        CaixaDeSaida.Mensagem convite = enviadas.getFirst();
+        assertThat(convite.para()).isEqualTo("paula@viaflux.local");
+        assertThat(convite.assunto()).isEqualTo("Convite de acesso à ViaFlux Mobilidade");
+        assertThat(convite.texto())
+                .contains("Carla Admin convidou você")
+                .contains("Perfis: ATENDENTE, LIDER_OPERACIONAL")
+                .contains("http://localhost:5261/aceitar-convite?token=")
+                .contains("7 dias");
+        assertThat(convite.html()).contains("Aceitar convite").contains("#0F2C59").contains("Carla Admin");
+        assertThat(emitidos.getFirst().getFinalidade()).isEqualTo(FinalidadeDoToken.CONVITE);
+    }
+
+    @Test
+    void conviteSemConvidanteConhecidoUsaAEquipeViaFlux() {
+        Usuario paula = convidar("Paula Atendente", "paula@viaflux.local", "ATENDENTE");
+
+        servico.aoSolicitarConvite(new ConviteSolicitado(paula.getId(), null));
+
+        assertThat(enviadas.getFirst().texto()).contains(ContaService.CONVIDANTE_PADRAO + " convidou você").contains("Perfil: ATENDENTE");
+    }
+
+    @Test
+    void nomesNoConviteSaoEscapadosNoHtml() {
+        Usuario carla = usuarios.save(new Usuario("Carla <script>alert(1)</script>", "carla@viaflux.local", "hash", Set.of(perfil("ADMIN"))));
+        Usuario paula = convidar("<b>Paula</b> & \"Cia\"", "paula@viaflux.local", "ATENDENTE");
+
+        servico.aoSolicitarConvite(new ConviteSolicitado(paula.getId(), carla.getId()));
+
+        CaixaDeSaida.Mensagem convite = enviadas.getFirst();
+        assertThat(convite.html())
+                .doesNotContain("<script>")
+                .doesNotContain("<b>Paula</b>")
+                .contains("Carla &lt;script&gt;alert(1)&lt;/script&gt;")
+                .contains("&lt;b&gt;Paula&lt;/b&gt; &amp; &quot;Cia&quot;");
+        assertThat(convite.texto()).contains("Olá, <b>Paula</b> & \"Cia\".");
+    }
+
+    @Test
+    void aceiteDoConviteDefineASenhaConfirmaOEmailEInvalidaOLink() {
+        Usuario paula = convidar("Paula Atendente", "paula@viaflux.local", "ATENDENTE");
+        servico.aoSolicitarConvite(new ConviteSolicitado(paula.getId(), null));
+        String token = tokenDe(enviadas.getFirst());
+
+        ContaController.ConviteResponse convite = servico.consultarConvite(token);
+        assertThat(convite.nome()).isEqualTo("Paula Atendente");
+        assertThat(convite.email()).isEqualTo("paula@viaflux.local");
+        assertThat(convite.perfis()).containsExactly(new ContaController.PerfilDoConvite("ATENDENTE", "ATENDENTE"));
+
+        servico.aceitarConvite(token, "senha-da-paula-1");
+
+        assertThat(paula.convitePendente()).isFalse();
+        assertThat(passwordEncoder.matches("senha-da-paula-1", paula.getSenhaHash())).isTrue();
+        assertThat(paula.emailVerificado()).isTrue();
+        assertThat(linkInvalido(() -> servico.consultarConvite(token))).isEqualTo(ContaService.LINK_INVALIDO);
+        assertThat(linkInvalido(() -> servico.aceitarConvite(token, "outra-senha-2"))).isEqualTo(ContaService.LINK_INVALIDO);
+    }
+
+    @Test
+    void conviteExpiraNoPrazoConfiguradoEOReenvioInvalidaOAnterior() {
+        Usuario paula = convidar("Paula Atendente", "paula@viaflux.local", "ATENDENTE");
+        servico.aoSolicitarConvite(new ConviteSolicitado(paula.getId(), null));
+        String primeiro = tokenDe(enviadas.getFirst());
+        servico.aoSolicitarConvite(new ConviteSolicitado(paula.getId(), null));
+        String segundo = tokenDe(enviadas.get(1));
+
+        assertThat(linkInvalido(() -> servico.consultarConvite(primeiro))).isEqualTo(ContaService.LINK_INVALIDO);
+        servico.consultarConvite(segundo);
+        relogio.avancar(Duration.ofDays(7));
+        assertThat(linkInvalido(() -> servico.consultarConvite(segundo))).isEqualTo(ContaService.LINK_INVALIDO);
+        assertThat(paula.convitePendente()).isTrue();
+    }
+
+    @Test
+    void conviteDeUsuarioDesativadoNaoPodeSerUsadoNemReenviado() {
+        Usuario paula = convidar("Paula Atendente", "paula@viaflux.local", "ATENDENTE");
+        servico.aoSolicitarConvite(new ConviteSolicitado(paula.getId(), null));
+        String token = tokenDe(enviadas.getFirst());
+        paula.alterarAtivo(false);
+
+        assertThat(linkInvalido(() -> servico.aceitarConvite(token, "senha-da-paula-1"))).isEqualTo(ContaService.LINK_INVALIDO);
+        servico.aoSolicitarConvite(new ConviteSolicitado(paula.getId(), null));
+        assertThat(enviadas).hasSize(1);
+    }
+
+    @Test
+    void naoEnviaConviteParaQuemJaAtivouNemVerificacaoParaConvitePendente() {
+        Usuario paula = usuarios.save(new Usuario("Paula Atendente", "paula@viaflux.local", "hash", Set.of(perfil("ATENDENTE"))));
+        servico.aoSolicitarConvite(new ConviteSolicitado(paula.getId(), null));
+        Usuario rui = convidar("Rui Atendente", "rui@viaflux.local", "ATENDENTE");
+        servico.reenviarVerificacao("rui@viaflux.local", "10.0.0.1");
+
+        assertThat(enviadas).isEmpty();
+        assertThat(rui.convitePendente()).isTrue();
+    }
+
+    private Usuario convidar(String nome, String email, String... codigosDosPerfis) {
+        Set<Perfil> perfisDoConvidado = Arrays.stream(codigosDosPerfis).map(ContaServiceTests::perfil).collect(Collectors.toSet());
+        return usuarios.save(Usuario.convidado(nome, email, perfisDoConvidado, null, Set.of()));
     }
 
     private static ContaController.CadastroRequest cadastro(String email) {

@@ -38,10 +38,7 @@ function ConteudoDoPortal() {
     <main id="conteudo" className="p-4 md:p-8">
       <div className="mx-auto max-w-3xl">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="font-display text-2xl font-bold text-brand-navy">Meus chamados</h1>
-            <p className="text-sm text-slate-500">Acompanhe o andamento sem precisar ligar para a Central.</p>
-          </div>
+          <h1 className="font-display text-2xl font-bold text-brand-navy">Meus chamados</h1>
           <Link href="/chamados/novo" className="alvo-toque inline-flex items-center gap-2 rounded-xl bg-brand-green px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90">
             <CirclePlus size={16} aria-hidden /> Abrir chamado
           </Link>
@@ -50,7 +47,7 @@ function ConteudoDoPortal() {
         <AvisoDeEmailNaoVerificado usuario={usuario} />
 
         <form onSubmit={buscar} className="mb-6 rounded-2xl border border-[#E2E8F0] bg-white p-4" noValidate>
-          <label htmlFor="busca-protocolo" className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">Buscar pelo protocolo</label>
+          <label htmlFor="busca-protocolo" className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">Buscar por protocolo</label>
           <div className="flex gap-2">
             <input id="busca-protocolo" value={protocolo} onChange={(evento) => setProtocolo(evento.target.value)} placeholder="VF-0001" aria-invalid={erroDoProtocolo ? true : undefined} aria-describedby={erroDoProtocolo ? "busca-protocolo-erro" : undefined} className="alvo-toque min-w-0 flex-1 rounded-lg border border-[#E2E8F0] px-3 py-2 text-sm uppercase outline-none focus:border-brand-blue" />
             <button type="submit" className="alvo-toque inline-flex items-center gap-2 rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white"><Search size={14} aria-hidden /> Buscar</button>
@@ -58,10 +55,10 @@ function ConteudoDoPortal() {
           {erroDoProtocolo && <p id="busca-protocolo-erro" className="mt-1 text-xs font-medium text-red-600">{erroDoProtocolo}</p>}
         </form>
 
-        {lista.isPending || lista.isPlaceholderData ? <Carregando texto="Carregando seus chamados…" /> : lista.isError ? (
+        {lista.isPending || lista.isPlaceholderData ? <Carregando texto="Carregando chamados…" /> : lista.isError ? (
           <FalhaAoCarregar erro={lista.error} aoTentarDeNovo={() => void lista.refetch()} />
         ) : lista.data.content.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-slate-300 p-10 text-center text-sm text-slate-500">Você ainda não abriu nenhum chamado.</p>
+          <p className="rounded-2xl border border-dashed border-slate-300 p-10 text-center text-sm text-slate-500">Nenhum chamado aberto.</p>
         ) : (
           <>
             <ul className="space-y-3">

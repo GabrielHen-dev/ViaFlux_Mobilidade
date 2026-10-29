@@ -7,7 +7,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.HashSet;
 import java.util.List;
@@ -28,7 +27,6 @@ class UsuarioAdminService {
     private final PerfilRepository perfis;
     private final OrganizacaoRepository organizacoes;
     private final DepartamentoRepository departamentos;
-    private final PasswordEncoder passwordEncoder;
     private final ApplicationEventPublisher eventos;
 
     UsuarioAdminService(
@@ -36,14 +34,12 @@ class UsuarioAdminService {
             PerfilRepository perfis,
             OrganizacaoRepository organizacoes,
             DepartamentoRepository departamentos,
-            PasswordEncoder passwordEncoder,
             ApplicationEventPublisher eventos
     ) {
         this.usuarios = usuarios;
         this.perfis = perfis;
         this.organizacoes = organizacoes;
         this.departamentos = departamentos;
-        this.passwordEncoder = passwordEncoder;
         this.eventos = eventos;
     }
 
@@ -66,7 +62,7 @@ class UsuarioAdminService {
     }
 
     @Transactional
-    UsuarioAdminResponse criar(CriarUsuarioRequest request) {
+    UsuarioAdminResponse criar(CriarUsuarioRequest request, UUID convidanteId) {
         String email = Usuario.normalizarEmail(request.email());
         if (usuarios.findByEmail(email).isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um usuário com este e-mail.");
@@ -77,21 +73,19 @@ class UsuarioAdminService {
         Set<Departamento> departamentosDoUsuario = carregarDepartamentos(request.departamentos());
         validarVinculos(perfisDoUsuario, organizacao, departamentosDoUsuario);
 
-        Usuario usuario = new Usuario(
+        Usuario salvo = usuarios.save(Usuario.convidado(
                 request.nome().trim(),
                 email,
-                passwordEncoder.encode(request.senha()),
                 perfisDoUsuario,
                 organizacao,
                 departamentosDoUsuario
-        );
-        Usuario salvo = usuarios.save(usuario);
-        eventos.publishEvent(new ContaCriadaPeloAdmin(salvo.getId()));
+        ));
+        eventos.publishEvent(new ConviteSolicitado(salvo.getId(), convidanteId));
         return UsuarioAdminResponse.de(salvo);
     }
 
     @Transactional
-    UsuarioAdminResponse atualizar(UUID id, AtualizarUsuarioRequest request) {
+    UsuarioAdminResponse atualizar(UUID id, AtualizarUsuarioRequest request, UUID solicitanteId) {
         Usuario usuario = buscarUsuario(id);
         String email = Usuario.normalizarEmail(request.email());
         usuarios.findByEmail(email)
@@ -106,13 +100,27 @@ class UsuarioAdminService {
         validarVinculos(perfisDoUsuario, organizacao, departamentosDoUsuario);
         protegerUltimoAdministrador(usuario, perfisDoUsuario, usuario.isAtivo());
 
+        boolean emailAlterado = !email.equals(usuario.getEmail());
         usuario.atualizarDados(request.nome(), email);
         usuario.definirPerfis(perfisDoUsuario);
         usuario.vincularOrganizacao(organizacao);
         usuario.definirDepartamentos(departamentosDoUsuario);
-        if (request.senha() != null && !request.senha().isBlank()) {
-            usuario.atualizarSenhaHash(passwordEncoder.encode(request.senha()));
+        if (emailAlterado && usuario.convitePendente() && usuario.isAtivo()) {
+            eventos.publishEvent(new ConviteSolicitado(usuario.getId(), solicitanteId));
         }
+        return UsuarioAdminResponse.de(usuario);
+    }
+
+    @Transactional
+    UsuarioAdminResponse reenviarConvite(UUID id, UUID solicitanteId) {
+        Usuario usuario = buscarUsuario(id);
+        if (!usuario.convitePendente()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Este usuário já ativou o acesso.");
+        }
+        if (!usuario.isAtivo()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Reative o usuário antes de reenviar o convite.");
+        }
+        eventos.publishEvent(new ConviteSolicitado(usuario.getId(), solicitanteId));
         return UsuarioAdminResponse.de(usuario);
     }
 

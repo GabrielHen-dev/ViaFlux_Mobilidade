@@ -14,5 +14,6 @@ enum TipoEvento {
     LOCALIZACAO,
     SLA,
     FORNECEDOR,
-    NOTIFICACAO
+    NOTIFICACAO,
+    ESCALONAMENTO
 }

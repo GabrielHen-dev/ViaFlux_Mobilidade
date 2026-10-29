@@ -1,7 +1,5 @@
 package br.com.viaflux.api.chamado;
 
-import org.springframework.stereotype.Component;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -10,7 +8,6 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
-@Component
 class ArmazenamentoEmDisco implements ArmazenamentoDeArquivos {
 
     private final Path diretorio;

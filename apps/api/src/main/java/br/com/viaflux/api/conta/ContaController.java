@@ -15,9 +15,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/auth")
-@Tag(name = "Conta", description = "Cadastro do cliente, verificação de e-mail e recuperação de senha")
+@Tag(name = "Conta", description = "Cadastro do cliente, convites, verificação de e-mail e recuperação de senha")
 class ContaController {
 
     static final String INSTRUCOES_ENVIADAS = "Se os dados estiverem corretos, enviamos as instruções para o seu e-mail.";
@@ -64,7 +66,22 @@ class ContaController {
     ) {
     }
 
+    record AceiteDeConviteRequest(
+            @NotBlank(message = "O link está incompleto.") @Size(max = 200) String token,
+
+            @NotBlank(message = "Crie uma senha.")
+            @Size(min = 8, max = 72, message = "A senha deve ter entre 8 e 72 caracteres.")
+            String senha
+    ) {
+    }
+
     record MensagemResponse(String mensagem) {
+    }
+
+    record PerfilDoConvite(String codigo, String descricao) {
+    }
+
+    record ConviteResponse(String nome, String email, List<PerfilDoConvite> perfis) {
     }
 
     private final ContaService contas;
@@ -130,5 +147,26 @@ class ContaController {
     MensagemResponse redefinir(@Valid @RequestBody RedefinicaoRequest pedido) {
         contas.redefinirSenha(pedido.token(), pedido.senha());
         return new MensagemResponse("Senha alterada. Entre com a senha nova.");
+    }
+
+    @PostMapping("/convite/consulta")
+    @Operation(
+            summary = "Consultar convite",
+            description = "Público. Devolve nome, e-mail e perfis do convidado para a tela de aceite. O token vai no corpo para não "
+                    + "aparecer em logs de URL. Token inválido, usado, expirado ou de usuário inativo responde 400."
+    )
+    ConviteResponse consultarConvite(@Valid @RequestBody TokenRequest pedido) {
+        return contas.consultarConvite(pedido.token());
+    }
+
+    @PostMapping("/convite/aceite")
+    @Operation(
+            summary = "Aceitar convite",
+            description = "Público. Define a senha do convidado, confirma o e-mail e invalida o link. Token inválido, usado, "
+                    + "expirado ou de usuário inativo responde 400."
+    )
+    MensagemResponse aceitarConvite(@Valid @RequestBody AceiteDeConviteRequest pedido) {
+        contas.aceitarConvite(pedido.token(), pedido.senha());
+        return new MensagemResponse("Acesso ativado. Entre com seu e-mail e a senha criada.");
     }
 }

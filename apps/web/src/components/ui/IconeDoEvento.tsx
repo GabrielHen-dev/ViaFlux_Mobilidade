@@ -1,5 +1,5 @@
 import {
-  ArrowRightLeft, Bell, CirclePlus, ClipboardCheck, Clock, Forward, Hand, MapPin, NotebookPen, Paperclip, Scale, Truck, Zap, type LucideIcon, type LucideProps,
+  ArrowRightLeft, ArrowUpRight, Bell, CirclePlus, ClipboardCheck, Clock, Forward, Hand, MapPin, NotebookPen, Paperclip, Scale, Truck, Zap, type LucideIcon, type LucideProps,
 } from "lucide-react";
 import type { TipoEvento } from "@/types/chamado";
 
@@ -18,6 +18,7 @@ const ICONE_POR_TIPO: Record<TipoEvento, LucideIcon> = {
   SLA: Clock,
   FORNECEDOR: Truck,
   NOTIFICACAO: Bell,
+  ESCALONAMENTO: ArrowUpRight,
 };
 
 export default function IconeDoEvento({ tipo, ...props }: { tipo: TipoEvento } & LucideProps) {

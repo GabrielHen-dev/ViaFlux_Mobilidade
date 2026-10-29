@@ -6,16 +6,23 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -25,6 +32,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(UsuarioAdminController.class)
 @Import({SecurityConfig.class, ApiExceptionHandler.class})
 class UsuarioAdminControllerTests {
+
+    private static final UUID ADMIN = UUID.randomUUID();
 
     @Autowired
     private MockMvc mockMvc;
@@ -58,29 +67,26 @@ class UsuarioAdminControllerTests {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
-    void createsUserAndReturnsLocation() throws Exception {
+    void invitesUserWithoutPasswordAndReturnsLocation() throws Exception {
         UUID id = UUID.randomUUID();
-        given(service.criar(any(CriarUsuarioRequest.class))).willReturn(new UsuarioAdminResponse(
-                id, "Maria Silva", "maria@example.com", true,
-                List.of(new UsuarioResponse.PerfilResponse("CLIENTE", "Cliente")), null, List.of()
-        ));
+        given(service.criar(any(CriarUsuarioRequest.class), eq(ADMIN))).willReturn(usuarioPendente(id));
 
         mockMvc.perform(post("/api/admin/usuarios")
+                        .with(admin())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
                                   "nome":"Maria Silva",
                                   "email":"maria@example.com",
-                                  "senha":"senha-segura-123",
-                                  "perfis":["CLIENTE"],
+                                  "perfis":["ATENDENTE","LIDER_OPERACIONAL"],
                                   "departamentos":[]
                                 }
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", "http://localhost/api/admin/usuarios/" + id))
                 .andExpect(jsonPath("$.id").value(id.toString()))
-                .andExpect(jsonPath("$.ativo").value(true));
+                .andExpect(jsonPath("$.ativo").value(true))
+                .andExpect(jsonPath("$.convitePendente").value(true));
     }
 
     @Test
@@ -89,12 +95,51 @@ class UsuarioAdminControllerTests {
         mockMvc.perform(post("/api/admin/usuarios")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"nome":"","email":"invalido","senha":"123","perfis":[]}
+                                {"nome":"","email":"invalido","perfis":[]}
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors.nome").exists())
                 .andExpect(jsonPath("$.errors.email").exists())
-                .andExpect(jsonPath("$.errors.senha").exists())
                 .andExpect(jsonPath("$.errors.perfis").exists());
+    }
+
+    @Test
+    void resendsPendingInvitation() throws Exception {
+        UUID id = UUID.randomUUID();
+        given(service.reenviarConvite(id, ADMIN)).willReturn(usuarioPendente(id));
+
+        mockMvc.perform(post("/api/admin/usuarios/{id}/convite", id).with(admin()))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.convitePendente").value(true));
+        then(service).should().reenviarConvite(id, ADMIN);
+    }
+
+    @Test
+    void resendingInvitationOfActivatedUserResponds409() throws Exception {
+        UUID id = UUID.randomUUID();
+        given(service.reenviarConvite(id, ADMIN))
+                .willThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Este usuário já ativou o acesso."));
+
+        mockMvc.perform(post("/api/admin/usuarios/{id}/convite", id).with(admin()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("Este usuário já ativou o acesso."));
+    }
+
+    @Test
+    void restrictsInvitationResendToAdministrators() throws Exception {
+        mockMvc.perform(post("/api/admin/usuarios/{id}/convite", UUID.randomUUID())
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_ATENDENTE"))))
+                .andExpect(status().isForbidden());
+    }
+
+    private static JwtRequestPostProcessor admin() {
+        return jwt().jwt(token -> token.subject(ADMIN.toString())).authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
+    }
+
+    private static UsuarioAdminResponse usuarioPendente(UUID id) {
+        return new UsuarioAdminResponse(
+                id, "Maria Silva", "maria@example.com", true, true,
+                List.of(new UsuarioResponse.PerfilResponse("ATENDENTE", "Atendente")), null, List.of()
+        );
     }
 }

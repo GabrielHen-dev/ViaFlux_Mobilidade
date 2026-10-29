@@ -12,10 +12,10 @@ const MINUTO_MS = 60_000;
 
 const APARENCIA: Record<FaseDoPrazo, { fundo: string; texto: string; borda: string; Icone: LucideIcon; rotulo: string }> = {
   NO_PRAZO: { fundo: "#F0FDF4", texto: "#15803D", borda: "#BBF7D0", Icone: Timer, rotulo: "No prazo" },
-  METADE: { fundo: "#FEFCE8", texto: "#A16207", borda: "#FDE68A", Icone: TriangleAlert, rotulo: "Mais da metade do prazo" },
-  ESTOURADO: { fundo: "#FEF2F2", texto: "#B91C1C", borda: "#FECACA", Icone: CircleX, rotulo: "Prazo estourado" },
-  CONCLUIDA: { fundo: "#F0FDF4", texto: "#15803D", borda: "#BBF7D0", Icone: CircleCheck, rotulo: "Triada no prazo" },
-  CONCLUIDA_COM_ATRASO: { fundo: "#FEF2F2", texto: "#B91C1C", borda: "#FECACA", Icone: CircleCheck, rotulo: "Triada com atraso" },
+  METADE: { fundo: "#FEFCE8", texto: "#A16207", borda: "#FDE68A", Icone: TriangleAlert, rotulo: "Em risco" },
+  ESTOURADO: { fundo: "#FEF2F2", texto: "#B91C1C", borda: "#FECACA", Icone: CircleX, rotulo: "Vencido" },
+  CONCLUIDA: { fundo: "#F0FDF4", texto: "#15803D", borda: "#BBF7D0", Icone: CircleCheck, rotulo: "Classificado no prazo" },
+  CONCLUIDA_COM_ATRASO: { fundo: "#FEF2F2", texto: "#B91C1C", borda: "#FECACA", Icone: CircleCheck, rotulo: "Classificado com atraso" },
 };
 
 export function faseDoPrazo(triagem: Triagem, agora: Date): FaseDoPrazo {
@@ -57,7 +57,7 @@ export function PrazoDaTriagem({ triagem, compacto = false }: { triagem: Triagem
       </div>
       <div className="mt-1 font-display text-lg font-bold tabular-nums" suppressHydrationWarning>{descricao}</div>
       <div className="mt-0.5 text-xs opacity-80">
-        Limite: {formatarDataHora(triagem.limite)} · prazo de {triagem.prazoMinutos} min pela urgência informada
+        Limite: {formatarDataHora(triagem.limite)} · {triagem.prazoMinutos} min
       </div>
     </div>
   );

@@ -18,12 +18,12 @@ export default function Inicio() {
   }, [daCentral, destino, router]);
 
   if (daCentral) return <Dashboard />;
-  if (destino !== "/") return <main id="conteudo"><Carregando texto="Abrindo sua área…" /></main>;
+  if (destino !== "/") return <main id="conteudo"><Carregando texto="Carregando…" /></main>;
   return (
     <main id="conteudo" className="p-4 md:p-8">
       <div className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center">
-        <h1 className="mb-2 text-xl font-bold text-brand-navy">Perfil sem área definida</h1>
-        <p className="text-sm text-slate-500">Peça ao administrador para associar um perfil ao seu usuário.</p>
+        <h1 className="mb-2 text-xl font-bold text-brand-navy">Perfil sem acesso configurado</h1>
+        <p className="text-sm text-slate-500">Solicite ao administrador a configuração do seu perfil.</p>
       </div>
     </main>
   );
