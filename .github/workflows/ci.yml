@@ -59,7 +59,7 @@ jobs:
           cache: maven
           cache-dependency-path: apps/api/pom.xml
       - name: Maven verify com Testcontainers
-        run: ./mvnw -B -ntp verify
+        run: bash ./mvnw -B -ntp verify
       - name: Publicar relatórios de testes em caso de falha
         if: failure()
         uses: actions/upload-artifact@v4
