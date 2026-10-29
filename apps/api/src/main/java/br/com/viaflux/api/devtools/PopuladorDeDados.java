@@ -187,7 +187,7 @@ class PopuladorDeDados {
 
     private UUID cadastrar(UsuarioDeExemplo usuario, String senhaCriptografada, Map<String, UUID> organizacoes) {
         UUID id = jdbc.queryForObject(
-                "INSERT INTO viaflux.usuario (nome, email, senha_hash, organizacao_id) VALUES (?, ?, ?, ?) RETURNING id",
+                "INSERT INTO viaflux.usuario (nome, email, senha_hash, organizacao_id, email_verificado_em) VALUES (?, ?, ?, ?, now()) RETURNING id",
                 UUID.class, usuario.nome(), usuario.email(), senhaCriptografada,
                 usuario.organizacao() == null ? null : organizacoes.get(usuario.organizacao()));
         for (String perfil : usuario.perfis()) {

@@ -23,7 +23,7 @@ export const APARENCIA_DA_PRIORIDADE: Record<CodigoPrioridade, Aparencia> = {
   P1: { fundo: "#FEF2F2", texto: "#B91C1C", Icone: Siren },
   P2: { fundo: "#FFF7ED", texto: "#C2410C", Icone: ChevronsUp },
   P3: { fundo: "#FEFCE8", texto: "#A16207", Icone: Equal },
-  P4: { fundo: "#F1F5F9", texto: "#475569", Icone: ArrowDown },
+  P4: { fundo: "#EFF6FF", texto: "#1E40AF", Icone: ArrowDown },
 };
 
 export function StatusBadge({ status }: { status: Status }) {

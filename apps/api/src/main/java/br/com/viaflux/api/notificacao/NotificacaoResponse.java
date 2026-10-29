@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public record NotificacaoResponse(UUID id, String chamadoId, String novoStatus, String mensagem, OffsetDateTime criadaEm, boolean lida) {
 
-    private static final ZoneId FUSO_DA_OPERACAO = ZoneId.of("America/Sao_Paulo");
+    private static final ZoneId FUSO_DA_OPERACAO = ZoneId.of("America/Fortaleza");
 
     static NotificacaoResponse de(Notificacao notificacao) {
         return new NotificacaoResponse(

@@ -107,6 +107,9 @@ class Chamado {
     @Column(name = "episodio", nullable = false)
     private int episodio = 1;
 
+    @Column(name = "lembrete_confirmacao_em")
+    private OffsetDateTime lembreteConfirmacaoEm;
+
     @Column(name = "urgencia_declarada")
     private Integer urgenciaDeclarada;
 
@@ -329,6 +332,43 @@ class Chamado {
         status = StatusChamado.FECHADO;
         fechadoEm = agora;
         tocar(agora);
+    }
+
+    void confirmarResolucao(OffsetDateTime agora) {
+        exigirStatus(StatusChamado.RESOLVIDO, "Só é possível confirmar a solução de um chamado resolvido.");
+        status = StatusChamado.FECHADO;
+        fechadoEm = agora;
+        tocar(agora);
+    }
+
+    void contestarResolucao(OffsetDateTime agora) {
+        exigirStatus(StatusChamado.RESOLVIDO, "Só é possível contestar a solução de um chamado resolvido.");
+        status = atendimentoResponsavelNome == null ? StatusChamado.NA_FILA : StatusChamado.EM_ATENDIMENTO;
+        resolvidoEm = null;
+        lembreteConfirmacaoEm = null;
+        tocar(agora);
+    }
+
+    void reabrir(OffsetDateTime agora) {
+        exigirStatus(StatusChamado.FECHADO, "Só é possível reabrir um chamado fechado.");
+        status = StatusChamado.NA_FILA;
+        episodio += 1;
+        resolvidoEm = null;
+        fechadoEm = null;
+        lembreteConfirmacaoEm = null;
+        motivoAguardando = null;
+        liberarResponsavel();
+        tocar(agora);
+    }
+
+    void registrarLembreteDeConfirmacao(OffsetDateTime agora) {
+        lembreteConfirmacaoEm = agora;
+    }
+
+    private void exigirStatus(StatusChamado esperado, String mensagem) {
+        if (status != esperado) {
+            throw ErroDeChamado.conflito(mensagem);
+        }
     }
 
     void definirOverride(Prioridade prioridade, String justificativa, Autor autor, OffsetDateTime agora) {
@@ -654,6 +694,7 @@ class Chamado {
     String getResolucaoResumo() { return resolucaoResumo; }
     OffsetDateTime getFechadoEm() { return fechadoEm; }
     int getEpisodio() { return episodio; }
+    OffsetDateTime getLembreteConfirmacaoEm() { return lembreteConfirmacaoEm; }
     String getClassificacaoVersao() { return classificacaoVersao; }
     String getRoteamentoVersao() { return roteamentoVersao; }
     String getSlaVersao() { return slaVersao; }

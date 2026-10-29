@@ -9,7 +9,7 @@ import { INTERVALO_DO_PAINEL_MS, useListaDeChamados, useResumoDeChamados } from 
 import { AvisoDeErro, Carregando, FalhaAoCarregar } from "@/components/feedback/EstadoDaConsulta";
 import FiltrosDoPainel, { type FiltrosDoPainel as Filtros } from "@/components/chamados/painel/FiltrosDoPainel";
 import TabelaDeChamados from "@/components/chamados/painel/TabelaDeChamados";
-import { AlertaDeP1, ContadoresDaTriagem } from "@/components/chamados/painel/AlertasDoPainel";
+import { AlertaDeP1, ContadoresDaOperacao } from "@/components/chamados/painel/AlertasDoPainel";
 import { NOME_TIPO } from "@/utils/prioridade";
 import { formatarHora } from "@/utils/date";
 import { useAgora } from "@/hooks/useAgora";
@@ -82,7 +82,7 @@ export default function Dashboard() {
       </div>
 
       {resumo.data && <AlertaDeP1 resumo={resumo.data} />}
-      {resumo.data && visaoGlobal && <ContadoresDaTriagem resumo={resumo.data} comLink={fazTriagem} />}
+      {resumo.data && <ContadoresDaOperacao resumo={resumo.data} comLink={fazTriagem} />}
       {resumo.isError && <div className="mb-5"><AvisoDeErro erro={resumo.error} /></div>}
 
       {resumo.data && (

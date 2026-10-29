@@ -18,34 +18,44 @@ class RoteamentoComPlantaoTests {
 
     private final RegraDeRoteamento roteamento = new RoteamentoComPlantao(EXPEDIENTE);
 
+    private static final int URGENCIA_IMEDIATA = 5;
+    private static final int URGENCIA_MEDIA = 3;
+
     @ParameterizedTest
     @EnumSource(value = TipoChamado.class, names = {"MANUTENCAO", "LOGISTICA", "ASSISTENCIA_24H"})
-    void p1OperacionalForaDoExpedienteVaiParaOPlantaoDaAssistencia(TipoChamado tipo) {
-        assertThat(roteamento.destino(tipo, Prioridade.P1, QUARTA_A_NOITE)).isEqualTo(TipoChamado.ASSISTENCIA_24H);
-        assertThat(roteamento.destino(tipo, Prioridade.P1, SABADO_DE_MANHA)).isEqualTo(TipoChamado.ASSISTENCIA_24H);
+    void p1EP2OperacionaisComUrgenciaImediataForaDoExpedienteVaoParaOPlantao(TipoChamado tipo) {
+        assertThat(roteamento.destino(tipo, Prioridade.P1, URGENCIA_IMEDIATA, QUARTA_A_NOITE)).isEqualTo(TipoChamado.ASSISTENCIA_24H);
+        assertThat(roteamento.destino(tipo, Prioridade.P2, URGENCIA_IMEDIATA, SABADO_DE_MANHA)).isEqualTo(TipoChamado.ASSISTENCIA_24H);
     }
 
     @ParameterizedTest
     @EnumSource(TipoChamado.class)
     void emExpedienteOChamadoSegueParaODepartamentoDoTipo(TipoChamado tipo) {
-        assertThat(roteamento.destino(tipo, Prioridade.P1, QUARTA_EM_EXPEDIENTE)).isEqualTo(tipo);
+        assertThat(roteamento.destino(tipo, Prioridade.P1, URGENCIA_IMEDIATA, QUARTA_EM_EXPEDIENTE)).isEqualTo(tipo);
+    }
+
+    @Test
+    void p2SemUrgenciaImediataAguardaODepartamento() {
+        assertThat(roteamento.destino(TipoChamado.MANUTENCAO, Prioridade.P2, URGENCIA_MEDIA, QUARTA_A_NOITE)).isEqualTo(TipoChamado.MANUTENCAO);
     }
 
     @ParameterizedTest
-    @EnumSource(value = Prioridade.class, names = {"P2", "P3", "P4"})
-    void somenteP1VaiParaOPlantao(Prioridade prioridade) {
-        assertThat(roteamento.destino(TipoChamado.MANUTENCAO, prioridade, QUARTA_A_NOITE)).isEqualTo(TipoChamado.MANUTENCAO);
+    @EnumSource(value = Prioridade.class, names = {"P3", "P4"})
+    void p3EP4AguardamOProximoPeriodoUtil(Prioridade prioridade) {
+        assertThat(roteamento.destino(TipoChamado.MANUTENCAO, prioridade, URGENCIA_IMEDIATA, QUARTA_A_NOITE)).isEqualTo(TipoChamado.MANUTENCAO);
     }
 
     @ParameterizedTest
     @EnumSource(value = TipoChamado.class, names = {"TI", "FINANCEIRO", "CONTRATOS"})
     void tiposAdministrativosNaoVaoParaOPlantao(TipoChamado tipo) {
-        assertThat(roteamento.destino(tipo, Prioridade.P1, QUARTA_A_NOITE)).isEqualTo(tipo);
+        assertThat(roteamento.destino(tipo, Prioridade.P1, URGENCIA_IMEDIATA, QUARTA_A_NOITE)).isEqualTo(tipo);
     }
 
     @Test
     void oFechamentoDoExpedienteJaContaComoForaDoHorario() {
-        assertThat(roteamento.destino(TipoChamado.LOGISTICA, Prioridade.P1, instante("2026-10-21T18:00"))).isEqualTo(TipoChamado.ASSISTENCIA_24H);
-        assertThat(roteamento.destino(TipoChamado.LOGISTICA, Prioridade.P1, instante("2026-10-21T08:00"))).isEqualTo(TipoChamado.LOGISTICA);
+        assertThat(roteamento.destino(TipoChamado.LOGISTICA, Prioridade.P1, URGENCIA_IMEDIATA, instante("2026-10-21T18:00")))
+                .isEqualTo(TipoChamado.ASSISTENCIA_24H);
+        assertThat(roteamento.destino(TipoChamado.LOGISTICA, Prioridade.P1, URGENCIA_IMEDIATA, instante("2026-10-21T08:00")))
+                .isEqualTo(TipoChamado.LOGISTICA);
     }
 }

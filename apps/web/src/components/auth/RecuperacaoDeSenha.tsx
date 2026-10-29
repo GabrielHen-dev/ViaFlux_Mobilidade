@@ -1,0 +1,50 @@
+"use client";
+
+import { useState, type FormEvent } from "react";
+import Link from "next/link";
+import { solicitarRedefinicaoDeSenha } from "@/services/api/conta";
+import { ErroApi } from "@/services/api/cliente";
+import CartaoDeAcesso, {
+  AvisoDeAcesso, ErroDeAcesso, botaoDeAcessoClass, campoDeAcessoClass, labelDeAcessoClass,
+} from "@/components/auth/CartaoDeAcesso";
+
+export default function RecuperacaoDeSenha() {
+  const [email, setEmail] = useState("");
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+
+  async function enviar(evento: FormEvent<HTMLFormElement>) {
+    evento.preventDefault();
+    setErro(null);
+    setAviso(null);
+    setEnviando(true);
+    try {
+      setAviso((await solicitarRedefinicaoDeSenha(email.trim())).mensagem);
+    } catch (falha) {
+      setErro(falha instanceof ErroApi ? falha.message : "Não foi possível enviar o pedido. Tente novamente.");
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  return (
+    <CartaoDeAcesso
+      titulo="Esqueci minha senha"
+      subtitulo="Enviamos um link para criar uma senha nova. Ele vale por 30 minutos."
+      rodape={<Link href="/login" className="font-semibold text-brand-green underline-offset-2 hover:underline">Voltar ao login</Link>}
+    >
+      <form onSubmit={enviar}>
+        <div className="mb-4">
+          <label htmlFor="recuperacao-email" className={labelDeAcessoClass}>E-mail</label>
+          <input id="recuperacao-email" className={campoDeAcessoClass} type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        </div>
+        <AvisoDeAcesso mensagem={aviso} />
+        <ErroDeAcesso mensagem={erro} />
+        <button type="submit" disabled={enviando || !email.trim()} className={botaoDeAcessoClass}>
+          {enviando ? "Enviando…" : "Enviar link"}
+        </button>
+      </form>
+    </CartaoDeAcesso>
+  );
+}

@@ -11,12 +11,14 @@ export interface UsuarioDeTeste {
   perfis: string[];
   organizacao: { id: string; nome: string; tipo: "CLIENTE" | "FORNECEDOR" } | null;
   departamentos: { codigo: string; nome: string }[];
+  emailVerificado?: boolean;
 }
 
 export const SENHA_DE_TESTE = "senha-de-teste";
 
 export const USUARIOS: Record<string, UsuarioDeTeste> = {
   cliente: { id: "u-cliente", nome: "Carla Cliente", email: "cliente@viaflux.test", perfis: ["CLIENTE"], organizacao: null, departamentos: [] },
+  clienteNaoVerificado: { id: "u-cliente-novo", nome: "Nina Nova", email: "nova@viaflux.test", perfis: ["CLIENTE"], organizacao: null, departamentos: [], emailVerificado: false },
   outroCliente: { id: "u-outro-cliente", nome: "Otávio Outro", email: "outro@viaflux.test", perfis: ["CLIENTE"], organizacao: null, departamentos: [] },
   atendente: { id: "u-atendente", nome: "Ana Atendente", email: "atendente@viaflux.test", perfis: ["ATENDENTE"], organizacao: null, departamentos: [] },
   lider: { id: "u-lider", nome: "Lia Líder", email: "lider@viaflux.test", perfis: ["LIDER_OPERACIONAL"], organizacao: null, departamentos: [] },
@@ -62,6 +64,9 @@ const STATUS_QUE_PODEM_SER_ASSUMIDOS: Status[] = ["Na fila", "Em atendimento", "
 const SO_ACOMPANHA = "Seu perfil só acompanha este chamado.";
 const PERFIS_QUE_ABREM = [...PERFIS_DE_CLIENTE, ...PERFIS_DE_TRIAGEM];
 const PERFIS_DE_METRICAS = ["ADMIN", "LIDER_OPERACIONAL"];
+const DIA_MS = 24 * 60 * 60 * 1000;
+const DIAS_PARA_CONFIRMAR = 3;
+const DIAS_PARA_REABRIR = 5;
 const VALIDADE_DO_ACCESS_TOKEN_S = 900;
 const MINUTO_MS = 60_000;
 const SISTEMA: Autor = { id: null, nome: "Sistema" };
@@ -90,6 +95,8 @@ interface ChamadoArmazenado {
   primeiraRespostaEm: Date | null;
   atendimento: { responsavel: Autor; assumidoEm: Date } | null;
   resolvidoEm: Date | null;
+  resolucaoResumo: string | null;
+  fechadoEm: Date | null;
   timeline: EventoTimeline[];
   anexos: Anexo[];
   servico: ServicoTerceiro | null;
@@ -269,6 +276,9 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
       timeline: visaoDeCliente ? chamado.timeline.filter((evento) => evento.visivelCliente) : chamado.timeline,
       anexos: chamado.anexos,
       servico: visaoDeCliente ? null : chamado.servico,
+      resolucaoResumo: chamado.resolucaoResumo,
+      confirmacaoAte: chamado.status === "Resolvido" && chamado.resolvidoEm ? new Date(chamado.resolvidoEm.getTime() + DIAS_PARA_CONFIRMAR * DIA_MS).toISOString() : null,
+      reaberturaAte: chamado.status === "Fechado" && chamado.fechadoEm ? new Date(chamado.fechadoEm.getTime() + DIAS_PARA_REABRIR * DIA_MS).toISOString() : null,
     };
   }
 
@@ -402,6 +412,8 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
         primeiraRespostaEm: null,
         atendimento: null,
         resolvidoEm: null,
+        resolucaoResumo: null,
+        fechadoEm: null,
         timeline: [],
         anexos: [],
         servico: null,
@@ -674,11 +686,44 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
       if (novo === "Em atendimento") chamado.primeiraRespostaEm ??= agora();
       if (novo === "Em atendimento") chamado.atendimento ??= { responsavel: autorDe(usuario), assumidoEm: agora() };
       if (novo === "Na fila") chamado.atendimento = null;
-      if (novo === "Resolvido") chamado.resolvidoEm = agora();
+      if (novo === "Resolvido") {
+        chamado.resolvidoEm = agora();
+        chamado.resolucaoResumo = texto("resumoResolucao").trim();
+      }
+      if (novo === "Fechado") chamado.fechadoEm = agora();
       const aguardando = chamado.motivoAguardando ? ` · aguardando ${ROTULO_DO_AGUARDANDO[chamado.motivoAguardando]}` : "";
       const observacao = texto("observacao").trim() ? ` · ${texto("observacao").trim()}` : "";
       registrar(chamado, "STATUS", `Status alterado para ${novo}`, `${anterior} → ${novo}${aguardando}${observacao}`, autorDe(usuario), true);
       avisar(chamado, novo, `O chamado ${chamado.id} mudou para ${novo}.`);
+      return devolver(chamado);
+    }
+    if (sufixo === "resolucao/confirmacao" && metodo === "POST") {
+      exigir(PERFIS_DE_CLIENTE);
+      const chamado = buscar(codigo);
+      if (chamado.status !== "Resolvido") recusar(409, "Só é possível confirmar a solução de um chamado resolvido.");
+      chamado.status = "Fechado";
+      chamado.fechadoEm = agora();
+      registrar(chamado, "STATUS", "Solução confirmada pelo solicitante", `Resolvido → Fechado · confirmado por ${usuario.nome}`, autorDe(usuario), true);
+      return devolver(chamado);
+    }
+    if (sufixo === "resolucao/contestacao" && metodo === "POST") {
+      exigir(PERFIS_DE_CLIENTE);
+      const chamado = buscar(codigo);
+      if (chamado.status !== "Resolvido") recusar(409, "Só é possível contestar a solução de um chamado resolvido.");
+      chamado.status = chamado.atendimento ? "Em atendimento" : "Na fila";
+      chamado.resolvidoEm = null;
+      registrar(chamado, "STATUS", "Solução contestada pelo solicitante", `Resolvido → ${chamado.status} · ${texto("motivo").trim()}`, autorDe(usuario), true);
+      return devolver(chamado);
+    }
+    if (sufixo === "reabertura" && metodo === "POST") {
+      exigir(PERFIS_DE_CLIENTE);
+      const chamado = buscar(codigo);
+      if (chamado.status !== "Fechado") recusar(409, "Só é possível reabrir um chamado fechado.");
+      chamado.status = "Na fila";
+      chamado.atendimento = null;
+      chamado.resolvidoEm = null;
+      chamado.fechadoEm = null;
+      registrar(chamado, "STATUS", "Chamado reaberto pelo solicitante", `Fechado → Na fila · ${texto("motivo").trim()}`, autorDe(usuario), true);
       return devolver(chamado);
     }
     if (sufixo === "transferencias" && metodo === "POST") {

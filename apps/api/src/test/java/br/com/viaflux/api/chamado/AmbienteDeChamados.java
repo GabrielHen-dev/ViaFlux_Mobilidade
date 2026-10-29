@@ -37,7 +37,7 @@ final class AmbienteDeChamados {
         historico = new HistoricoDoChamado(eventos);
         aviso = new AvisoAoSolicitante((destinatario, chamadoId, codigo, status, mensagem, instante) ->
                 notificacoes.add(new NotificacaoEnviada(destinatario, codigo, status, mensagem)), historico);
-        montagem = new MontagemDeChamado(eventos, anexos, servicos, politicaDeSla(), politicaDeTriagem(), relogio);
+        montagem = new MontagemDeChamado(eventos, anexos, servicos, politicaDeSla(), politicaDeTriagem(), new JanelaDeEncerramento(ChamadosDeTeste.EXPEDIENTE), relogio);
         given(eventos.save(any(ChamadoEvento.class))).willAnswer(invocacao -> {
             ChamadoEvento evento = invocacao.getArgument(0);
             registrados.add(evento);

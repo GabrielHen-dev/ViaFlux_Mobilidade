@@ -67,6 +67,18 @@ export function transferirChamado(api: ClienteApi, codigo: string, dados: DadosT
   return api.requisitar<Chamado>(caminhoDo(codigo, "/transferencias"), json("POST", dados));
 }
 
+export function confirmarResolucao(api: ClienteApi, codigo: string) {
+  return api.requisitar<Chamado>(caminhoDo(codigo, "/resolucao/confirmacao"), json("POST"));
+}
+
+export function contestarResolucao(api: ClienteApi, codigo: string, motivo: string) {
+  return api.requisitar<Chamado>(caminhoDo(codigo, "/resolucao/contestacao"), json("POST", { motivo }));
+}
+
+export function reabrirChamado(api: ClienteApi, codigo: string, motivo: string) {
+  return api.requisitar<Chamado>(caminhoDo(codigo, "/reabertura"), json("POST", { motivo }));
+}
+
 export function iniciarTriagem(api: ClienteApi, codigo: string) {
   return api.requisitar<Chamado>(caminhoDo(codigo, "/triagem/inicio"), json("POST"));
 }

@@ -8,6 +8,7 @@ import Triagem from "@/components/forms/Triagem";
 import Encaminhamento from "@/components/forms/Encaminhamento";
 import DetalhesChamado from "@/components/chamados/DetalhesChamado";
 import PortalDoCliente from "@/components/portal/PortalDoCliente";
+import ChamadoDoCliente from "@/components/portal/ChamadoDoCliente";
 import { type ClienteApi, abrirChamado, alterarStatus, concluirTriagem } from "@/services/api/chamados";
 import { requisitarApi } from "@/services/api/cliente";
 import { render } from "@testing-library/react";
@@ -271,12 +272,14 @@ describe("dashboard", () => {
     expect(await screen.findByText("Nenhum chamado encontrado com os filtros aplicados.")).toBeInTheDocument();
   });
 
-  it("mostra a fila de triagem e filtra os chamados que aguardam triagem", async () => {
+  it("conta as exceções na fila ativa e filtra os chamados que aguardam triagem", async () => {
     const usuario = userEvent.setup();
     await criarChamados();
     await renderizarComo(USUARIOS.atendente, <Dashboard />);
-    const contadores = await screen.findByRole("region", { name: "Fila de triagem" });
-    expect(within(contadores).getByText("aguardando").previousSibling).toHaveTextContent("1");
+    const contadores = await screen.findByRole("region", { name: "Fila ativa" });
+    expect(within(contadores).getByText("exceções").previousSibling).toHaveTextContent("1");
+    expect(screen.getByRole("region", { name: "SLA · 1ª resposta" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "SLA · resolução" })).toBeInTheDocument();
     await usuario.selectOptions(screen.getByLabelText("Filtrar por etapa"), "TRIAGEM");
     await waitFor(() => expect(screen.queryByRole("link", { name: "#VF-0000" })).not.toBeInTheDocument());
     expect(screen.getByRole("link", { name: "#VF-0002" })).toBeInTheDocument();
@@ -312,6 +315,44 @@ describe("meus chamados", () => {
     const chamados = screen.getAllByRole("link").filter((link) => link.getAttribute("href")?.startsWith("/portal/chamados/"));
     expect(chamados.map((link) => link.getAttribute("href"))).toEqual(["/portal/chamados/VF-0001", "/portal/chamados/VF-0000"]);
     expect(chamados[1]).toHaveTextContent("Fechado");
+  });
+
+  async function chamadoResolvidoDoCliente() {
+    ligarBackendFalso();
+    await abrirPane();
+    const atendente = apiComo(USUARIOS.atendente);
+    await concluirTriagem(atendente, "VF-0000", { tipo: "ASSISTENCIA_24H", severidade: 5, urgencia: 5 });
+    await alterarStatus(atendente, "VF-0000", { status: "Resolvido", resumoResolucao: "Bateria substituída no local." });
+  }
+
+  it("o cliente confirma a solução e depois pode reabrir o chamado", async () => {
+    const usuario = userEvent.setup();
+    await chamadoResolvidoDoCliente();
+    await renderizarComo(USUARIOS.cliente, <ChamadoDoCliente id="VF-0000" />);
+
+    expect(await screen.findByText("Bateria substituída no local.")).toBeInTheDocument();
+    await usuario.click(screen.getByRole("button", { name: "Confirmar solução" }));
+    await usuario.click(await screen.findByRole("button", { name: "Reabrir chamado" }));
+    await usuario.type(screen.getByLabelText("Por que reabrir? *"), "O motor voltou a falhar hoje cedo.");
+    await usuario.click(screen.getByRole("button", { name: "Reabrir chamado" }));
+
+    expect(await screen.findByText("Chamado reaberto pelo solicitante")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Confirmar solução" })).not.toBeInTheDocument();
+  });
+
+  it("o cliente contesta a solução e o chamado volta para atendimento", async () => {
+    const usuario = userEvent.setup();
+    await chamadoResolvidoDoCliente();
+    await renderizarComo(USUARIOS.cliente, <ChamadoDoCliente id="VF-0000" />);
+
+    await usuario.click(await screen.findByRole("button", { name: "Ainda não resolveu" }));
+    const enviar = screen.getByRole("button", { name: "Enviar e voltar ao atendimento" });
+    expect(enviar).toBeDisabled();
+    await usuario.type(screen.getByLabelText("O que ainda não foi resolvido? *"), "A luz de alerta continua acesa.");
+    await usuario.click(enviar);
+
+    expect(await screen.findByText("Solução contestada pelo solicitante")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Confirmar solução" })).not.toBeInTheDocument();
   });
 });
 

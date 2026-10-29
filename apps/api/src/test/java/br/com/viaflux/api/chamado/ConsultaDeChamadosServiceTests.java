@@ -49,11 +49,11 @@ class ConsultaDeChamadosServiceTests {
     }
 
     @Test
-    void filaComecaPelaTriagemMaisUrgenteESeguePelaPrioridade() {
+    void filaAtivaOrdenaPorPrioridadeScoreEAntiguidadeSemExcecoesNemEncerrados() {
         ChamadosPageResponse pagina = servico.listar(SEM_FILTROS, 0, 20, paula);
 
-        assertThat(codigos(pagina)).containsExactly("VF-0003", "VF-0001", "VF-0002", "VF-0005", "VF-0006", "VF-0004", "VF-0007");
-        assertThat(pagina.totalElements()).isEqualTo(7);
+        assertThat(codigos(pagina)).containsExactly("VF-0005", "VF-0006", "VF-0004");
+        assertThat(pagina.totalElements()).isEqualTo(3);
         assertThat(pagina.totalPages()).isEqualTo(1);
     }
 
@@ -61,7 +61,7 @@ class ConsultaDeChamadosServiceTests {
     void ordenacaoPorRecentesUsaAAbertura() {
         ChamadosPageResponse pagina = servico.listar(filtros(null, null, null, null, null, "recentes"), 0, 20, paula);
 
-        assertThat(codigos(pagina)).containsExactly("VF-0002", "VF-0001", "VF-0004", "VF-0006", "VF-0003", "VF-0005", "VF-0007");
+        assertThat(codigos(pagina)).containsExactly("VF-0004", "VF-0006", "VF-0005");
     }
 
     @Test
@@ -69,7 +69,7 @@ class ConsultaDeChamadosServiceTests {
         assertThat(codigos(servico.listar(filtros(null, null, null, null, "TRIAGEM", null), 0, 20, paula)))
                 .containsExactly("VF-0003", "VF-0001", "VF-0002");
         assertThat(codigos(servico.listar(filtros(null, null, null, null, "atendimento", null), 0, 20, paula)))
-                .containsExactly("VF-0005", "VF-0006", "VF-0004", "VF-0007");
+                .containsExactly("VF-0005", "VF-0006", "VF-0004");
     }
 
     @Test
@@ -79,7 +79,9 @@ class ConsultaDeChamadosServiceTests {
         assertThat(codigos(servico.listar(filtros(null, "P1", null, null, null, null), 0, 20, paula)))
                 .containsExactly("VF-0005", "VF-0006");
         assertThat(codigos(servico.listar(filtros(null, null, "MANUTENCAO", null, null, null), 0, 20, paula)))
-                .containsExactly("VF-0006", "VF-0004", "VF-0007");
+                .containsExactly("VF-0006", "VF-0004");
+        assertThat(codigos(servico.listar(filtros("Fechado", null, null, null, null, null), 0, 20, paula)))
+                .containsExactly("VF-0007");
     }
 
     @Test
@@ -89,19 +91,19 @@ class ConsultaDeChamadosServiceTests {
         assertThat(codigos(servico.listar(filtros(null, null, null, "EM_RISCO", null, null), 0, 20, paula)))
                 .containsExactly("VF-0005", "VF-0006");
         assertThat(codigos(servico.listar(filtros(null, null, null, "NO_PRAZO", null, null), 0, 20, paula)))
-                .containsExactly("VF-0004", "VF-0007");
+                .containsExactly("VF-0004");
     }
 
     @Test
     void paginaOResultadoJaOrdenado() {
-        ChamadosPageResponse pagina = servico.listar(SEM_FILTROS, 1, 3, paula);
+        ChamadosPageResponse pagina = servico.listar(SEM_FILTROS, 1, 2, paula);
 
-        assertThat(codigos(pagina)).containsExactly("VF-0005", "VF-0006", "VF-0004");
+        assertThat(codigos(pagina)).containsExactly("VF-0004");
         assertThat(pagina.page()).isEqualTo(1);
-        assertThat(pagina.size()).isEqualTo(3);
-        assertThat(pagina.totalElements()).isEqualTo(7);
-        assertThat(pagina.totalPages()).isEqualTo(3);
-        assertThat(servico.listar(SEM_FILTROS, 5, 3, paula).content()).isEmpty();
+        assertThat(pagina.size()).isEqualTo(2);
+        assertThat(pagina.totalElements()).isEqualTo(3);
+        assertThat(pagina.totalPages()).isEqualTo(2);
+        assertThat(servico.listar(SEM_FILTROS, 5, 2, paula).content()).isEmpty();
     }
 
     @Test
@@ -119,7 +121,7 @@ class ConsultaDeChamadosServiceTests {
     @Test
     void departamentoListaSoOsTriadosDaPropriaFila() {
         assertThat(codigos(servico.listar(SEM_FILTROS, 0, 20, departamento(TipoChamado.MANUTENCAO))))
-                .containsExactly("VF-0006", "VF-0004", "VF-0007");
+                .containsExactly("VF-0006", "VF-0004");
         assertThat(codigos(servico.listar(SEM_FILTROS, 0, 20, departamento(TipoChamado.LOGISTICA)))).isEmpty();
     }
 

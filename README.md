@@ -54,13 +54,11 @@ Centralizar o ciclo de vida do chamado, do registro ao encerramento. Nada aqui �
 
 O objetivo 6 depende de o cliente definir o que conta como impacto, e o 9 depende de como o parceiro acessa a plataforma. Os dois estão em [Em aberto com o cliente](#em-aberto-com-o-cliente).
 
-**Controle de SLA não é objetivo desta fase.** Ele aparece em [`docs/stack.md`](docs/stack.md#backend) como regra prevista, mas está bloqueado pela pendência descrita em [O que o produto não resolve](#o-que-o-produto-não-resolve). Até lá a plataforma registra os tempos, sem cobrar prazo.
-
-> **Atenção — decisão pendente.** O protótipo atual já tem triagem manual com prazo, prioridade P1–P4 e situação de SLA, com parâmetros **provisórios** definidos pelo squad para o fluxo funcionar de ponta a ponta. Isso vai além do recorte acima, e cabe ao cliente decidir se os prazos ficam, mudam ou saem desta fase. O fluxo e os parâmetros estão em [`docs/fluxo-de-chamados.md`](docs/fluxo-de-chamados.md).
+**SLA é baseline operacional do MVP, não penalidade contratual.** Motivo e contexto definem severidade e urgência; a soma dá o score e a prioridade (10 = P1, 8 = P2, 6 = P3, 4 ou 2 = P4). Os prazos são P1 15 min / 2 h e P2 30 min / 4 h corridos, P3 2 h / 24 h e P4 4 h / 48 h úteis, de segunda a sexta, das 08:00 às 18:00, no fuso America/Fortaleza.
 
 ### Premissas
 
-1. **Operação 24/7**, com acesso por navegador nas unidades e por celular nas equipes de campo e na assistência. Parte dos usuários está em deslocamento com conexão instável no celular pessoal — como tratar isso ainda é decisão em aberto, registrada como risco em [`docs/stack.md`](docs/stack.md#principais-riscos).
+1. **Operação 24/7**, com acesso por navegador nas unidades e por celular nas equipes de campo e na assistência. Parte dos usuários está em deslocamento com conexão instável no celular pessoal — por isso o rascunho do formulário fica no aparelho por até 24 h, isolado por usuário, e a câmera é um recurso extra ao lado da seleção de arquivo.
 2. Os canais atuais continuam existindo em paralelo durante a transição. A plataforma é o ponto único de **registro**, não de contato: ela é alimentada tanto pela abertura direta do cliente quanto pelo atendente que recebeu a solicitação por telefone.
 3. Usuários externos não dependem de conta no domínio corporativo da ViaFlux.
 4. O acesso a dados pessoais e contratuais fica restrito às partes diretamente envolvidas no chamado, seguindo a LGPD, sem deixar o atendente sem a informação de que precisa para continuar o caso. Retenção e exclusão ainda não foram definidas.
@@ -77,14 +75,28 @@ O objetivo 6 depende de o cliente definir o que conta como impacto, e o 9 depend
 | Tecnologia, manutenção e financeiro | Atuação em segunda camada quando acionados | Computador corporativo, horário comercial |
 | Liderança operacional | Visão consolidada de volume, criticidade e status | Computador e celular |
 
-Logística e contratos já existem como departamentos, mas ainda falta confirmar se recebem chamado direto, pela pendência descrita no contexto. Os perfis técnicos correspondentes estão em [`docs/stack.md`](docs/stack.md#autenticação-e-permissões).
+Logística e contratos são departamentos de destino como os demais: o tipo do motivo define o departamento inicial. O que cada perfil pode fazer na plataforma está em [Perfis e permissões](#perfis-e-permissões).
+
+### Perfis e permissões
+
+A API aplica as regras abaixo em cada requisição; a interface só esconde o que o perfil não pode usar.
+
+| Perfil | Abre chamado | O que vê | O que faz |
+|---|---|---|---|
+| `CLIENTE` | Sim, em nome próprio | Os próprios chamados, no portal | Acompanha, complementa, confirma ou contesta a solução e reabre em até 5 dias úteis após o fechamento |
+| `GESTOR_FROTA` | Sim, para si ou para um motorista da sua organização | Os chamados da sua organização | O mesmo que o cliente; não altera classificação nem prioridade |
+| `ATENDENTE` | Sim, pela Central, em nome de um cliente | Todos os chamados | Trata a fila de exceções, revisa classificação e prioridade com justificativa, transfere, atende qualquer fila, aciona fornecedor e usa a lixeira |
+| `DEPARTAMENTO` | Não | A fila do próprio departamento | Assume, muda status, resolve com resumo da solução, transfere e aciona fornecedor |
+| `LIDER_OPERACIONAL` | Não | Todos os chamados, só leitura | Acompanha o painel e consulta e exporta métricas |
+| `FORNECEDOR` | Não | Só os serviços atribuídos à sua empresa | Atualiza o status do serviço e registra observações |
+| `ADMIN` | Sim, pela Central | Todos os chamados (visão global no MVP) | Tudo o que o atendente faz, mais gestão de usuários e ferramentas de desenvolvimento |
 
 ## O que o produto não resolve
 
 Nem todo problema levantado se resolve com software. Estes dependem de decisão e de gestão da ViaFlux, e a plataforma não substitui nenhum deles:
 
 - **Divergência de escopo entre áreas.** Cada departamento tem uma leitura diferente do que deve atender. Exige acordo organizacional, tipo RACI, não uma feature.
-- **Política de SLA.** Não existem tempos-alvo formalizados. Automatizar SLA antes disso é automatizar o vazio.
+- **SLA contratual.** A plataforma mede os prazos do baseline do MVP; metas e penalidades com parceiros dependem de contrato e da gestão.
 - **Quem comunica o cliente quando o chamado está com um terceiro.** Hoje ninguém assume. É governança.
 - **Adesão dos parceiros.** O objetivo 9 depende de a oficina e o guincho realmente atualizarem status. Isso é cláusula contratual; sem ela a funcionalidade existe e fica vazia.
 - **Cultura de planilhas paralelas.** Substituir a planilha é simples; fazer a equipe abandoná-la depende de treinamento e diretriz da liderança.
@@ -110,7 +122,6 @@ Nenhuma linha de base foi medida ainda. Como o cenário atual está espalhado em
 |---|---|
 | Logística e contratos recebem chamado direto, ou só apoiam? | Áreas atendentes e perfis de acesso |
 | O que conta como impacto real: clientes afetados, veículo parado em via, unidade indisponível? Qual a ordem? | Objetivo 6, o motor de triagem |
-| Quais os prazos de triagem, 1ª resposta e resolução, e o SLA entra nesta fase? | Os prazos provisórios que estão no código ([`docs/fluxo-de-chamados.md`](docs/fluxo-de-chamados.md)) |
 | Como o parceiro acessa sem conta corporativa: link por chamado, convite, credencial? | Objetivo 9 e a premissa 3 |
 | Por qual meio o cliente é notificado: e-mail, SMS, WhatsApp? Há contrato com provedor? | Objetivo 11 e o custo de infraestrutura |
 | Qual o prazo de retenção de dados e anexos, e como se dá a exclusão a pedido do titular? | Premissa 4 e conformidade com a LGPD |
@@ -179,8 +190,6 @@ Nenhuma linha de base foi medida ainda. Como o cenário atual está espalhado em
 | Testes | JUnit 5, Mockito e Testcontainers na API; Vitest, React Testing Library e Playwright na web | Cobre regra de negócio e os fluxos críticos ponta a ponta, sem perseguir percentual de cobertura |
 | Publicação | Docker Compose em servidor próprio, GitHub Actions | Custo zero, sem limite de free tier, e ambiente igual ao de desenvolvimento |
 
-As justificativas completas, e os riscos que cada escolha carrega, estão em [`docs/stack.md`](docs/stack.md).
-
 ## Estrutura do repositório
 
 Este é um monorepo. Frontend, backend, infraestrutura e documentação ficam no mesmo repositório e são versionados juntos.
@@ -212,7 +221,7 @@ ViaFlux_Mobilidade/
 │           │   ├── application.yml
 │           │   └── db/migration/V1__initialize_schema.sql
 │           └── test/java/br/com/viaflux/api/ViafluxApplicationTests.java
-├── docs/
+├── docs/                                 ‹a criar›
 │   ├── stack.md                Decisão de stack, justificativas e riscos
 │   └── fluxo-de-chamados.md    Ciclo do chamado, triagem, prioridade e SLA
 ├── infra/
@@ -225,7 +234,7 @@ ViaFlux_Mobilidade/
 
 ## Como rodar localmente
 
-> **Estado desta etapa.** A API Spring Boot e o frontend Next.js cobrem o ciclo completo do chamado: abertura, triagem manual, atendimento pelos departamentos, fornecedores, anexos, notificações, métricas e lixeira. O fluxo está em [`docs/fluxo-de-chamados.md`](docs/fluxo-de-chamados.md).
+> **Estado desta etapa.** A API Spring Boot e o frontend Next.js cobrem o ciclo completo do chamado: abertura com classificação e roteamento automáticos, fila de exceções da Central, atendimento pelos departamentos, fornecedores, anexos, notificações, confirmação da solução pelo solicitante com fechamento automático em 3 dias úteis, reabertura, métricas e lixeira.
 
 ### Pré-requisitos
 

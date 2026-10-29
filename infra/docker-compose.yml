@@ -30,5 +30,13 @@ services:
       db:
         condition: service_healthy
 
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: viaflux-dev-mailpit
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${MAIL_PORT:-1025}:1025"
+      - "127.0.0.1:8025:8025"
+
 volumes:
   db-data:

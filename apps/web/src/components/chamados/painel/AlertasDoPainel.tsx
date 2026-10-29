@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ClipboardList, Siren } from "lucide-react";
-import type { ResumoChamados } from "@/types/chamado";
+import type { ReactNode } from "react";
+import { ClipboardList, Siren, Timer, type LucideIcon } from "lucide-react";
+import type { ContadoresSla, ResumoChamados } from "@/types/chamado";
 import { ContagemRegressiva } from "@/components/ui/SlaIndicador";
 
 export function AlertaDeP1({ resumo }: { resumo: ResumoChamados }) {
@@ -22,31 +23,53 @@ export function AlertaDeP1({ resumo }: { resumo: ResumoChamados }) {
 
 function Contador({ rotulo, valor, destaque }: { rotulo: string; valor: number; destaque?: string }) {
   return (
-    <div className="min-w-[96px]">
+    <div className="min-w-[84px]">
       <div className={`font-display text-xl font-bold tabular-nums ${valor > 0 && destaque ? destaque : "text-brand-dark"}`}>{valor}</div>
       <div className="text-xs text-slate-500">{rotulo}</div>
     </div>
   );
 }
 
-export function ContadoresDaTriagem({ resumo, comLink }: { resumo: ResumoChamados; comLink: boolean }) {
-  const { triagem } = resumo;
-  const total = triagem.aguardando + triagem.emAndamento;
+function GrupoDeContadores({ titulo, Icone, children }: { titulo: string; Icone: LucideIcon; children: ReactNode }) {
   return (
-    <section aria-label="Fila de triagem" className="mb-5 flex flex-wrap items-center gap-x-8 gap-y-3 rounded-2xl border border-[#E2E8F0] bg-white p-4">
-      <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-brand-navy"><ClipboardList size={16} aria-hidden /> Triagem</h2>
-      <Contador rotulo="aguardando" valor={triagem.aguardando} />
-      <Contador rotulo="em andamento" valor={triagem.emAndamento} />
-      <Contador rotulo="na metade do prazo" valor={triagem.emRisco} destaque="text-amber-600" />
-      <Contador rotulo="atrasados" valor={triagem.atrasados} destaque="text-red-600" />
-      {triagem.proximoLimite && (
-        <div className="text-xs text-slate-500">
-          Próximo limite: <ContagemRegressiva limite={triagem.proximoLimite} />
-        </div>
-      )}
-      {comLink && total > 0 && (
-        <Link href="/triagem" className="alvo-toque ml-auto rounded-xl bg-brand-green px-4 py-2 text-sm font-semibold text-white hover:opacity-90">Abrir fila de triagem</Link>
-      )}
+    <section aria-label={titulo} className="flex flex-col gap-3 rounded-2xl border border-[#E2E8F0] bg-white p-4">
+      <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-brand-navy"><Icone size={16} aria-hidden /> {titulo}</h2>
+      <div className="flex flex-wrap gap-x-6 gap-y-3">{children}</div>
     </section>
+  );
+}
+
+function ContadoresDoSla({ titulo, contadores }: { titulo: string; contadores: ContadoresSla }) {
+  return (
+    <GrupoDeContadores titulo={titulo} Icone={Timer}>
+      <Contador rotulo="no prazo" valor={contadores.noPrazo} />
+      <Contador rotulo="em risco" valor={contadores.emRisco} destaque="text-amber-600" />
+      <Contador rotulo="violados" valor={contadores.violado} destaque="text-red-600" />
+    </GrupoDeContadores>
+  );
+}
+
+export function ContadoresDaOperacao({ resumo, comLink }: { resumo: ResumoChamados; comLink: boolean }) {
+  const { porStatus, sla, triagem } = resumo;
+  const excecoes = triagem.aguardando + triagem.emAndamento;
+  return (
+    <div className="mb-5 grid gap-3 lg:grid-cols-3">
+      <GrupoDeContadores titulo="Fila ativa" Icone={ClipboardList}>
+        <Contador rotulo="na fila" valor={porStatus["Na fila"] ?? 0} />
+        <Contador rotulo="em atendimento" valor={porStatus["Em atendimento"] ?? 0} />
+        <Contador rotulo="aguardando" valor={porStatus["Aguardando"] ?? 0} />
+        <Contador rotulo="exceções" valor={excecoes} destaque="text-amber-600" />
+        {comLink && excecoes > 0 && (
+          <Link href="/triagem" className="alvo-toque self-center rounded-xl bg-brand-green px-3 py-2 text-xs font-semibold text-white hover:opacity-90">Abrir exceções</Link>
+        )}
+        {triagem.proximoLimite && (
+          <div className="basis-full text-xs text-slate-500">
+            Próxima exceção vence em <ContagemRegressiva limite={triagem.proximoLimite} />
+          </div>
+        )}
+      </GrupoDeContadores>
+      <ContadoresDoSla titulo="SLA · 1ª resposta" contadores={sla.primeiraResposta} />
+      <ContadoresDoSla titulo="SLA · resolução" contadores={sla.resolucao} />
+    </div>
   );
 }

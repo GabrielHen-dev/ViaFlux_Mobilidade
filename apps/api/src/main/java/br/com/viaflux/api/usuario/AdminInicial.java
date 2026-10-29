@@ -9,6 +9,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Set;
 
 @Component
@@ -41,12 +43,14 @@ class AdminInicial implements ApplicationRunner {
             return;
         }
         Perfil perfilAdmin = perfis.findById(Perfil.ADMIN).orElseThrow();
-        Usuario usuario = usuarios.save(new Usuario(
+        Usuario novo = new Usuario(
                 NOME_DO_ADMIN_INICIAL,
                 admin.email(),
                 passwordEncoder.encode(admin.senha()),
                 Set.of(perfilAdmin)
-        ));
+        );
+        novo.confirmarEmail(OffsetDateTime.now(ZoneOffset.UTC));
+        Usuario usuario = usuarios.save(novo);
         log.info("Administrador inicial criado: {}", usuario.getEmail());
     }
 }

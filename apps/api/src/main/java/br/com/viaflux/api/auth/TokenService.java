@@ -1,9 +1,11 @@
 package br.com.viaflux.api.auth;
 
+import br.com.viaflux.api.usuario.IdentificacaoDoUsuario;
 import br.com.viaflux.api.usuario.Perfil;
 import br.com.viaflux.api.usuario.Usuario;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -22,6 +24,9 @@ import java.util.UUID;
 class TokenService {
 
     record TokensEmitidos(String accessToken, String refreshToken, Duration validadeDoAccessToken) {
+    }
+
+    record Renovacao(UUID usuarioId, int versaoDaSessao) {
     }
 
     private final JwtEncoder encoder;
@@ -49,9 +54,12 @@ class TokenService {
         return new TokensEmitidos(assinar(acesso), assinar(renovacao), propriedades.accessTtl());
     }
 
-    Optional<UUID> usuarioDoRefreshToken(String refreshToken) {
+    Optional<Renovacao> renovacaoDoRefreshToken(String refreshToken) {
         try {
-            return Optional.of(UUID.fromString(decodificadorDeRenovacao.decode(refreshToken).getSubject()));
+            Jwt token = decodificadorDeRenovacao.decode(refreshToken);
+            Object versao = token.getClaim(IdentificacaoDoUsuario.CLAIM_VERSAO_DA_SESSAO);
+            int versaoDaSessao = versao instanceof Number numero ? numero.intValue() : 0;
+            return Optional.of(new Renovacao(UUID.fromString(token.getSubject()), versaoDaSessao));
         } catch (JwtException | IllegalArgumentException tokenInvalido) {
             return Optional.empty();
         }
@@ -63,7 +71,8 @@ class TokenService {
                 .subject(usuario.getId().toString())
                 .id(UUID.randomUUID().toString())
                 .issuedAt(emitidoEm)
-                .expiresAt(emitidoEm.plus(validade));
+                .expiresAt(emitidoEm.plus(validade))
+                .claim(IdentificacaoDoUsuario.CLAIM_VERSAO_DA_SESSAO, usuario.getVersaoDaSessao());
     }
 
     private String assinar(JwtClaimsSet claims) {

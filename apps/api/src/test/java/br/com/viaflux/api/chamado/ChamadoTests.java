@@ -194,13 +194,30 @@ class ChamadoTests {
     }
 
     @Test
-    void reabrirUmChamadoResolvidoLimpaAResolucao() {
+    void resolvidoSoVoltaParaAtendimentoPelaContestacaoDoSolicitante() {
         Chamado chamado = chamadoTriado("VF-0001", QUARTA_AS_DEZ, TipoChamado.MANUTENCAO, 3, 3);
         chamado.alterarStatus(StatusChamado.RESOLVIDO, null, QUARTA_AS_DEZ.plusMinutes(30));
 
-        chamado.alterarStatus(StatusChamado.EM_ATENDIMENTO, null, QUARTA_AS_DEZ.plusMinutes(40));
+        assertThat(erroAo(() -> chamado.alterarStatus(StatusChamado.EM_ATENDIMENTO, null, QUARTA_AS_DEZ.plusMinutes(40))).getStatusCode())
+                .isEqualTo(HttpStatus.CONFLICT);
+        chamado.contestarResolucao(QUARTA_AS_DEZ.plusMinutes(40));
 
+        assertThat(chamado.getStatus()).isEqualTo(StatusChamado.NA_FILA);
         assertThat(chamado.getResolvidoEm()).isNull();
+    }
+
+    @Test
+    void reabrirUmChamadoFechadoAbreUmNovoEpisodioNaFila() {
+        Chamado chamado = chamadoTriado("VF-0001", QUARTA_AS_DEZ, TipoChamado.MANUTENCAO, 3, 3);
+        chamado.alterarStatus(StatusChamado.RESOLVIDO, null, QUARTA_AS_DEZ.plusMinutes(30));
+        chamado.confirmarResolucao(QUARTA_AS_DEZ.plusMinutes(40));
+
+        chamado.reabrir(QUARTA_AS_DEZ.plusMinutes(50));
+
+        assertThat(chamado.getStatus()).isEqualTo(StatusChamado.NA_FILA);
+        assertThat(chamado.getEpisodio()).isEqualTo(2);
+        assertThat(chamado.getFechadoEm()).isNull();
+        assertThat(erroAo(() -> chamado.reabrir(QUARTA_AS_DEZ.plusMinutes(60))).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
     }
 
     @Test

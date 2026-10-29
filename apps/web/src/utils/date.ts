@@ -1,4 +1,4 @@
-const FUSO_DA_OPERACAO = "America/Sao_Paulo";
+const FUSO_DA_OPERACAO = "America/Fortaleza";
 const MINUTO_MS = 60_000;
 
 export function formatarDataHora(iso: string) {

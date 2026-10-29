@@ -14,6 +14,7 @@ class MontagemDeChamado {
     private final ServicoTerceiroRepository servicos;
     private final PoliticaDeSla politicaDeSla;
     private final PoliticaDeTriagem politicaDeTriagem;
+    private final JanelaDeEncerramento janelaDeEncerramento;
     private final Clock relogio;
 
     MontagemDeChamado(
@@ -22,6 +23,7 @@ class MontagemDeChamado {
             ServicoTerceiroRepository servicos,
             PoliticaDeSla politicaDeSla,
             PoliticaDeTriagem politicaDeTriagem,
+            JanelaDeEncerramento janelaDeEncerramento,
             Clock relogio
     ) {
         this.eventos = eventos;
@@ -29,6 +31,7 @@ class MontagemDeChamado {
         this.servicos = servicos;
         this.politicaDeSla = politicaDeSla;
         this.politicaDeTriagem = politicaDeTriagem;
+        this.janelaDeEncerramento = janelaDeEncerramento;
         this.relogio = relogio;
     }
 
@@ -101,7 +104,10 @@ class MontagemDeChamado {
                 chamado.getRoteamentoVersao(),
                 chamado.getSlaVersao(),
                 chamado.getResolucaoResumo(),
-                chamado.getClassificacaoEstado()
+                chamado.getClassificacaoEstado(),
+                chamado.getEpisodio(),
+                Datas.local(janelaDeEncerramento.confirmacaoAte(chamado)),
+                Datas.local(janelaDeEncerramento.reaberturaAte(chamado))
         );
     }
 }

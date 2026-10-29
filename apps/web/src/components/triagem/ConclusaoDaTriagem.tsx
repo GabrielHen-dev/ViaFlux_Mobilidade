@@ -5,14 +5,12 @@ import { Hand, Lightbulb } from "lucide-react";
 import type { Chamado, Peso, TipoChamado } from "@/types/chamado";
 import type { DadosConclusaoTriagem } from "@/services/api/contratos";
 import { concluirTriagem, iniciarTriagem } from "@/services/api/chamados";
-import { useAcaoNoChamado, useDepartamentos } from "@/hooks/consultas";
+import { useAcaoNoChamado } from "@/hooks/consultas";
 import { useUsuarioAutenticado } from "@/store/AuthContext";
 import { AvisoDeErro } from "@/components/feedback/EstadoDaConsulta";
 import { PrazoDaTriagem } from "@/components/triagem/PrazoDaTriagem";
 import { ResultadoDoScore, SeletorDePeso, SeletorDeTipo, cartaoClass, inputClass, labelClass } from "@/components/triagem/CamposDaTriagem";
 import { NOME_TIPO, ROTULO_PESO } from "@/utils/prioridade";
-
-const PELA_REGRA_DE_PLANTAO = "";
 
 export interface Sugestao {
   tipo: TipoChamado | null;
@@ -59,13 +57,11 @@ export default function ConclusaoDaTriagem({ chamado, aoConcluir }: { chamado: C
   const [tipo, setTipo] = useState<TipoChamado | "">(sugestao.tipo ?? "");
   const [severidade, setSeveridade] = useState<Peso | "">(sugestao.severidade ?? "");
   const [urgencia, setUrgencia] = useState<Peso | "">(sugestao.urgencia ?? "");
-  const [departamento, setDepartamento] = useState<TipoChamado | typeof PELA_REGRA_DE_PLANTAO>(PELA_REGRA_DE_PLANTAO);
   const [observacao, setObservacao] = useState("");
-  const departamentos = useDepartamentos();
   const conclusao = useAcaoNoChamado(chamado.id, (api, dados: DadosConclusaoTriagem) => concluirTriagem(api, chamado.id, dados));
 
   const confirmar = () => conclusao.mutate(
-    { tipo: tipo as TipoChamado, severidade: severidade as Peso, urgencia: urgencia as Peso, departamento: departamento || null, observacao: observacao.trim() },
+    { tipo: tipo as TipoChamado, severidade: severidade as Peso, urgencia: urgencia as Peso, observacao: observacao.trim() },
     { onSuccess: (atualizado) => aoConcluir(`Triagem concluída: ${atualizado.prioridade} · encaminhado para ${atualizado.departamento?.nome ?? (tipo ? NOME_TIPO[tipo] : "Central")}.`) },
   );
 
@@ -91,13 +87,14 @@ export default function ConclusaoDaTriagem({ chamado, aoConcluir }: { chamado: C
           <SeletorDePeso nome="conclusao-severidade" rotulo="Severidade (impacto)" valor={severidade} aoAlterar={setSeveridade} />
           <SeletorDePeso nome="conclusao-urgencia" rotulo="Urgência (contexto)" valor={urgencia} aoAlterar={setUrgencia} />
           <ResultadoDoScore severidade={severidade} urgencia={urgencia} />
-          <div>
-            <label htmlFor="conclusao-departamento" className={labelClass}>Departamento de destino</label>
-            <select id="conclusao-departamento" className={inputClass} value={departamento} onChange={(evento) => setDepartamento(evento.target.value as TipoChamado)} aria-describedby="conclusao-departamento-dica">
-              <option value={PELA_REGRA_DE_PLANTAO}>Automático: {tipo ? NOME_TIPO[tipo] : "selecione o tipo"}</option>
-              {(departamentos.data ?? []).map((opcao) => <option key={opcao.codigo} value={opcao.codigo}>{opcao.nome}</option>)}
-            </select>
-            <p id="conclusao-departamento-dica" className="mt-1 text-xs text-slate-400">No automático, um P1 operacional fora do horário comercial vai para a Assistência 24h (plantão).</p>
+          <div aria-live="polite">
+            <p className={labelClass}>Departamento de destino</p>
+            <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-brand-dark">
+              {tipo ? NOME_TIPO[tipo] : "Selecione o tipo"}
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              Definido pelo tipo. Fora do horário comercial, P1 e P2 operacionais com urgência imediata vão para o plantão da Assistência 24h. Para outro departamento, use Transferir depois da triagem.
+            </p>
           </div>
           <div>
             <label htmlFor="conclusao-observacao" className={labelClass}>Observação da triagem</label>

@@ -42,6 +42,7 @@ public class SecurityConfig {
     private static final String[] PERFIS_QUE_ATENDEM = {"ADMIN", "ATENDENTE", "DEPARTAMENTO"};
     private static final String[] PERFIS_DE_METRICAS = {"ADMIN", "LIDER_OPERACIONAL"};
     private static final String[] PERFIS_QUE_ABREM_CHAMADO = {"CLIENTE", "GESTOR_FROTA", "ADMIN", "ATENDENTE"};
+    private static final String[] PERFIS_DE_SOLICITANTE = {"CLIENTE", "GESTOR_FROTA"};
     private static final String[] PERFIS_COM_ACESSO_A_CHAMADOS = {
             "ADMIN", "ATENDENTE", "DEPARTAMENTO", "LIDER_OPERACIONAL", "CLIENTE", "GESTOR_FROTA"
     };
@@ -67,6 +68,8 @@ public class SecurityConfig {
                         .requestMatchers("/health").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/refresh").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/cadastro", "/auth/verificacao", "/auth/verificacao/reenvio",
+                                "/auth/senha/recuperacao", "/auth/senha/redefinicao").permitAll()
                         .requestMatchers(HttpMethod.GET, "/auth/me").authenticated()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/dev/**").hasRole("ADMIN")
@@ -87,6 +90,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/chamados/*/status").hasAnyRole(PERFIS_QUE_ATENDEM)
                         .requestMatchers(HttpMethod.POST, "/api/chamados/*/atendimento").hasAnyRole(PERFIS_QUE_ATENDEM)
                         .requestMatchers(HttpMethod.POST, "/api/chamados/*/transferencias").hasAnyRole(PERFIS_QUE_CONDUZEM)
+                        .requestMatchers(HttpMethod.POST, "/api/chamados/*/resolucao/**", "/api/chamados/*/reabertura").hasAnyRole(PERFIS_DE_SOLICITANTE)
                         .requestMatchers("/api/chamados/*/servicos", "/api/chamados/*/servicos/*").hasAnyRole(PERFIS_QUE_CONDUZEM)
                         .requestMatchers("/api/chamados", "/api/chamados/**").hasAnyRole(PERFIS_COM_ACESSO_A_CHAMADOS)
                         .anyRequest().denyAll())
