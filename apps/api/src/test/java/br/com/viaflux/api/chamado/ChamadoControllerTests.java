@@ -128,8 +128,6 @@ class ChamadoControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"motivoId\":\"\",\"contextoId\":\"\",\"descricao\":\"\",\"cliente\":\"\",\"localizacao\":{\"uf\":\"SPX\"}}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors.motivoId").value("Selecione o motivo da solicitação."))
-                .andExpect(jsonPath("$.errors.contextoId").value("Selecione o contexto situacional."))
                 .andExpect(jsonPath("$.errors.descricao").value("Descreva o problema."))
                 .andExpect(jsonPath("$.errors.cliente").value("Informe o nome do solicitante."))
                 .andExpect(jsonPath("$.errors['localizacao.uf']").value("Use a sigla da UF com 2 letras."));
@@ -265,16 +263,15 @@ class ChamadoControllerTests {
     }
 
     @Test
-    void atendenteELiderNaoMudamOStatusDoAtendimento() throws Exception {
-        for (String perfil : List.of("ATENDENTE", "LIDER_OPERACIONAL")) {
-            mockMvc.perform(patch("/api/chamados/VF-0001/status")
-                            .with(autenticado(usuario(perfil)))
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("{\"status\":\"Resolvido\"}"))
-                    .andExpect(status().isForbidden());
-            mockMvc.perform(post("/api/chamados/VF-0001/atendimento").with(autenticado(usuario(perfil))))
-                    .andExpect(status().isForbidden());
-        }
+    void liderNaoMudaOStatusDoAtendimento() throws Exception {
+        UsuarioAtual lia = usuario("LIDER_OPERACIONAL");
+        mockMvc.perform(patch("/api/chamados/VF-0001/status")
+                        .with(autenticado(lia))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"Resolvido\"}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/chamados/VF-0001/atendimento").with(autenticado(lia)))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -366,7 +363,7 @@ class ChamadoControllerTests {
     void atendenteAssumeEConcluiATriagem() throws Exception {
         UsuarioAtual paula = usuario("ATENDENTE");
         given(triagem.iniciar("VF-0001", paula)).willReturn(respostaDoChamado("VF-0001"));
-        given(triagem.concluir("VF-0001", new ConcluirTriagemRequest("MANUTENCAO", 5, 3, null, null), paula))
+        given(triagem.concluir("VF-0001", new ConcluirTriagemRequest("MANUTENCAO", 5, 3, null), paula))
                 .willReturn(respostaDoChamado("VF-0001"));
 
         mockMvc.perform(post("/api/chamados/VF-0001/triagem/inicio").with(autenticado(paula)))
@@ -377,7 +374,7 @@ class ChamadoControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"tipo\":\"MANUTENCAO\",\"severidade\":5,\"urgencia\":3}"))
                 .andExpect(status().isOk());
-        then(triagem).should().concluir("VF-0001", new ConcluirTriagemRequest("MANUTENCAO", 5, 3, null, null), paula);
+        then(triagem).should().concluir("VF-0001", new ConcluirTriagemRequest("MANUTENCAO", 5, 3, null), paula);
     }
 
     @Test

@@ -1,14 +1,11 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/store/AuthContext";
 import { ErroApi } from "@/services/api/cliente";
-import MarcaViaFlux from "@/components/ui/MarcaViaFlux";
-
-const labelClass = "block text-xs font-semibold text-[#475569] uppercase tracking-wide mb-1.5";
-const inputClass =
-  "w-full px-3.5 py-2.5 rounded-lg border border-[#E2E8F0] text-sm text-brand-dark outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 transition-all";
+import CartaoDeAcesso, { ErroDeAcesso, botaoDeAcessoClass, campoDeAcessoClass, labelDeAcessoClass, linkDeAcessoClass } from "@/components/auth/CartaoDeAcesso";
 
 export default function LoginForm() {
   const { estado, entrar } = useAuth();
@@ -37,40 +34,30 @@ export default function LoginForm() {
   const bloqueado = enviando || estado.status !== "anonimo";
 
   return (
-    <main id="conteudo" className="flex min-h-screen items-center justify-center bg-brand-navy p-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex items-center justify-center gap-3">
-          <MarcaViaFlux tamanho="lg" />
-          <div>
-            <div className="font-display text-lg font-bold leading-tight text-white">ViaFlux</div>
-            <div className="text-sm leading-tight text-brand-green">Mobilidade</div>
-          </div>
+    <CartaoDeAcesso
+      titulo="Central de Chamados"
+      subtitulo="Entre com seu e-mail e senha."
+      rodape={<>Ainda não tem conta? <Link href="/cadastro" className="font-semibold text-brand-green underline-offset-2 hover:underline">Criar conta</Link></>}
+    >
+      <form onSubmit={enviar}>
+        <div className="mb-4">
+          <label htmlFor="login-email" className={labelDeAcessoClass}>E-mail</label>
+          <input id="login-email" className={campoDeAcessoClass} type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
         </div>
+        <div className="mb-2">
+          <label htmlFor="login-senha" className={labelDeAcessoClass}>Senha</label>
+          <input id="login-senha" className={campoDeAcessoClass} type="password" autoComplete="current-password" required value={senha} onChange={(e) => setSenha(e.target.value)} />
+        </div>
+        <p className="mb-6 text-right text-xs">
+          <Link href="/esqueci-a-senha" className={linkDeAcessoClass}>Esqueci minha senha</Link>
+        </p>
 
-        <form onSubmit={enviar} className="rounded-2xl bg-white p-8 shadow-xl">
-          <h1 className="mb-1 text-xl font-bold text-brand-navy">Central de Chamados</h1>
-          <p className="mb-6 text-sm text-slate-500">Entre com seu e-mail e senha.</p>
+        <ErroDeAcesso mensagem={erro} />
 
-          <div className="mb-4">
-            <label htmlFor="login-email" className={labelClass}>E-mail</label>
-            <input id="login-email" className={inputClass} type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
-          <div className="mb-6">
-            <label htmlFor="login-senha" className={labelClass}>Senha</label>
-            <input id="login-senha" className={inputClass} type="password" autoComplete="current-password" required value={senha} onChange={(e) => setSenha(e.target.value)} />
-          </div>
-
-          {erro && <p role="alert" className="mb-4 rounded-lg bg-red-50 px-3.5 py-2.5 text-sm text-red-700">{erro}</p>}
-
-          <button
-            type="submit"
-            disabled={bloqueado || !email.trim() || !senha}
-            className="w-full rounded-xl bg-brand-green py-3.5 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {enviando ? "Entrando…" : "Entrar"}
-          </button>
-        </form>
-      </div>
-    </main>
+        <button type="submit" disabled={bloqueado || !email.trim() || !senha} className={botaoDeAcessoClass}>
+          {enviando ? "Entrando…" : "Entrar"}
+        </button>
+      </form>
+    </CartaoDeAcesso>
   );
 }

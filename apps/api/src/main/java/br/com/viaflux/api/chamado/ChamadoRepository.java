@@ -16,6 +16,8 @@ interface ChamadoRepository extends JpaRepository<Chamado, UUID> {
 
     List<Chamado> findByExcluidoEmIsNotNullOrderByExcluidoEmDesc();
 
+    List<Chamado> findByStatusAndExcluidoEmIsNull(StatusChamado status);
+
     @Query("""
             SELECT chamado
             FROM Chamado chamado

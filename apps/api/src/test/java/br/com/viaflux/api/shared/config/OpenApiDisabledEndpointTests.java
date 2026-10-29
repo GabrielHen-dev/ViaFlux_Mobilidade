@@ -1,6 +1,7 @@
 package br.com.viaflux.api.shared.config;
 
 import br.com.viaflux.api.chamado.RepositoriosDeChamadoSimulados;
+import br.com.viaflux.api.conta.RepositorioDeTokensSimulado;
 import br.com.viaflux.api.notificacao.RepositorioDeNotificacoesSimulado;
 import br.com.viaflux.api.usuario.DepartamentoRepository;
 import br.com.viaflux.api.usuario.OrganizacaoRepository;
@@ -27,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 + "org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration"
 })
 @AutoConfigureMockMvc
-@Import({RepositoriosDeChamadoSimulados.class, RepositorioDeNotificacoesSimulado.class})
+@Import({RepositoriosDeChamadoSimulados.class, RepositorioDeNotificacoesSimulado.class, RepositorioDeTokensSimulado.class})
 class OpenApiDisabledEndpointTests {
 
     @Autowired

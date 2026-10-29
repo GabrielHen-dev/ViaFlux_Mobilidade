@@ -10,7 +10,9 @@ public record UsuarioResponse(
         String email,
         List<PerfilResponse> perfis,
         OrganizacaoResponse organizacao,
-        List<DepartamentoResponse> departamentos
+        List<DepartamentoResponse> departamentos,
+        String telefone,
+        boolean emailVerificado
 ) {
 
     public record PerfilResponse(String codigo, String descricao) {
@@ -40,7 +42,8 @@ public record UsuarioResponse(
                 .map(departamento -> new DepartamentoResponse(departamento.getCodigo(), departamento.getNome()))
                 .toList();
         return new UsuarioResponse(
-                usuario.getId(), usuario.getNome(), usuario.getEmail(), perfis, organizacaoResponse, departamentos
+                usuario.getId(), usuario.getNome(), usuario.getEmail(), perfis, organizacaoResponse, departamentos,
+                usuario.getTelefone(), usuario.emailVerificado()
         );
     }
 }

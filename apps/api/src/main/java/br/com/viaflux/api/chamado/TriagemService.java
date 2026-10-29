@@ -58,10 +58,7 @@ class TriagemService {
         Chamado chamado = acesso.paraConduzir(codigo, usuario);
         OffsetDateTime agora = agora();
         Prioridade prioridade = Prioridade.porScore(Prioridade.score(request.severidade(), request.urgencia()));
-        boolean destinoEscolhido = request.departamento() != null && !request.departamento().isBlank();
-        TipoChamado destino = destinoEscolhido
-                ? TipoChamado.deCodigo(request.departamento(), "departamento")
-                : roteamento.destino(tipo, prioridade, request.urgencia(), agora.toInstant());
+        TipoChamado destino = roteamento.destino(tipo, prioridade, request.urgencia(), agora.toInstant());
         Autor autor = autor(usuario);
         chamado.concluirTriagem(tipo, request.severidade(), request.urgencia(), destino, autor, agora);
 
@@ -73,7 +70,7 @@ class TriagemService {
                         + " · em " + minutos + " min, " + prazo + " (" + chamado.getTriagemPrazoMinutos() + " min)" + observacao,
                 autor, agora);
         historico.registrarParaTodos(chamado, TipoEvento.ROTEAMENTO, "Encaminhado para " + destino.getNome(),
-                descreverEncaminhamento(tipo, destino, destinoEscolhido, prioridade, request.urgencia()), autor, agora);
+                descreverEncaminhamento(tipo, destino, prioridade, request.urgencia()), autor, agora);
         aviso.avisar(chamado, StatusChamado.NA_FILA.getRotulo(),
                 "O chamado " + chamado.getCodigo() + " foi analisado e encaminhado para " + destino.getNome() + ".", agora);
         return montagem.completo(chamado, false);
@@ -148,8 +145,8 @@ class TriagemService {
                 + Prioridade.rotuloDoPeso(urgencia) + " (" + urgencia + ") = score " + score + " · " + prioridade + " " + prioridade.getRotulo();
     }
 
-    private static String descreverEncaminhamento(TipoChamado tipo, TipoChamado destino, boolean destinoEscolhido, Prioridade prioridade, int urgencia) {
-        if (destinoEscolhido || destino == tipo) {
+    private static String descreverEncaminhamento(TipoChamado tipo, TipoChamado destino, Prioridade prioridade, int urgencia) {
+        if (destino == tipo) {
             return "Chamado direcionado para a fila de " + destino.getNome() + ".";
         }
         return prioridade + (urgencia == 5 ? " com urgência imediata" : "")

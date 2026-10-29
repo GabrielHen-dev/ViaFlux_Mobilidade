@@ -4,7 +4,12 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
 
-public record UsuarioAtual(UUID id, String nome, Set<String> perfis, Set<String> departamentos, UUID organizacaoId) {
+public record UsuarioAtual(UUID id, String nome, Set<String> perfis, Set<String> departamentos, UUID organizacaoId,
+                           boolean emailVerificado) {
+
+    public UsuarioAtual(UUID id, String nome, Set<String> perfis, Set<String> departamentos, UUID organizacaoId) {
+        this(id, nome, perfis, departamentos, organizacaoId, true);
+    }
 
     public static final Set<String> PERFIS_COM_VISAO_GLOBAL = Set.of("ADMIN", "ATENDENTE", "LIDER_OPERACIONAL");
     public static final Set<String> PERFIS_DA_CENTRAL = Set.of("ADMIN", "ATENDENTE", "DEPARTAMENTO", "LIDER_OPERACIONAL");

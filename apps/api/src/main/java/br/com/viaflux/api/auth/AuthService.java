@@ -1,5 +1,6 @@
 package br.com.viaflux.api.auth;
 
+import br.com.viaflux.api.shared.seguranca.LimiteDeTentativas;
 import br.com.viaflux.api.usuario.Usuario;
 import br.com.viaflux.api.usuario.UsuarioRepository;
 import br.com.viaflux.api.usuario.UsuarioResponse;
@@ -22,29 +23,40 @@ class AuthService {
     private final UsuarioRepository usuarios;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokens;
+    private final LimiteDeTentativas limite;
     private final String hashParaEmailInexistente;
 
-    AuthService(UsuarioRepository usuarios, PasswordEncoder passwordEncoder, TokenService tokens) {
+    AuthService(UsuarioRepository usuarios, PasswordEncoder passwordEncoder, TokenService tokens, LimiteDeTentativas limite) {
         this.usuarios = usuarios;
         this.passwordEncoder = passwordEncoder;
         this.tokens = tokens;
+        this.limite = limite;
         this.hashParaEmailInexistente = passwordEncoder.encode(UUID.randomUUID().toString());
     }
 
     SessaoResponse entrar(String email, String senha) {
-        Optional<Usuario> encontrado = usuarios.findByEmail(Usuario.normalizarEmail(email));
+        String emailNormalizado = Usuario.normalizarEmail(email);
+        String chaveDoLimite = "login:" + emailNormalizado;
+        limite.exigirDisponivel(chaveDoLimite);
+        Optional<Usuario> encontrado = usuarios.findByEmail(emailNormalizado);
         String hashComparado = encontrado.map(Usuario::getSenhaHash).orElse(hashParaEmailInexistente);
         boolean senhaConfere = passwordEncoder.matches(senha, hashComparado);
 
-        return encontrado
+        Optional<SessaoResponse> sessao = encontrado
                 .filter(usuario -> senhaConfere && usuario.isAtivo())
-                .map(this::abrirSessao)
-                .orElseThrow(() -> naoAutorizado(CREDENCIAIS_INVALIDAS));
+                .map(this::abrirSessao);
+        if (sessao.isEmpty()) {
+            limite.registrar(chaveDoLimite);
+            throw naoAutorizado(CREDENCIAIS_INVALIDAS);
+        }
+        limite.esquecer(chaveDoLimite);
+        return sessao.get();
     }
 
     SessaoResponse renovar(String refreshToken) {
-        return tokens.usuarioDoRefreshToken(refreshToken)
-                .flatMap(this::usuarioAtivo)
+        return tokens.renovacaoDoRefreshToken(refreshToken)
+                .flatMap(renovacao -> usuarioAtivo(renovacao.usuarioId())
+                        .filter(usuario -> usuario.getVersaoDaSessao() == renovacao.versaoDaSessao()))
                 .map(this::abrirSessao)
                 .orElseThrow(() -> naoAutorizado(SESSAO_EXPIRADA));
     }

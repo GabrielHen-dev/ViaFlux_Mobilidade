@@ -21,6 +21,8 @@ export interface UsuarioAutenticado {
   perfis: PerfilUsuario[];
   organizacao?: OrganizacaoUsuario | null;
   departamentos?: DepartamentoUsuario[];
+  telefone?: string | null;
+  emailVerificado?: boolean;
 }
 
 export interface Sessao {

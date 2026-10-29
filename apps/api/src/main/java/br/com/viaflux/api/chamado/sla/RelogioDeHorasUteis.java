@@ -76,6 +76,19 @@ public final class RelogioDeHorasUteis implements Relogio {
         return cursor;
     }
 
+    public Instant somarDiasUteis(Instant inicio, int dias) {
+        ZonedDateTime local = inicio.atZone(fuso);
+        LocalDate dia = local.toLocalDate();
+        int somados = 0;
+        for (int passo = 0; somados < dias && passo < LIMITE_DE_DIAS_PERCORRIDOS; passo++) {
+            dia = dia.plusDays(1);
+            if (ehDiaUtil(dia)) {
+                somados++;
+            }
+        }
+        return dia.atTime(local.toLocalTime()).atZone(fuso).toInstant();
+    }
+
     private Instant inicioDoExpediente(LocalDate dia) {
         return dia.atTime(abertura).atZone(fuso).toInstant();
     }

@@ -55,33 +55,54 @@ class AberturaDeChamadoServiceTests {
     }
 
     @Test
-    void clienteAbreChamadoQueEntraNaFilaDeTriagemSemPrioridade() {
+    void clienteAbreChamadoJaClassificadoEEncaminhadoAoDepartamento() {
         AberturaDeChamadoService.Resultado resultado = servico.abrir(pedido(null, "C-PARADO"), cliente(ANA), null);
 
         Chamado salvo = chamadoSalvo();
         assertThat(resultado.criado()).isTrue();
         assertThat(salvo.getCodigo()).isEqualTo("VF-0007");
         assertThat(salvo.getSolicitante()).isSameAs(anaCadastrada);
-        assertThat(salvo.getStatus()).isEqualTo(StatusChamado.ABERTO);
+        assertThat(salvo.getStatus()).isEqualTo(StatusChamado.NA_FILA);
         assertThat(salvo.getAbertoEm()).isEqualTo(QUARTA_AS_DEZ);
-        assertThat(salvo.getTriagemPrazoMinutos()).isEqualTo(10);
-        assertThat(salvo.getTriagemLimite()).isEqualTo(QUARTA_AS_DEZ.plusMinutes(10));
         assertThat(salvo.getModelo()).isEqualTo("Volvo FH 460");
 
         ChamadoResponse resposta = resultado.chamado();
         assertThat(resposta.id()).isEqualTo("VF-0007");
+        assertThat(resposta.status()).isEqualTo("Na fila");
+        assertThat(resposta.prioridade()).isEqualTo(Prioridade.P1);
+        assertThat(resposta.score()).isEqualTo(10);
+        assertThat(resposta.classificacao()).isEqualTo(new ClassificacaoResponse(TipoChamado.MANUTENCAO, 5, 5, 10, Prioridade.P1));
+        assertThat(resposta.departamento().codigo()).isEqualTo(TipoChamado.MANUTENCAO);
+        assertThat(resposta.sla()).isNotNull();
+        assertThat(resposta.override()).isNull();
+        assertThat(resposta.servico()).isNull();
+        assertThat(resposta.timeline()).extracting(EventoResponse::acao).containsExactly("Chamado aberto", "Encaminhado para Manutenção");
+        assertThat(ambiente.unicoEventoDoTipo(TipoEvento.CLASSIFICACAO).isVisivelCliente()).isFalse();
+    }
+
+    @Test
+    void contaSemEmailVerificadoNaoAbreChamado() {
+        UsuarioAtual naoVerificada = new UsuarioAtual(ANA, "Ana Cliente", Set.of("CLIENTE"), Set.of(), null, false);
+
+        ErroDeChamado erro = erroAo(() -> servico.abrir(pedido(null, "C-PARADO"), naoVerificada, null));
+
+        assertThat(erro.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(erro.getBody().getDetail()).isEqualTo(AberturaDeChamadoService.EMAIL_NAO_VERIFICADO);
+        then(ambiente.chamados).should(never()).save(any(Chamado.class));
+    }
+
+    @Test
+    void outroMotivoFicaNasExcecoesDaCentralSemScore() {
+        AbrirChamadoRequest outro = new AbrirChamadoRequest(null, "OUTRO", null, "Cobrança de pedágio em outro estado",
+                "Problema que não está na lista", "Ana Cliente", null, null, null, null);
+
+        ChamadoResponse resposta = servico.abrir(outro, cliente(ANA), null).chamado();
+
         assertThat(resposta.status()).isEqualTo("Aberto");
         assertThat(resposta.prioridade()).isNull();
         assertThat(resposta.score()).isNull();
-        assertThat(resposta.classificacao()).isNull();
         assertThat(resposta.departamento()).isNull();
-        assertThat(resposta.sla()).isNull();
-        assertThat(resposta.triagem().prazoMinutos()).isEqualTo(10);
-        assertThat(resposta.override()).isNull();
-        assertThat(resposta.servico()).isNull();
-        assertThat(resposta.timeline()).extracting(EventoResponse::acao).containsExactly("Chamado aberto", "Aguardando triagem");
-        assertThat(resposta.timeline()).extracting(EventoResponse::detalhe).containsExactly(
-                "Chamado registrado pelo portal ViaFlux.", "Um atendente vai analisar a solicitação em até 10 minutos.");
+        assertThat(chamadoSalvo().getMotivoOutro()).isEqualTo("Cobrança de pedágio em outro estado");
     }
 
     @Test

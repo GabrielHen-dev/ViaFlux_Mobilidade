@@ -12,6 +12,7 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Objects;
@@ -37,6 +38,21 @@ public class Usuario {
 
     @Column(nullable = false)
     private boolean ativo = true;
+
+    @Column(length = 30)
+    private String telefone;
+
+    @Column(name = "email_verificado_em")
+    private OffsetDateTime emailVerificadoEm;
+
+    @Column(name = "termos_versao", length = 40)
+    private String termosVersao;
+
+    @Column(name = "termos_aceitos_em")
+    private OffsetDateTime termosAceitosEm;
+
+    @Column(name = "versao_da_sessao", nullable = false)
+    private int versaoDaSessao;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -142,5 +158,48 @@ public class Usuario {
 
     public void alterarAtivo(boolean ativo) {
         this.ativo = ativo;
+    }
+
+    public String getTelefone() {
+        return telefone;
+    }
+
+    public void definirTelefone(String telefone) {
+        this.telefone = telefone == null || telefone.isBlank() ? null : telefone.trim();
+    }
+
+    public boolean emailVerificado() {
+        return emailVerificadoEm != null;
+    }
+
+    public OffsetDateTime getEmailVerificadoEm() {
+        return emailVerificadoEm;
+    }
+
+    public void confirmarEmail(OffsetDateTime agora) {
+        if (emailVerificadoEm == null) {
+            this.emailVerificadoEm = Objects.requireNonNull(agora);
+        }
+    }
+
+    public void registrarAceiteDosTermos(String versao, OffsetDateTime agora) {
+        this.termosVersao = Objects.requireNonNull(versao);
+        this.termosAceitosEm = Objects.requireNonNull(agora);
+    }
+
+    public String getTermosVersao() {
+        return termosVersao;
+    }
+
+    public OffsetDateTime getTermosAceitosEm() {
+        return termosAceitosEm;
+    }
+
+    public int getVersaoDaSessao() {
+        return versaoDaSessao;
+    }
+
+    public void encerrarSessoes() {
+        this.versaoDaSessao += 1;
     }
 }

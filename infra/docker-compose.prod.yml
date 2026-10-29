@@ -39,6 +39,14 @@ services:
       VIAFLUX_DEV_TOOLS_HABILITADO: ${DEV_TOOLS_HABILITADO:-false}
       VIAFLUX_DEV_TOOLS_SENHA: ${DEV_TOOLS_SENHA:-}
       VIAFLUX_ANEXO_DIR: /var/viaflux/anexos
+      VIAFLUX_PORTAL_URL: ${PORTAL_URL:?defina PORTAL_URL com o endereço público do frontend}
+      VIAFLUX_MAIL_HOST: ${MAIL_HOST:?defina MAIL_HOST com o servidor SMTP}
+      VIAFLUX_MAIL_PORT: ${MAIL_PORT:-587}
+      VIAFLUX_MAIL_USERNAME: ${MAIL_USERNAME:-}
+      VIAFLUX_MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      VIAFLUX_MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-true}
+      VIAFLUX_MAIL_STARTTLS: ${MAIL_STARTTLS:-true}
+      VIAFLUX_MAIL_REMETENTE: ${MAIL_REMETENTE:-ViaFlux Mobilidade <nao-responda@viaflux.local>}
       TZ: America/Recife
     expose:
       - "8281"

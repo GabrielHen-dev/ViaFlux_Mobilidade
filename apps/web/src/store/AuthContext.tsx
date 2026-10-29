@@ -17,6 +17,7 @@ interface AuthContextValue {
   estado: EstadoAuth;
   entrar: (email: string, senha: string) => Promise<void>;
   sair: () => void;
+  atualizarUsuario: () => Promise<void>;
   api: ClienteApi;
 }
 
@@ -143,7 +144,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     aplicarSessao(await entrarNaApi(email, senha));
   }, [aplicarSessao]);
 
-  return <AuthContext.Provider value={{ estado, entrar, sair, api }}>{children}</AuthContext.Provider>;
+  const atualizarUsuario = useCallback(async () => {
+    const usuario = await api.requisitar<UsuarioAutenticado>("/auth/me");
+    setEstado((atual) => atual.status === "autenticado" && atual.usuario.id === usuario.id ? { ...atual, usuario } : atual);
+  }, [api]);
+
+  return <AuthContext.Provider value={{ estado, entrar, sair, atualizarUsuario, api }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

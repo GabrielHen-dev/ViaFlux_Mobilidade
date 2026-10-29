@@ -19,6 +19,8 @@ import java.util.UUID;
 @Service
 class AberturaDeChamadoService {
 
+    static final String EMAIL_NAO_VERIFICADO = "Confirme seu e-mail pelo link que enviamos antes de abrir o primeiro chamado.";
+
     private static final String MODELO_QUANDO_NAO_HA_VEICULO = "Não se aplica";
 
     record Resultado(ChamadoResponse chamado, boolean criado) {
@@ -66,6 +68,9 @@ class AberturaDeChamadoService {
 
     @Transactional
     Resultado abrir(AbrirChamadoRequest request, UsuarioAtual usuario, String chaveIdempotencia) {
+        if (!usuario.emailVerificado()) {
+            throw ErroDeChamado.proibido(EMAIL_NAO_VERIFICADO);
+        }
         String chave = chaveIdempotencia == null || chaveIdempotencia.isBlank() ? null : usuario.id() + ":" + chaveIdempotencia.trim();
         Optional<Chamado> jaRegistrado = chave == null ? Optional.empty() : chamados.findByChaveIdempotencia(chave);
         if (jaRegistrado.isPresent()) {

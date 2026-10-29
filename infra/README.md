@@ -43,6 +43,12 @@ cp infra/.env.example infra/.env
 | `TRIAGEM_URGENCIA_BAIXA_MINUTOS` | API | Prazo da triagem para urgência baixa. Padrão `40`. |
 | `ANEXO_DIR` | API | Pasta onde a API grava fotos e documentos dos chamados. Padrão `./data/anexos`, relativo a `apps/api`. Em produção o Compose usa `VIAFLUX_ANEXO_DIR=/var/viaflux/anexos`, montado no volume `anexos`. |
 | `ANEXO_LIMITE_MB` | API | Tamanho máximo de cada anexo, em MB. Padrão `10`. Mantenha igual a `NEXT_PUBLIC_ANEXO_LIMITE_MB` do frontend, se definido. |
+| `PORTAL_URL` | API | Endereço público do frontend, usado para montar os links de verificação de e-mail e de redefinição de senha. Padrão `http://localhost:5261`. Obrigatória no Compose de produção. |
+| `MAIL_HOST` | API | Servidor SMTP. Em desenvolvimento é o Mailpit do Compose, em `localhost`. Obrigatória no Compose de produção. |
+| `MAIL_PORT` | API | Porta SMTP. Padrão `1025` (Mailpit) em desenvolvimento e `587` no Compose de produção. |
+| `MAIL_USERNAME` / `MAIL_PASSWORD` | API | Credenciais do provedor SMTP. Vazias no Mailpit. São segredo: nunca versione os valores reais. |
+| `MAIL_SMTP_AUTH` / `MAIL_STARTTLS` | API | `true` para provedores reais, que exigem autenticação e TLS. `false` no Mailpit. |
+| `MAIL_REMETENTE` | API | Remetente dos e-mails de conta. Padrão `ViaFlux Mobilidade <nao-responda@viaflux.local>`. |
 | `NEXT_PUBLIC_API_URL` | Frontend | URL da API vista pelo navegador. Em produção é o domínio público da `api`, por exemplo `https://api.viaflux.seudominio.com`. |
 
 > ⚠️ `NEXT_PUBLIC_*` é embutido no bundle do frontend e **fica visível para qualquer usuário**. Nunca coloque segredo nessa variável, porque ela existe só para endereço público.
@@ -67,8 +73,12 @@ docker compose -f infra/docker-compose.yml --env-file infra/.env up -d
 |---|---|
 | PostgreSQL | `localhost:5432` |
 | Adminer | <http://localhost:8081> |
+| Mailpit (SMTP) | `localhost:1025` |
+| Mailpit (caixa de entrada) | <http://localhost:8025> |
 
 No Adminer, use `db` como servidor, junto com `POSTGRES_DB` e `POSTGRES_USER` do arquivo `infra/.env`.
+
+O Mailpit captura todos os e-mails que a API envia (verificação de cadastro e redefinição de senha) sem entregá-los a ninguém. Abra a caixa de entrada em <http://localhost:8025> para clicar nos links.
 
 Se a porta 5432 já estiver ocupada, altere `POSTGRES_PORT` no seu `infra/.env`:
 
@@ -100,9 +110,14 @@ Na primeira subida com o banco vazio, a API cria o administrador com `ADMIN_EMAI
 | `POST /auth/login` | Pública | Recebe `email` e `senha` e devolve `accessToken`, `refreshToken`, `expiresIn` e os dados do usuário com seus perfis. |
 | `POST /auth/refresh` | Pública | Recebe `refreshToken` e devolve uma sessão nova no mesmo formato do login. |
 | `GET /auth/me` | `Authorization: Bearer <accessToken>` | Devolve o usuário autenticado. |
+| `POST /auth/cadastro` | Pública | Cria conta `CLIENTE` com `nome`, `email`, `senha`, `telefone` opcional e `aceiteDosTermos`, e envia o link de verificação (24 h). A resposta é a mesma se o e-mail já existir. |
+| `POST /auth/verificacao` | Pública | Recebe o `token` do link e confirma o e-mail. Sem e-mail confirmado o usuário entra, mas não abre chamado. |
+| `POST /auth/verificacao/reenvio` | Pública | Recebe `email` e gera um link de verificação novo, invalidando o anterior. |
+| `POST /auth/senha/recuperacao` | Pública | Recebe `email` e envia o link de redefinição (30 min). A resposta não revela se a conta existe. |
+| `POST /auth/senha/redefinicao` | Pública | Recebe `token` e `senha`, troca a senha e encerra todas as sessões abertas. |
 | `GET /health` | Pública | Healthcheck. |
 
-Todas as outras rotas exigem *access token*. O *refresh token* não é aceito como *access token*.
+Todas as outras rotas exigem *access token*. O *refresh token* não é aceito como *access token*. Login, cadastro, reenvio e recuperação têm limite de 5 tentativas a cada 15 minutos por e-mail (e por origem, nas rotas de conta), com resposta `429`. O contador fica em memória e zera quando a API reinicia.
 
 Para parar sem perder dados:
 

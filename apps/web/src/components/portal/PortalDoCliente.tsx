@@ -10,10 +10,13 @@ import { PrioridadeIndicador, StatusBadge } from "@/components/ui/StatusBadge";
 import { Carregando, FalhaAoCarregar } from "@/components/feedback/EstadoDaConsulta";
 import { formatarDataHora } from "@/utils/date";
 import { PERFIS_DE_CLIENTE } from "@/utils/perfis";
+import { useUsuarioAutenticado } from "@/store/AuthContext";
+import AvisoDeEmailNaoVerificado from "@/components/auth/AvisoDeEmailNaoVerificado";
 
 const FORMATO_DO_PROTOCOLO = /^VF-\d{4,}$/;
 
 function ConteudoDoPortal() {
+  const usuario = useUsuarioAutenticado();
   const router = useRouter();
   const [protocolo, setProtocolo] = useState("");
   const [erroDoProtocolo, setErroDoProtocolo] = useState("");
@@ -43,6 +46,8 @@ function ConteudoDoPortal() {
             <CirclePlus size={16} aria-hidden /> Abrir chamado
           </Link>
         </div>
+
+        <AvisoDeEmailNaoVerificado usuario={usuario} />
 
         <form onSubmit={buscar} className="mb-6 rounded-2xl border border-[#E2E8F0] bg-white p-4" noValidate>
           <label htmlFor="busca-protocolo" className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">Buscar pelo protocolo</label>

@@ -11,7 +11,7 @@ const ETAPA_DO_STATUS: Record<Status, number> = {
   "Na fila": 2,
   "Em atendimento": 3,
   "Aguardando": 3,
-  "Resolvido": 4,
+  "Resolvido": 5,
   "Fechado": 5,
 };
 

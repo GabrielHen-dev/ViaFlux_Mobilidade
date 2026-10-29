@@ -56,17 +56,17 @@ class TriagemServiceTests {
     }
 
     @Test
-    void concluirTriagemClassificaEncaminhaParaODepartamentoEscolhidoEAvisaOCliente() {
+    void concluirTriagemClassificaEncaminhaPeloRoteamentoEAvisaOCliente() {
         AmbienteDeChamados ambiente = new AmbienteDeChamados(QUARTA_AS_DEZ.plusMinutes(6));
         ambiente.cadastrar(chamadoAberto("VF-0001", QUARTA_AS_DEZ, usuario(ANA, "Ana Cliente", "CLIENTE"), TipoChamado.MANUTENCAO, 5));
 
         ChamadoResponse resposta = servico(ambiente).concluir("VF-0001",
-                new ConcluirTriagemRequest("MANUTENCAO", 5, 3, "LOGISTICA", "Cliente parado na estrada"), paula);
+                new ConcluirTriagemRequest("MANUTENCAO", 5, 3, "Cliente parado na estrada"), paula);
 
         assertThat(resposta.status()).isEqualTo("Na fila");
         assertThat(resposta.prioridade()).isEqualTo(Prioridade.P2);
         assertThat(resposta.score()).isEqualTo(8);
-        assertThat(resposta.departamento().codigo()).isEqualTo(TipoChamado.LOGISTICA);
+        assertThat(resposta.departamento().codigo()).isEqualTo(TipoChamado.MANUTENCAO);
         assertThat(resposta.classificacao()).isEqualTo(new ClassificacaoResponse(TipoChamado.MANUTENCAO, 5, 3, 8, Prioridade.P2));
         assertThat(resposta.sla()).isNotNull();
         assertThat(resposta.triagem().concluidaPor()).isEqualTo(autor(paula));
@@ -78,12 +78,12 @@ class TriagemServiceTests {
                 .contains("em 6 min, dentro do prazo (10 min)")
                 .endsWith(" · Cliente parado na estrada");
         ChamadoEvento roteamento = ambiente.unicoEventoDoTipo(TipoEvento.ROTEAMENTO);
-        assertThat(roteamento.getAcao()).isEqualTo("Encaminhado para Logística");
+        assertThat(roteamento.getAcao()).isEqualTo("Encaminhado para Manutenção");
         assertThat(roteamento.isVisivelCliente()).isTrue();
         assertThat(ambiente.notificacoes).singleElement().satisfies(notificacao -> {
             assertThat(notificacao.destinatarioId()).isEqualTo(ANA);
             assertThat(notificacao.novoStatus()).isEqualTo("Na fila");
-            assertThat(notificacao.mensagem()).isEqualTo("O chamado VF-0001 foi analisado e encaminhado para Logística.");
+            assertThat(notificacao.mensagem()).isEqualTo("O chamado VF-0001 foi analisado e encaminhado para Manutenção.");
         });
     }
 
@@ -92,31 +92,31 @@ class TriagemServiceTests {
         AmbienteDeChamados ambiente = new AmbienteDeChamados(QUARTA_AS_DEZ.plusMinutes(25));
         ambiente.cadastrar(chamadoAberto("VF-0001", QUARTA_AS_DEZ, null, TipoChamado.MANUTENCAO, 3));
 
-        servico(ambiente).concluir("VF-0001", new ConcluirTriagemRequest("MANUTENCAO", 3, 3, "MANUTENCAO", null), paula);
+        servico(ambiente).concluir("VF-0001", new ConcluirTriagemRequest("MANUTENCAO", 3, 3, null), paula);
 
         assertThat(ambiente.unicoEventoDoTipo(TipoEvento.CLASSIFICACAO).getDetalhe()).endsWith("em 25 min, fora do prazo (20 min)");
     }
 
     @Test
-    void semDepartamentoEscolhidoP1OperacionalForaDoExpedienteVaiParaOPlantao() {
+    void p1OperacionalComUrgenciaImediataForaDoExpedienteVaiParaOPlantao() {
         OffsetDateTime quartaANoite = emSaoPaulo("2026-10-21T22:00");
         AmbienteDeChamados ambiente = new AmbienteDeChamados(quartaANoite.plusMinutes(3));
         ambiente.cadastrar(chamadoAberto("VF-0001", quartaANoite));
 
-        ChamadoResponse resposta = servico(ambiente).concluir("VF-0001", new ConcluirTriagemRequest("MANUTENCAO", 5, 5, " ", null), paula);
+        ChamadoResponse resposta = servico(ambiente).concluir("VF-0001", new ConcluirTriagemRequest("MANUTENCAO", 5, 5, null), paula);
 
         assertThat(resposta.departamento().codigo()).isEqualTo(TipoChamado.ASSISTENCIA_24H);
         assertThat(resposta.tipo()).isEqualTo(TipoChamado.MANUTENCAO);
         assertThat(ambiente.unicoEventoDoTipo(TipoEvento.ROTEAMENTO).getDetalhe())
-                .isEqualTo("P1 fora do horário comercial: chamado direcionado ao Plantão da Assistência 24h.");
+                .isEqualTo("P1 com urgência imediata fora do horário comercial: chamado direcionado ao Plantão da Assistência 24h.");
     }
 
     @Test
-    void semDepartamentoEscolhidoEmExpedienteSegueParaODepartamentoDoTipo() {
+    void emExpedienteSegueParaODepartamentoDoTipo() {
         AmbienteDeChamados ambiente = new AmbienteDeChamados(QUARTA_AS_DEZ.plusMinutes(3));
         ambiente.cadastrar(chamadoAberto("VF-0001", QUARTA_AS_DEZ));
 
-        ChamadoResponse resposta = servico(ambiente).concluir("VF-0001", new ConcluirTriagemRequest("MANUTENCAO", 5, 5, null, null), paula);
+        ChamadoResponse resposta = servico(ambiente).concluir("VF-0001", new ConcluirTriagemRequest("MANUTENCAO", 5, 5, null), paula);
 
         assertThat(resposta.departamento().codigo()).isEqualTo(TipoChamado.MANUTENCAO);
         assertThat(ambiente.unicoEventoDoTipo(TipoEvento.ROTEAMENTO).getDetalhe())
@@ -128,7 +128,7 @@ class TriagemServiceTests {
         AmbienteDeChamados ambiente = new AmbienteDeChamados(QUARTA_AS_DEZ.plusMinutes(3));
         ambiente.cadastrar(chamadoAberto("VF-0001", QUARTA_AS_DEZ));
 
-        servico(ambiente).concluir("VF-0001", new ConcluirTriagemRequest("TI", 1, 1, null, null), paula);
+        servico(ambiente).concluir("VF-0001", new ConcluirTriagemRequest("TI", 1, 1, null), paula);
 
         assertThat(ambiente.notificacoes).isEmpty();
         assertThat(ambiente.eventoComAcao("Notificação não enviada")).isPresent();
@@ -139,7 +139,7 @@ class TriagemServiceTests {
         AmbienteDeChamados ambiente = new AmbienteDeChamados(QUARTA_AS_DEZ.plusMinutes(3));
         Chamado chamado = ambiente.cadastrar(chamadoAberto("VF-0001", QUARTA_AS_DEZ));
 
-        ErroDeChamado erro = erroAo(() -> servico(ambiente).concluir("VF-0001", new ConcluirTriagemRequest("MANUTENCAO", 4, 0, null, null), paula));
+        ErroDeChamado erro = erroAo(() -> servico(ambiente).concluir("VF-0001", new ConcluirTriagemRequest("MANUTENCAO", 4, 0, null), paula));
 
         assertThat(erro.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(errosDeCampo(erro)).containsOnlyKeys("severidade", "urgencia");
@@ -148,15 +148,13 @@ class TriagemServiceTests {
     }
 
     @Test
-    void recusaTipoOuDepartamentoDesconhecido() {
+    void recusaTipoDesconhecido() {
         AmbienteDeChamados ambiente = new AmbienteDeChamados(QUARTA_AS_DEZ.plusMinutes(3));
         ambiente.cadastrar(chamadoAberto("VF-0001", QUARTA_AS_DEZ));
         TriagemService servico = servico(ambiente);
 
-        assertThat(errosDeCampo(erroAo(() -> servico.concluir("VF-0001", new ConcluirTriagemRequest("OFICINA", 3, 3, null, null), paula))))
+        assertThat(errosDeCampo(erroAo(() -> servico.concluir("VF-0001", new ConcluirTriagemRequest("OFICINA", 3, 3, null), paula))))
                 .containsKey("tipo");
-        assertThat(errosDeCampo(erroAo(() -> servico.concluir("VF-0001", new ConcluirTriagemRequest("TI", 3, 3, "OFICINA", null), paula))))
-                .containsKey("departamento");
     }
 
     @Test
@@ -173,7 +171,7 @@ class TriagemServiceTests {
         AmbienteDeChamados ambiente = new AmbienteDeChamados(QUARTA_AS_DEZ.plusMinutes(30));
         ambiente.cadastrar(chamadoTriado("VF-0001", QUARTA_AS_DEZ, TipoChamado.MANUTENCAO, 3, 3));
 
-        assertThat(erroAo(() -> servico(ambiente).concluir("VF-0001", new ConcluirTriagemRequest("TI", 3, 3, null, null), paula))
+        assertThat(erroAo(() -> servico(ambiente).concluir("VF-0001", new ConcluirTriagemRequest("TI", 3, 3, null), paula))
                 .getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
     }
 

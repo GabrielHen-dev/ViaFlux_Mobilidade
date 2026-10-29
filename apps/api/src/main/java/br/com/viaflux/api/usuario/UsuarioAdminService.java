@@ -1,5 +1,6 @@
 package br.com.viaflux.api.usuario;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -28,19 +29,22 @@ class UsuarioAdminService {
     private final OrganizacaoRepository organizacoes;
     private final DepartamentoRepository departamentos;
     private final PasswordEncoder passwordEncoder;
+    private final ApplicationEventPublisher eventos;
 
     UsuarioAdminService(
             UsuarioRepository usuarios,
             PerfilRepository perfis,
             OrganizacaoRepository organizacoes,
             DepartamentoRepository departamentos,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            ApplicationEventPublisher eventos
     ) {
         this.usuarios = usuarios;
         this.perfis = perfis;
         this.organizacoes = organizacoes;
         this.departamentos = departamentos;
         this.passwordEncoder = passwordEncoder;
+        this.eventos = eventos;
     }
 
     UsuarioAdminOpcoesResponse opcoes() {
@@ -81,7 +85,9 @@ class UsuarioAdminService {
                 organizacao,
                 departamentosDoUsuario
         );
-        return UsuarioAdminResponse.de(usuarios.save(usuario));
+        Usuario salvo = usuarios.save(usuario);
+        eventos.publishEvent(new ContaCriadaPeloAdmin(salvo.getId()));
+        return UsuarioAdminResponse.de(salvo);
     }
 
     @Transactional

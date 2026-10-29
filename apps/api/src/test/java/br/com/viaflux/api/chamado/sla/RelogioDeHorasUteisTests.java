@@ -33,6 +33,17 @@ class RelogioDeHorasUteisTests {
         assertThat(expediente.emExpediente(local(dataHora))).isEqualTo(esperado);
     }
 
+    @ParameterizedTest
+    @CsvSource({
+            "2026-10-21T11:00, 3, 2026-10-26T11:00",
+            "2026-10-23T09:30, 1, 2026-10-26T09:30",
+            "2026-10-24T10:00, 1, 2026-10-26T10:00",
+            "2026-10-21T12:00, 5, 2026-10-28T12:00"
+    })
+    void somaDiasUteisPulandoOFimDeSemana(String inicio, int dias, String esperado) {
+        assertThat(expediente.somarDiasUteis(local(inicio), dias)).isEqualTo(local(esperado));
+    }
+
     @Test
     void contaMinutosDentroDoMesmoExpediente() {
         assertThat(expediente.minutosEntre(local("2026-10-21T10:00"), local("2026-10-21T11:30"))).isEqualTo(90);

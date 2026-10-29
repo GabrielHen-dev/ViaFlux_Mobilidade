@@ -32,7 +32,6 @@ export interface DadosConclusaoTriagem {
   tipo: TipoChamado;
   severidade: Peso;
   urgencia: Peso;
-  departamento?: TipoChamado | null;
   observacao?: string;
 }
 

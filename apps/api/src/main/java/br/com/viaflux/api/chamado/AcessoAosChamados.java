@@ -64,6 +64,14 @@ class AcessoAosChamados {
         return chamado;
     }
 
+    Chamado paraOSolicitante(String codigo, UsuarioAtual usuario) {
+        Chamado chamado = visivel(codigo, usuario);
+        if (!usuario.temAlgum(UsuarioAtual.PERFIS_DE_CLIENTE)) {
+            throw ErroDeChamado.proibido("Só o solicitante confirma, contesta ou reabre o chamado.");
+        }
+        return chamado;
+    }
+
     Chamado naLixeira(String codigo) {
         return chamados.findByCodigo(codigo)
                 .filter(Chamado::naLixeira)

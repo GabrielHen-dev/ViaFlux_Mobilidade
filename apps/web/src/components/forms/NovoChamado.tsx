@@ -10,6 +10,7 @@ import { ID_DO_CAMPO, ROTULO_DO_CAMPO, type CampoDoFormulario } from "@/componen
 import { useAberturaDeChamado } from "@/components/forms/novo-chamado/useAberturaDeChamado";
 import { SecaoDeAnexos, SecaoDoProblema, SecaoDoSolicitante, SecaoDoVeiculoELocal } from "@/components/forms/novo-chamado/SecoesDoFormulario";
 import ConfirmacaoDeAbertura from "@/components/forms/novo-chamado/ConfirmacaoDeAbertura";
+import AvisoDeEmailNaoVerificado, { emailPendente } from "@/components/auth/AvisoDeEmailNaoVerificado";
 
 function FormularioDoChamado({ usuario }: { usuario: UsuarioAutenticado }) {
   const ehCliente = usuarioTemPerfil(usuario, PERFIS_DE_CLIENTE);
@@ -47,6 +48,8 @@ function FormularioDoChamado({ usuario }: { usuario: UsuarioAutenticado }) {
           </div>
         </div>
 
+        <AvisoDeEmailNaoVerificado usuario={usuario} />
+
         {abertura.restaurado && (
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
             <span>Recuperamos o rascunho que você estava preenchendo. Anexos precisam ser selecionados de novo.</span>
@@ -78,7 +81,7 @@ function FormularioDoChamado({ usuario }: { usuario: UsuarioAutenticado }) {
           <SecaoDoVeiculoELocal campos={campos} erros={erros} alterar={alterar} />
           <SecaoDeAnexos arquivos={abertura.arquivos} aoAdicionar={abertura.adicionarArquivos} aoRemover={abertura.removerArquivo} />
 
-          <button type="submit" disabled={abertura.enviando} className="alvo-toque w-full rounded-xl bg-brand-green py-3.5 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 active:scale-95 disabled:cursor-wait disabled:opacity-60">
+          <button type="submit" disabled={abertura.enviando || emailPendente(usuario)} className="alvo-toque w-full rounded-xl bg-brand-green py-3.5 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60">
             {abertura.enviando ? "Enviando…" : abertura.falhaDoEnvio ? "Tentar de novo" : "Abrir Chamado"}
           </button>
         </form>

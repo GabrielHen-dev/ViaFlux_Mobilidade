@@ -210,6 +210,9 @@ export interface Chamado extends ChamadoResumo {
   slaVersao?: string | null;
   resolucaoResumo?: string | null;
   estadoClassificacao?: "CLASSIFICADA" | "PENDENTE_CLASSIFICACAO" | "PENDENTE_ROTEAMENTO";
+  episodio?: number;
+  confirmacaoAte?: string | null;
+  reaberturaAte?: string | null;
   telefone: string;
   descricao: string;
   motivo: Motivo | null;
