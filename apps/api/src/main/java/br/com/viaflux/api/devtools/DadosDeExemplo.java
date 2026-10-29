@@ -31,21 +31,32 @@ final class DadosDeExemplo {
 
     static final List<OrganizacaoDeExemplo> ORGANIZACOES = List.of(
             new OrganizacaoDeExemplo("Transportes Sul Ltda", "CLIENTE", null),
+            new OrganizacaoDeExemplo("Norte Frotas Locações", "CLIENTE", null),
             new OrganizacaoDeExemplo("Guincho ViaRápido", "FORNECEDOR", "Guincho / Remoção"),
-            new OrganizacaoDeExemplo("Oficina TechTruck", "FORNECEDOR", "Mecânica")
+            new OrganizacaoDeExemplo("Oficina TechTruck", "FORNECEDOR", "Mecânica"),
+            new OrganizacaoDeExemplo("Chaveiro Express", "FORNECEDOR", "Chaveiro")
     );
 
     static final List<UsuarioDeExemplo> USUARIOS = List.of(
             new UsuarioDeExemplo("Ana Ribeiro", "cliente.ana" + DOMINIO_DOS_EMAILS, List.of("CLIENTE"), null, List.of(), true),
             new UsuarioDeExemplo("Bruno Lima", "cliente.bruno" + DOMINIO_DOS_EMAILS, List.of("CLIENTE"), null, List.of(), true),
+            new UsuarioDeExemplo("Carla Mendes", "cliente.carla" + DOMINIO_DOS_EMAILS, List.of("CLIENTE"), null, List.of(), true),
             new UsuarioDeExemplo("Gestão de Frota Transportes Sul", "gestor.frota" + DOMINIO_DOS_EMAILS, List.of("GESTOR_FROTA"), "Transportes Sul Ltda", List.of(), true),
+            new UsuarioDeExemplo("Gestão de Frota Norte Frotas", "gestor.norte" + DOMINIO_DOS_EMAILS, List.of("GESTOR_FROTA"), "Norte Frotas Locações", List.of(), true),
             new UsuarioDeExemplo("Paula Atendente", "atendente" + DOMINIO_DOS_EMAILS, List.of("ATENDENTE"), null, List.of(), false),
+            new UsuarioDeExemplo("João Atendente", "atendente.joao" + DOMINIO_DOS_EMAILS, List.of("ATENDENTE"), null, List.of(), false),
             new UsuarioDeExemplo("Diego Assistência", "assistencia" + DOMINIO_DOS_EMAILS, List.of("DEPARTAMENTO"), null, List.of("ASSISTENCIA_24H"), false),
             new UsuarioDeExemplo("Marina Manutenção", "manutencao" + DOMINIO_DOS_EMAILS, List.of("DEPARTAMENTO"), null, List.of("MANUTENCAO"), false),
+            new UsuarioDeExemplo("Lucas Logística", "logistica" + DOMINIO_DOS_EMAILS, List.of("DEPARTAMENTO"), null, List.of("LOGISTICA"), false),
             new UsuarioDeExemplo("Tiago Tecnologia", "ti" + DOMINIO_DOS_EMAILS, List.of("DEPARTAMENTO"), null, List.of("TI"), false),
+            new UsuarioDeExemplo("Fernanda Financeiro", "financeiro" + DOMINIO_DOS_EMAILS, List.of("DEPARTAMENTO"), null, List.of("FINANCEIRO"), false),
+            new UsuarioDeExemplo("Carlos Contratos", "contratos" + DOMINIO_DOS_EMAILS, List.of("DEPARTAMENTO"), null, List.of("CONTRATOS"), false),
+            new UsuarioDeExemplo("Renata Operações", "operacoes" + DOMINIO_DOS_EMAILS, List.of("DEPARTAMENTO"), null, List.of("MANUTENCAO", "LOGISTICA"), false),
             new UsuarioDeExemplo("Lúcia Líder", "lider" + DOMINIO_DOS_EMAILS, List.of("LIDER_OPERACIONAL"), null, List.of(), false),
+            new UsuarioDeExemplo("Helena Coordenação", "coordenacao" + DOMINIO_DOS_EMAILS, List.of("ATENDENTE", "LIDER_OPERACIONAL"), null, List.of(), false),
             new UsuarioDeExemplo("Guincho ViaRápido", "guincho" + DOMINIO_DOS_EMAILS, List.of("FORNECEDOR"), "Guincho ViaRápido", List.of(), false),
-            new UsuarioDeExemplo("Oficina TechTruck", "oficina" + DOMINIO_DOS_EMAILS, List.of("FORNECEDOR"), "Oficina TechTruck", List.of(), false)
+            new UsuarioDeExemplo("Oficina TechTruck", "oficina" + DOMINIO_DOS_EMAILS, List.of("FORNECEDOR"), "Oficina TechTruck", List.of(), false),
+            new UsuarioDeExemplo("Chaveiro Express", "chaveiro" + DOMINIO_DOS_EMAILS, List.of("FORNECEDOR"), "Chaveiro Express", List.of(), false)
     );
 
     static final List<CenarioDeChamado> CENARIOS = List.of(

@@ -17,6 +17,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -82,5 +83,23 @@ class DevToolsControllerTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalDeChamados").value(12))
                 .andExpect(jsonPath("$.senhaConfigurada").value(true));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void apagaTudoMantendoOsAdministradores() throws Exception {
+        given(populador.apagarTudoExcetoAdministradores()).willReturn(new PopuladorDeDados.ResultadoDaLimpezaGeral(40, 19, 5, 1));
+
+        mockMvc.perform(delete("/api/dev/banco"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.chamadosRemovidos").value(40))
+                .andExpect(jsonPath("$.administradoresMantidos").value(1));
+    }
+
+    @Test
+    @WithMockUser(roles = "LIDER_OPERACIONAL")
+    void naoDeixaQuemNaoEAdministradorApagarOBanco() throws Exception {
+        mockMvc.perform(delete("/api/dev/banco")).andExpect(status().isForbidden());
+        then(populador).should(never()).apagarTudoExcetoAdministradores();
     }
 }

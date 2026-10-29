@@ -72,6 +72,17 @@ class DevToolsController {
         return populador.limpar();
     }
 
+    @DeleteMapping("/banco")
+    @Operation(
+            summary = "Apagar todos os dados, exceto os usuários ADMIN",
+            description = "Remove todos os chamados, os usuários sem perfil ADMIN e as organizações sem usuários, e reinicia a numeração "
+                    + "dos protocolos. Catálogos, regras e feriados são mantidos. Só existe com DEV_TOOLS_HABILITADO=true. Perfil: ADMIN.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    PopuladorDeDados.ResultadoDaLimpezaGeral apagarTudo() {
+        return populador.apagarTudoExcetoAdministradores();
+    }
+
     @ExceptionHandler(DevToolsIndisponivelException.class)
     ProblemDetail devToolsIndisponivel(DevToolsIndisponivelException excecao) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, excecao.getMessage());
