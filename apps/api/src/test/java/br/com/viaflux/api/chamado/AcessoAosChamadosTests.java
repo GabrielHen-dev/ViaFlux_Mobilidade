@@ -33,6 +33,7 @@ class AcessoAosChamadosTests {
     void centralComVisaoGlobalVeChamadosAindaSemTriagem() {
         Chamado aguardandoTriagem = cadastrado(chamadoAberto("VF-0001", QUARTA_AS_DEZ));
 
+        assertThat(acesso.visivel("VF-0001", admin())).isSameAs(aguardandoTriagem);
         assertThat(acesso.visivel("VF-0001", atendente())).isSameAs(aguardandoTriagem);
         assertThat(acesso.visivel("VF-0001", lider())).isSameAs(aguardandoTriagem);
     }
@@ -115,6 +116,7 @@ class AcessoAosChamadosTests {
         given(chamados.buscarAtivos(null)).willReturn(List.of(semTriagem, daManutencao, daTi));
 
         assertThat(acesso.visiveis(departamento(TipoChamado.MANUTENCAO), null)).containsExactly(daManutencao);
+        assertThat(acesso.visiveis(admin(), " ")).containsExactly(semTriagem, daManutencao, daTi);
         assertThat(acesso.visiveis(atendente(), " ")).containsExactly(semTriagem, daManutencao, daTi);
     }
 
@@ -145,7 +147,7 @@ class AcessoAosChamadosTests {
         assertThat(acesso.podeAtender(daManutencao, admin())).isTrue();
         assertThat(acesso.podeAtender(daManutencao, departamento(TipoChamado.MANUTENCAO))).isTrue();
         assertThat(acesso.podeAtender(daManutencao, departamento(TipoChamado.TI))).isFalse();
-        assertThat(acesso.podeAtender(daManutencao, atendente())).isFalse();
+        assertThat(acesso.podeAtender(daManutencao, atendente())).isTrue();
         assertThat(acesso.podeAtender(daManutencao, lider())).isFalse();
     }
 

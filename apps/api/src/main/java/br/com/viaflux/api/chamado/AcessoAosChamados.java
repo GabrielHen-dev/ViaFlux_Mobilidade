@@ -10,7 +10,6 @@ import java.util.Locale;
 class AcessoAosChamados {
 
     private final ChamadoRepository chamados;
-
     AcessoAosChamados(ChamadoRepository chamados) {
         this.chamados = chamados;
     }
@@ -20,6 +19,11 @@ class AcessoAosChamados {
             return true;
         }
         if (chamado.getDepartamento() != null && usuario.atuaNoDepartamento(chamado.getDepartamento().name())) {
+            return true;
+        }
+        if (usuario.perfis().contains("GESTOR_FROTA") && chamado.getSolicitante() != null
+                && usuario.organizacaoId() != null && chamado.getSolicitante().getOrganizacao() != null
+                && usuario.organizacaoId().equals(chamado.getSolicitante().getOrganizacao().getId())) {
             return true;
         }
         return usuario.temAlgum(UsuarioAtual.PERFIS_DE_CLIENTE) && chamado.pertenceAo(usuario.id());

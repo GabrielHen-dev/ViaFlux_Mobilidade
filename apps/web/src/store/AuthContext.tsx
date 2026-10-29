@@ -1,10 +1,12 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { entrar as entrarNaApi, renovarSessao } from "@/services/api/auth";
 import { ErroApi, requisitarApi, requisitarArquivo } from "@/services/api/cliente";
 import type { ClienteApi } from "@/services/api/chamados";
 import type { Sessao, UsuarioAutenticado } from "@/types/auth";
+import { limparRascunhosLocais } from "@/hooks/useRascunho";
 
 type EstadoAuth =
   | { status: "verificando" }
@@ -49,21 +51,31 @@ function comAutorizacao(init: RequestInit, accessToken: string | null): RequestI
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const clienteDeConsultas = useQueryClient();
   const [estado, setEstado] = useState<EstadoAuth>({ status: "verificando" });
   const tokens = useRef<TokensDaSessao | null>(null);
+  const identidadeAtual = useRef<string | null>(null);
   const renovacaoEmCurso = useRef<Promise<string | null> | null>(null);
 
   const aplicarSessao = useCallback((sessao: Sessao) => {
+    if (identidadeAtual.current !== null && identidadeAtual.current !== sessao.usuario.id) {
+      clienteDeConsultas.clear();
+      limparRascunhosLocais();
+    }
+    identidadeAtual.current = sessao.usuario.id;
     gravarRefreshToken(sessao.refreshToken);
     tokens.current = { accessToken: sessao.accessToken, refreshToken: sessao.refreshToken, expiraEm: Date.now() + sessao.expiresIn * 1000 };
     setEstado({ status: "autenticado", usuario: sessao.usuario, accessToken: sessao.accessToken });
-  }, []);
+  }, [clienteDeConsultas]);
 
   const sair = useCallback(() => {
     removerRefreshToken();
+    limparRascunhosLocais();
     tokens.current = null;
+    identidadeAtual.current = null;
+    clienteDeConsultas.clear();
     setEstado({ status: "anonimo" });
-  }, []);
+  }, [clienteDeConsultas]);
 
   const renovar = useCallback((): Promise<string | null> => {
     if (renovacaoEmCurso.current) return renovacaoEmCurso.current;

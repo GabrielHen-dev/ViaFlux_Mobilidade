@@ -32,7 +32,11 @@ class AtendimentoService {
         MotivoAguardando motivo = motivoAguardandoValido(request.motivoAguardando());
         Chamado chamado = acesso.paraAtender(codigo, usuario);
         OffsetDateTime agora = agora();
+        if (novo == StatusChamado.RESOLVIDO && (request.resumoResolucao() == null || request.resumoResolucao().isBlank())) {
+            throw ErroDeChamado.campoInvalido("resumoResolucao", "Informe o resumo da solução antes de resolver o chamado.");
+        }
         StatusChamado anterior = chamado.alterarStatus(novo, motivo, agora);
+        if (novo == StatusChamado.RESOLVIDO) chamado.resolverComResumo(request.resumoResolucao(), autor(usuario), agora);
         if (novo == StatusChamado.EM_ATENDIMENTO) {
             chamado.registrarResponsavelSeAusente(autor(usuario), agora);
         }

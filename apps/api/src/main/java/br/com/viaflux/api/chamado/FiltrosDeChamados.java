@@ -9,6 +9,7 @@ record FiltrosDeChamados(
         StatusChamado status,
         Prioridade prioridade,
         TipoChamado departamento,
+        TipoChamado tipo,
         SituacaoPrazo sla,
         Etapa etapa,
         Ordenacao ordenacao
@@ -16,14 +17,24 @@ record FiltrosDeChamados(
 
     enum Etapa { TRIAGEM, ATENDIMENTO }
 
-    enum Ordenacao { FILA, RECENTES }
+    enum Ordenacao { FILA, RECENTES, ATIVOS_RECENTES }
+
+    FiltrosDeChamados(String busca, StatusChamado status, Prioridade prioridade, TipoChamado departamento,
+                      SituacaoPrazo sla, Etapa etapa, Ordenacao ordenacao) {
+        this(busca, status, prioridade, departamento, null, sla, etapa, ordenacao);
+    }
 
     static FiltrosDeChamados de(String busca, String status, String prioridade, String departamento, String sla, String etapa, String ordenacao) {
+        return de(busca, status, prioridade, departamento, null, sla, etapa, ordenacao);
+    }
+
+    static FiltrosDeChamados de(String busca, String status, String prioridade, String departamento, String tipo, String sla, String etapa, String ordenacao) {
         return new FiltrosDeChamados(
                 busca,
                 vazio(status) ? null : StatusChamado.fromRotulo(status),
                 vazio(prioridade) ? null : Prioridade.deCodigo(prioridade),
                 vazio(departamento) ? null : departamentoValido(departamento),
+                vazio(tipo) ? null : tipoValido(tipo),
                 vazio(sla) ? null : situacaoFiltravel(sla),
                 vazio(etapa) ? null : valor(Etapa.class, etapa, "A etapa informada não é válida."),
                 vazio(ordenacao) ? Ordenacao.FILA : valor(Ordenacao.class, ordenacao, "A ordenação informada não é válida.")
@@ -31,7 +42,7 @@ record FiltrosDeChamados(
     }
 
     FiltrosDeChamados semStatus() {
-        return new FiltrosDeChamados(busca, null, prioridade, departamento, sla, etapa, ordenacao);
+        return new FiltrosDeChamados(busca, null, prioridade, departamento, tipo, sla, etapa, ordenacao);
     }
 
     private static boolean vazio(String valor) {
@@ -43,6 +54,14 @@ record FiltrosDeChamados(
             return TipoChamado.valueOf(codigo.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException erro) {
             throw new FiltroChamadoInvalidoException("O departamento informado não é válido.");
+        }
+    }
+
+    private static TipoChamado tipoValido(String codigo) {
+        try {
+            return TipoChamado.valueOf(codigo.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException erro) {
+            throw new FiltroChamadoInvalidoException("O tipo informado não é válido.");
         }
     }
 

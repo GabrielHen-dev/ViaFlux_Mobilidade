@@ -84,6 +84,14 @@ class SecurityConfigTests {
     }
 
     @Test
+    void letsAdminReachTheTicketQueueAndSummary() throws Exception {
+        mockMvc.perform(get("/api/chamados").with(perfil("ADMIN")))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/chamados/resumo").with(perfil("ADMIN")))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void forbidsSupplierFromTicketEndpoints() throws Exception {
         mockMvc.perform(get("/api/chamados/VF-0001").with(perfil("FORNECEDOR")))
                 .andExpect(status().isForbidden());

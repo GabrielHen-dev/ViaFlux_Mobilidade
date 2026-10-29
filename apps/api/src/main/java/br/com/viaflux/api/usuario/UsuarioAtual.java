@@ -10,7 +10,7 @@ public record UsuarioAtual(UUID id, String nome, Set<String> perfis, Set<String>
     public static final Set<String> PERFIS_DA_CENTRAL = Set.of("ADMIN", "ATENDENTE", "DEPARTAMENTO", "LIDER_OPERACIONAL");
     public static final Set<String> PERFIS_DE_TRIAGEM = Set.of("ADMIN", "ATENDENTE");
     public static final Set<String> PERFIS_QUE_CONDUZEM_QUALQUER_FILA = Set.of("ADMIN", "ATENDENTE");
-    public static final Set<String> PERFIS_QUE_ATENDEM_QUALQUER_FILA = Set.of("ADMIN");
+    public static final Set<String> PERFIS_QUE_ATENDEM_QUALQUER_FILA = Set.of("ADMIN", "ATENDENTE");
     public static final Set<String> PERFIS_DE_CLIENTE = Set.of("CLIENTE", "GESTOR_FROTA");
 
     public boolean temAlgum(Collection<String> esperados) {

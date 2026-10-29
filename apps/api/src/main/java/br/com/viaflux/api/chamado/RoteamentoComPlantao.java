@@ -16,7 +16,13 @@ class RoteamentoComPlantao implements RegraDeRoteamento {
 
     @Override
     public TipoChamado destino(TipoChamado tipo, Prioridade prioridade, Instant instante) {
-        boolean plantao = prioridade == Prioridade.P1 && tipo.isOperacional() && !expediente.emExpediente(instante);
+        return destino(tipo, prioridade, 1, instante);
+    }
+
+    @Override
+    public TipoChamado destino(TipoChamado tipo, Prioridade prioridade, int urgencia, Instant instante) {
+        boolean plantao = (prioridade == Prioridade.P1 || prioridade == Prioridade.P2)
+                && urgencia == 5 && tipo.isOperacional() && !expediente.emExpediente(instante);
         return plantao ? TipoChamado.ASSISTENCIA_24H : tipo;
     }
 }

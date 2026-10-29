@@ -41,6 +41,7 @@ export function ErroDoCampo({ campo, erros }: { campo: CampoDoFormulario; erros:
 export function SecaoDoProblema({ campos, erros, alterar, escolherMotivo }: PropsDaSecao & { escolherMotivo: (motivoId: string, manterContexto: boolean) => void }) {
   const motivos = useMotivos();
   const motivoSelecionado = motivos.data?.find((motivo) => motivo.id === campos.motivoId) ?? null;
+  const outroSelecionado = campos.motivoId === "OUTRO";
   const contextos = useContextos(motivoSelecionado?.tipo ?? null);
   const listaDeMotivos = motivos.data;
   const motivosPorTipo = useMemo(() => {
@@ -66,18 +67,25 @@ export function SecaoDoProblema({ campos, erros, alterar, escolherMotivo }: Prop
                 {lista.map((motivo) => <option key={motivo.id} value={motivo.id}>{motivo.descricao}</option>)}
               </optgroup>
             ))}
+            <option value="OUTRO">Outro motivo</option>
           </select>
           <ErroDoCampo campo="motivoId" erros={erros} />
           {motivos.isError && <p className="mt-1 text-xs font-medium text-red-600">Não foi possível carregar os motivos. {mensagemDeErro(motivos.error)}</p>}
         </div>
         <div>
-          <label htmlFor={ID_DO_CAMPO.contextoId} className={labelClass}>Contexto situacional *</label>
-          <select {...propriedadesDoCampo("contextoId", erros)} className={inputClass} value={campos.contextoId} onChange={(evento) => alterar("contextoId", evento.target.value)} disabled={!motivoSelecionado || contextos.isPending}>
-            <option value="">{motivoSelecionado ? "Selecione a situação atual" : "Escolha o motivo primeiro"}</option>
+          <label htmlFor={ID_DO_CAMPO.contextoId} className={labelClass}>Contexto situacional {outroSelecionado ? "(não se aplica)" : "*"}</label>
+          <select {...propriedadesDoCampo("contextoId", erros)} className={inputClass} value={campos.contextoId} onChange={(evento) => alterar("contextoId", evento.target.value)} disabled={!motivoSelecionado || contextos.isPending || outroSelecionado}>
+            <option value="">{outroSelecionado ? "A Central classificará este chamado" : motivoSelecionado ? "Selecione a situação atual" : "Escolha o motivo primeiro"}</option>
             {(contextos.data ?? []).map((contexto) => <option key={contexto.id} value={contexto.id}>{contexto.descricao}</option>)}
           </select>
           <ErroDoCampo campo="contextoId" erros={erros} />
         </div>
+        {outroSelecionado && <div>
+          <label htmlFor={ID_DO_CAMPO.motivoOutro} className={labelClass}>Descreva brevemente o outro motivo *</label>
+          <input {...propriedadesDoCampo("motivoOutro", erros)} className={inputClass} maxLength={200} value={campos.motivoOutro} onChange={(evento) => alterar("motivoOutro", evento.target.value)} />
+          <ErroDoCampo campo="motivoOutro" erros={erros} />
+          <p className="mt-1 text-xs text-slate-500">A Central fará a classificação. Em risco imediato à vida ou segurança, ligue para a Central 24h.</p>
+        </div>}
         <div>
           <label htmlFor={ID_DO_CAMPO.descricao} className={labelClass}>Descrição *</label>
           <textarea {...propriedadesDoCampo("descricao", erros)} className={`${inputClass} resize-none`} rows={3} placeholder="Conte o que está acontecendo, com o máximo de detalhes…" value={campos.descricao} onChange={(evento) => alterar("descricao", evento.target.value)} />
@@ -90,15 +98,16 @@ export function SecaoDoProblema({ campos, erros, alterar, escolherMotivo }: Prop
 
 interface PropsDoSolicitante extends PropsDaSecao {
   abrePelaCentral: boolean;
+  gestorFrota: boolean;
   escolherSolicitante: (solicitante: { id: string; nome: string; organizacao: string | null } | null) => void;
 }
 
-export function SecaoDoSolicitante({ campos, erros, alterar, abrePelaCentral, escolherSolicitante }: PropsDoSolicitante) {
+export function SecaoDoSolicitante({ campos, erros, alterar, abrePelaCentral, gestorFrota, escolherSolicitante }: PropsDoSolicitante) {
   return (
     <Secao numero={2} titulo="Solicitante">
-      {abrePelaCentral && (
+      {(abrePelaCentral || gestorFrota) && (
         <div className="mb-4">
-          <label htmlFor={ID_DO_CAMPO.solicitanteId} className={labelClass}>Cliente solicitante *</label>
+          <label htmlFor={ID_DO_CAMPO.solicitanteId} className={labelClass}>{abrePelaCentral ? "Cliente solicitante *" : "Motorista da frota (opcional)"}</label>
           <SeletorDeSolicitante
             id={ID_DO_CAMPO.solicitanteId}
             valor={campos.solicitanteId}
@@ -108,13 +117,13 @@ export function SecaoDoSolicitante({ campos, erros, alterar, abrePelaCentral, es
             aoEscolher={escolherSolicitante}
           />
           <ErroDoCampo campo="solicitanteId" erros={erros} />
-          <p className="mt-1 text-xs text-slate-500">O chamado aparece no portal desse cliente, e ele recebe as notificações.</p>
+          <p className="mt-1 text-xs text-slate-500">{abrePelaCentral ? "Selecione o cliente validado para esta abertura." : "A lista é limitada à organização vinculada à sua conta."}</p>
         </div>
       )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor={ID_DO_CAMPO.cliente} className={labelClass}>Nome *</label>
-          <input {...propriedadesDoCampo("cliente", erros)} className={inputClass} autoComplete="name" value={campos.cliente} onChange={(evento) => alterar("cliente", evento.target.value)} />
+          <input {...propriedadesDoCampo("cliente", erros)} className={inputClass} autoComplete="name" value={campos.cliente} readOnly={!abrePelaCentral} onChange={(evento) => alterar("cliente", evento.target.value)} />
           <ErroDoCampo campo="cliente" erros={erros} />
         </div>
         <div>

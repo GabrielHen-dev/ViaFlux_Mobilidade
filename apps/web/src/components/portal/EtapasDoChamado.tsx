@@ -3,7 +3,7 @@ import type { Chamado, Status } from "@/types/chamado";
 import { formatarDataHora } from "@/utils/date";
 import { cn } from "@/utils/cn";
 
-const ETAPAS = ["Recebido", "Em análise", "Encaminhado", "Em atendimento", "Resolvido"] as const;
+const ETAPAS = ["Recebido", "Em análise", "Encaminhado", "Em atendimento", "Resolvido", "Fechado"] as const;
 
 const ETAPA_DO_STATUS: Record<Status, number> = {
   "Aberto": 1,
@@ -12,7 +12,7 @@ const ETAPA_DO_STATUS: Record<Status, number> = {
   "Em atendimento": 3,
   "Aguardando": 3,
   "Resolvido": 4,
-  "Fechado": 4,
+  "Fechado": 5,
 };
 
 export default function EtapasDoChamado({ chamado }: { chamado: Chamado }) {
@@ -20,7 +20,7 @@ export default function EtapasDoChamado({ chamado }: { chamado: Chamado }) {
   const emAnalise = chamado.prioridade === null;
   return (
     <section aria-label="Andamento do chamado" className="rounded-2xl border border-[#E2E8F0] bg-white p-5">
-      <ol className="grid grid-cols-5 gap-1">
+      <ol className="grid grid-cols-3 gap-x-2 gap-y-4 sm:grid-cols-6">
         {ETAPAS.map((etapa, indice) => {
           const concluida = indice < atual || (indice === atual && chamado.status === "Fechado");
           const corrente = indice === atual && !concluida;

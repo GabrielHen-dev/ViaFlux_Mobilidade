@@ -57,7 +57,7 @@ const PERFIS_DE_TRIAGEM = ["ADMIN", "ATENDENTE"];
 const PERFIS_DA_CENTRAL = [...PERFIS_GLOBAIS, "DEPARTAMENTO"];
 const PERFIS_DA_LIXEIRA = ["ADMIN", "ATENDENTE"];
 const PERFIS_QUE_CONDUZEM_QUALQUER_FILA = ["ADMIN", "ATENDENTE"];
-const PERFIS_QUE_ATENDEM_QUALQUER_FILA = ["ADMIN"];
+const PERFIS_QUE_ATENDEM_QUALQUER_FILA = ["ADMIN", "ATENDENTE"];
 const STATUS_QUE_PODEM_SER_ASSUMIDOS: Status[] = ["Na fila", "Em atendimento", "Aguardando"];
 const SO_ACOMPANHA = "Seu perfil só acompanha este chamado.";
 const PERFIS_QUE_ABREM = [...PERFIS_DE_CLIENTE, ...PERFIS_DE_TRIAGEM];
@@ -425,7 +425,12 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
         .filter((chamado) => !parametro("prioridade") || prioridadeEfetiva(chamado) === parametro("prioridade"))
         .filter((chamado) => !parametro("departamento") || chamado.departamento === parametro("departamento"))
         .filter((chamado) => !parametro("etapa") || (parametro("etapa") === "TRIAGEM") !== triado(chamado))
-        .sort(parametro("ordenacao") === "recentes"
+        .sort(parametro("ordenacao") === "ativos_recentes"
+          ? (a, b) => Number(!["Resolvido", "Fechado"].includes(b.status)) - Number(!["Resolvido", "Fechado"].includes(a.status))
+            || b.atualizadoEm.getTime() - a.atualizadoEm.getTime()
+            || b.abertura.getTime() - a.abertura.getTime()
+            || b.id.localeCompare(a.id)
+          : parametro("ordenacao") === "recentes"
           ? (a, b) => b.abertura.getTime() - a.abertura.getTime() || b.id.localeCompare(a.id)
           : (a, b) => Number(triado(a)) - Number(triado(b))
             || (triado(a) ? 0 : a.triagem.limite.getTime() - b.triagem.limite.getTime())
@@ -632,7 +637,7 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
       return devolver(chamado);
     }
     if (sufixo === "atendimento" && metodo === "POST") {
-      exigir(["ADMIN", "DEPARTAMENTO"]);
+      exigir(["ADMIN", "ATENDENTE", "DEPARTAMENTO"]);
       const chamado = paraAtender(codigo);
       exigirTriagem(chamado);
       if (!STATUS_QUE_PODEM_SER_ASSUMIDOS.includes(chamado.status)) recusar(409, "Chamados resolvidos ou fechados não podem ser assumidos.");
@@ -652,12 +657,18 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
       return devolver(chamado);
     }
     if (sufixo === "status" && metodo === "PATCH") {
-      exigir(["ADMIN", "DEPARTAMENTO"]);
+      exigir(["ADMIN", "ATENDENTE", "DEPARTAMENTO"]);
       const chamado = paraAtender(codigo);
       exigirTriagem(chamado);
       const novo = texto("status") as Status;
       if (STATUS_AGUARDANDO_TRIAGEM.includes(novo)) recusar(400, "Um ou mais campos são inválidos.", { status: "Abertura e triagem não podem ser definidas manualmente." });
       const anterior = chamado.status;
+      if (anterior === "Fechado") recusar(409, "Chamados fechados não podem mudar de status.");
+      if (anterior === "Resolvido" && novo !== "Fechado") recusar(409, "Reabertura exige o fluxo específico de reabertura.");
+      if (novo === "Fechado" && anterior !== "Resolvido") recusar(409, "Só é possível fechar um chamado depois de resolvido.");
+      if (novo === anterior && (novo !== "Aguardando" || dados.motivoAguardando === chamado.motivoAguardando)) recusar(409, `O chamado já está ${novo}.`);
+      if (novo === "Aguardando" && !dados.motivoAguardando) recusar(400, "Um ou mais campos são inválidos.", { motivoAguardando: "Informe quem está sendo aguardado." });
+      if (novo === "Resolvido" && !texto("resumoResolucao").trim()) recusar(400, "Um ou mais campos são inválidos.", { resumoResolucao: "Informe o resumo da solução." });
       chamado.status = novo;
       chamado.motivoAguardando = novo === "Aguardando" ? (texto("motivoAguardando") as MotivoAguardando) : null;
       if (novo === "Em atendimento") chamado.primeiraRespostaEm ??= agora();
