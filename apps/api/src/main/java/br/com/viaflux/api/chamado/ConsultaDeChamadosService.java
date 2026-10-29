@@ -76,13 +76,15 @@ class ConsultaDeChamadosService {
                 contarPorDepartamento(chamados),
                 new ResumoDeChamadosResponse.Sla(
                         contadores(ativosTriados.stream().map(chamado -> chamado.sla().primeiraResposta().situacao())),
-                        contadores(ativosTriados.stream().map(chamado -> chamado.sla().resolucao().situacao()))
+                        contadores(ativosTriados.stream().map(chamado -> chamado.sla().resolucao().situacao())),
+                        contadores(ativosTriados.stream().map(chamado -> prazoVigente(chamado.sla()).situacao()))
                 ),
                 ativosTriados.stream()
                         .filter(chamado -> chamado.prioridade() == Prioridade.P1 && chamado.sla().primeiraResposta().cumpridoEm() == null)
                         .map(ChamadoResumoResponse::id)
                         .toList(),
-                resumoDaTriagem(emTriagem)
+                resumoDaTriagem(emTriagem, chamados.stream().filter(chamado -> chamado.triagem().revisaoPendente()).count()),
+                chamados.stream().filter(chamado -> chamado.escalonamento() != null && filaAtiva(chamado.status())).count()
         );
     }
 
@@ -106,7 +108,7 @@ class ConsultaDeChamadosService {
         if (etapa == null) {
             return chamado -> true;
         }
-        return etapa == FiltrosDeChamados.Etapa.TRIAGEM ? chamado -> !chamado.triado() : Chamado::triado;
+        return etapa == FiltrosDeChamados.Etapa.TRIAGEM ? Chamado::aguardaAnalise : Chamado::triado;
     }
 
     private static Predicate<ChamadoResumoResponse> porSla(SituacaoPrazo situacao) {
@@ -157,7 +159,11 @@ class ConsultaDeChamadosService {
         );
     }
 
-    private static ResumoDeChamadosResponse.Triagem resumoDaTriagem(List<ChamadoResumoResponse> emTriagem) {
+    static PrazoResponse prazoVigente(SlaResponse sla) {
+        return sla.primeiraResposta().cumpridoEm() == null ? sla.primeiraResposta() : sla.resolucao();
+    }
+
+    private static ResumoDeChamadosResponse.Triagem resumoDaTriagem(List<ChamadoResumoResponse> emTriagem, long aguardandoRevisao) {
         OffsetDateTime proximoLimite = emTriagem.stream()
                 .map(chamado -> chamado.triagem().limite())
                 .min(Comparator.naturalOrder())
@@ -167,7 +173,8 @@ class ConsultaDeChamadosService {
                 emTriagem.stream().filter(chamado -> StatusChamado.EM_TRIAGEM.getRotulo().equals(chamado.status())).count(),
                 emTriagem.stream().filter(chamado -> chamado.triagem().situacao() == SituacaoPrazo.EM_RISCO).count(),
                 emTriagem.stream().filter(chamado -> chamado.triagem().situacao() == SituacaoPrazo.VIOLADO).count(),
-                proximoLimite
+                proximoLimite,
+                aguardandoRevisao
         );
     }
 }

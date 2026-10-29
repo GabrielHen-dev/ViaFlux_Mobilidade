@@ -11,6 +11,7 @@ import {
   preencherComEnderecoEncontrado, temCoordenadas,
 } from "@/utils/endereco";
 import { cn } from "@/utils/cn";
+import Select, { type OpcaoDoSelect } from "@/components/ui/Select";
 
 export { descreverCoordenadas };
 
@@ -25,6 +26,8 @@ const MENSAGEM_DO_ERRO_DE_GPS: Record<number, string> = {
 };
 
 const CAMPOS_ESTRUTURADOS = ["cep", "logradouro", "numero", "complemento", "bairro", "cidade", "uf"] as const;
+
+const OPCOES_DE_UF: OpcaoDoSelect[] = [{ valor: "", rotulo: "—" }, ...UFS.map((uf) => ({ valor: uf, rotulo: uf }))];
 
 const rotuloClass = "mb-1 block text-xs font-medium text-slate-600";
 
@@ -407,16 +410,12 @@ export default function CampoDeLocalizacao({ id, valor, aoAlterar, inputClassNam
 
         <div className="sm:col-span-1">
           <label htmlFor={`${id}-uf`} className={rotuloClass}>UF</label>
-          <select
+          <Select
             id={`${id}-uf`}
-            className={inputClassName}
-            autoComplete="address-level1"
             value={localizacao.uf}
-            onChange={(evento) => alterarCampo({ uf: evento.target.value })}
-          >
-            <option value="">—</option>
-            {UFS.map((uf) => <option key={uf} value={uf}>{uf}</option>)}
-          </select>
+            onChange={(uf) => alterarCampo({ uf })}
+            opcoes={OPCOES_DE_UF}
+          />
         </div>
       </div>
 

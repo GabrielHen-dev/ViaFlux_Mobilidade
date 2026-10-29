@@ -38,8 +38,8 @@ class TriagemServiceTests {
         assertThat(resposta.triagem().responsavel()).isEqualTo(autor(paula));
         assertThat(resposta.triagem().iniciadaEm()).isEqualTo(Datas.local(QUARTA_AS_DEZ.plusMinutes(2)));
         ChamadoEvento evento = ambiente.unicoEventoDoTipo(TipoEvento.TRIAGEM);
-        assertThat(evento.getAcao()).isEqualTo("Triagem iniciada");
-        assertThat(evento.getDetalhe()).isEqualTo("Triagem assumida por Paula Atendente.");
+        assertThat(evento.getAcao()).isEqualTo("Análise iniciada");
+        assertThat(evento.getDetalhe()).isEqualTo("Análise assumida por Paula Atendente.");
         assertThat(evento.isVisivelCliente()).isTrue();
     }
 
@@ -52,7 +52,7 @@ class TriagemServiceTests {
         servico(ambiente).iniciar("VF-0001", paula);
 
         assertThat(ambiente.unicoEventoDoTipo(TipoEvento.TRIAGEM).getDetalhe())
-                .isEqualTo("Triagem assumida por Paula Atendente (antes com Rui Atendente).");
+                .isEqualTo("Análise assumida por Paula Atendente (antes com Rui Atendente).");
     }
 
     @Test
@@ -275,5 +275,64 @@ class TriagemServiceTests {
     private static TriagemService servico(AmbienteDeChamados ambiente) {
         return new TriagemService(ambiente.acesso, ambiente.historico, new RoteamentoComPlantao(EXPEDIENTE), ambiente.aviso,
                 ambiente.montagem, ambiente.relogio);
+    }
+
+    @Test
+    void assumirAnaliseDeChamadoClassificadoPeloRelatoMantemFilaEStatus() {
+        AmbienteDeChamados ambiente = new AmbienteDeChamados(QUARTA_AS_DEZ.plusMinutes(3));
+        Chamado chamado = ambiente.cadastrar(chamadoClassificadoPeloRelato(TipoChamado.FINANCEIRO));
+
+        ChamadoResponse resposta = servico(ambiente).iniciar("VF-0001", paula);
+
+        assertThat(resposta.status()).isEqualTo("Na fila");
+        assertThat(resposta.triagem().responsavel()).isEqualTo(autor(paula));
+        assertThat(resposta.triagem().revisaoPendente()).isTrue();
+        assertThat(chamado.getDepartamento()).isEqualTo(TipoChamado.FINANCEIRO);
+        assertThat(ambiente.unicoEventoDoTipo(TipoEvento.TRIAGEM).isVisivelCliente()).isFalse();
+    }
+
+    @Test
+    void confirmarClassificacaoEncerraARevisaoSemMudarAFila() {
+        AmbienteDeChamados ambiente = new AmbienteDeChamados(QUARTA_AS_DEZ.plusMinutes(3));
+        Chamado chamado = ambiente.cadastrar(chamadoClassificadoPeloRelato(TipoChamado.FINANCEIRO));
+
+        ChamadoResponse resposta = servico(ambiente).confirmarClassificacao("VF-0001", paula);
+
+        assertThat(resposta.triagem().revisaoPendente()).isFalse();
+        assertThat(chamado.getClassificacaoEstado()).isEqualTo(Chamado.ESTADO_CLASSIFICADA);
+        assertThat(chamado.getDepartamento()).isEqualTo(TipoChamado.FINANCEIRO);
+        assertThat(ambiente.eventoComAcao("Classificação confirmada")).isPresent();
+        assertThat(erroAo(() -> servico(ambiente).confirmarClassificacao("VF-0001", paula)).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    void reclassificarDuranteARevisaoReencaminhaParaODepartamentoDoNovoTipo() {
+        AmbienteDeChamados ambiente = new AmbienteDeChamados(QUARTA_AS_DEZ.plusMinutes(3));
+        Chamado chamado = ambiente.cadastrar(chamadoClassificadoPeloRelato(TipoChamado.ASSISTENCIA_24H));
+
+        servico(ambiente).reclassificar("VF-0001",
+                new ReclassificacaoRequest("FINANCEIRO", 3, 3, "Relato trata de cobrança indevida."), paula);
+
+        assertThat(chamado.getDepartamento()).isEqualTo(TipoChamado.FINANCEIRO);
+        assertThat(chamado.getStatus()).isEqualTo(StatusChamado.NA_FILA);
+        assertThat(chamado.revisaoPendente()).isFalse();
+        assertThat(ambiente.eventoComAcao("Encaminhado para Financeiro")).isPresent();
+    }
+
+    @Test
+    void reclassificarForaDaRevisaoNaoMudaODepartamento() {
+        AmbienteDeChamados ambiente = new AmbienteDeChamados(QUARTA_AS_DEZ.plusMinutes(30));
+        Chamado chamado = ambiente.cadastrar(chamadoTriado("VF-0001", QUARTA_AS_DEZ, TipoChamado.MANUTENCAO, 3, 3));
+
+        servico(ambiente).reclassificar("VF-0001",
+                new ReclassificacaoRequest("FINANCEIRO", 3, 3, "Ajuste de classificação."), paula);
+
+        assertThat(chamado.getDepartamento()).isEqualTo(TipoChamado.MANUTENCAO);
+    }
+
+    private static Chamado chamadoClassificadoPeloRelato(TipoChamado tipo) {
+        Chamado chamado = chamadoAberto("VF-0001", QUARTA_AS_DEZ);
+        chamado.classificarPorTexto(tipo, 3, 3, tipo, QUARTA_AS_DEZ);
+        return chamado;
     }
 }

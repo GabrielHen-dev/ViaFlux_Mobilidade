@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import type { UserEvent } from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { vi } from "vitest";
 import Provedores from "@/components/providers/Provedores";
@@ -25,4 +26,9 @@ export async function renderizarComo(usuario: UsuarioDeTeste, interface_: ReactN
   const resultado = render(<Provedores><AreaProtegida>{interface_}</AreaProtegida></Provedores>);
   await screen.findByRole("main", {}, { timeout: 3000 });
   return resultado;
+}
+
+export async function escolher(usuario: UserEvent, rotuloDoCampo: string | RegExp, textoDaOpcao: string | RegExp) {
+  await usuario.click(await screen.findByLabelText(rotuloDoCampo));
+  await usuario.click(await screen.findByRole("option", { name: textoDaOpcao }));
 }

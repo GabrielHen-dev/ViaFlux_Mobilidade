@@ -213,8 +213,9 @@ class ChamadoControllerTests {
         UsuarioAtual manutencao = usuario("DEPARTAMENTO");
         given(consulta.resumir(any(FiltrosDeChamados.class), eq(manutencao))).willReturn(new ResumoDeChamadosResponse(
                 3, Map.of(), Map.of(), Map.of(),
-                new ResumoDeChamadosResponse.Sla(new ResumoDeChamadosResponse.Contadores(1, 1, 1), new ResumoDeChamadosResponse.Contadores(3, 0, 0)),
-                List.of("VF-0001"), new ResumoDeChamadosResponse.Triagem(2, 1, 1, 0, ABERTURA)));
+                new ResumoDeChamadosResponse.Sla(new ResumoDeChamadosResponse.Contadores(1, 1, 1), new ResumoDeChamadosResponse.Contadores(3, 0, 0),
+                        new ResumoDeChamadosResponse.Contadores(2, 1, 0)),
+                List.of("VF-0001"), new ResumoDeChamadosResponse.Triagem(2, 1, 1, 0, ABERTURA, 0), 0));
 
         mockMvc.perform(get("/api/chamados/resumo").with(autenticado(manutencao)))
                 .andExpect(status().isOk())
@@ -458,11 +459,11 @@ class ChamadoControllerTests {
     private static ChamadoResumoResponse resumo(String codigo) {
         return new ChamadoResumoResponse(codigo, "Maria Silva", "Volvo FH 460", "ABC-1D23", "BR-116, km 312", "Na fila",
                 Prioridade.P1, 10, TipoChamado.MANUTENCAO, DepartamentoResponse.de(TipoChamado.MANUTENCAO), ABERTURA, ABERTURA, null,
-                new TriagemResponse(ABERTURA.plusMinutes(10), 10, null, null, ABERTURA.plusMinutes(5), null, SituacaoPrazo.CUMPRIDO), null);
+                new TriagemResponse(ABERTURA.plusMinutes(10), 10, null, null, ABERTURA.plusMinutes(5), null, SituacaoPrazo.CUMPRIDO, false), null, null);
     }
 
     private static ChamadoResponse respostaDoChamado(String codigo) {
-        TriagemResponse triagem = new TriagemResponse(ABERTURA.plusMinutes(10), 10, null, null, null, null, SituacaoPrazo.NO_PRAZO);
+        TriagemResponse triagem = new TriagemResponse(ABERTURA.plusMinutes(10), 10, null, null, null, null, SituacaoPrazo.NO_PRAZO, false);
         return new ChamadoResponse(codigo, "Maria Silva", "Volvo FH 460", "ABC-1D23", "BR-116, km 312", "Aberto", null, null,
                 TipoChamado.MANUTENCAO, null, ABERTURA, ABERTURA, null, triagem, null, "", "Freio falhando",
                 new MotivoResponse("M-MANUTENCAO-1", "Falha no sistema de freios", TipoChamado.MANUTENCAO, 5),

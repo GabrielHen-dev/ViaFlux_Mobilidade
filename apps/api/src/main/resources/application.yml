@@ -57,6 +57,7 @@ viaflux:
     termos-versao: ${VIAFLUX_TERMOS_VERSAO:${TERMOS_VERSAO:termos-v1}}
     validade-da-verificacao: ${VIAFLUX_VALIDADE_VERIFICACAO:${VALIDADE_VERIFICACAO:PT24H}}
     validade-da-redefinicao: ${VIAFLUX_VALIDADE_REDEFINICAO:${VALIDADE_REDEFINICAO:PT30M}}
+    validade-do-convite: ${VIAFLUX_VALIDADE_CONVITE:${VALIDADE_CONVITE:P7D}}
     tentativas-por-janela: ${VIAFLUX_CONTA_TENTATIVAS:${CONTA_TENTATIVAS:5}}
     janela-de-tentativas: ${VIAFLUX_CONTA_JANELA:${CONTA_JANELA:PT15M}}
   dev-tools:
@@ -69,6 +70,15 @@ viaflux:
   anexos:
     diretorio: ${VIAFLUX_ANEXO_DIR:${ANEXO_DIR:./data/anexos}}
     limite-mb: ${VIAFLUX_ANEXO_LIMITE_MB:${ANEXO_LIMITE_MB:10}}
+    armazenamento: ${VIAFLUX_ANEXO_ARMAZENAMENTO:${ANEXO_ARMAZENAMENTO:disco}}
+    s3:
+      endpoint: ${VIAFLUX_S3_ENDPOINT:${S3_ENDPOINT:}}
+      regiao: ${VIAFLUX_S3_REGIAO:${S3_REGIAO:auto}}
+      bucket: ${VIAFLUX_S3_BUCKET:${S3_BUCKET:}}
+      access-key-id: ${VIAFLUX_S3_ACCESS_KEY_ID:${S3_ACCESS_KEY_ID:}}
+      secret-access-key: ${VIAFLUX_S3_SECRET_ACCESS_KEY:${S3_SECRET_ACCESS_KEY:}}
+      prefixo: ${VIAFLUX_S3_PREFIXO:${S3_PREFIXO:}}
+      path-style: ${VIAFLUX_S3_PATH_STYLE:${S3_PATH_STYLE:true}}
   enderecos:
     nominatim-url: ${VIAFLUX_NOMINATIM_URL:${NOMINATIM_URL:https://nominatim.openstreetmap.org}}
     viacep-url: ${VIAFLUX_VIACEP_URL:${VIACEP_URL:https://viacep.com.br}}

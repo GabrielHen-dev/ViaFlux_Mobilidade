@@ -1,0 +1,5 @@
+Olá, {{nome}}.
+
+A senha da sua conta foi alterada e todas as sessões ativas foram encerradas.
+
+Se você não reconhece esta alteração, redefina sua senha imediatamente e entre em contato com a Central ViaFlux.

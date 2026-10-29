@@ -36,7 +36,7 @@ export function StatusBadge({ status }: { status: Status }) {
   );
 }
 
-export const ROTULO_SEM_TRIAGEM = "Aguardando triagem";
+export const ROTULO_SEM_TRIAGEM = "Aguardando classificação";
 
 export function PrioridadeIndicador({ prioridade, score, className }: { prioridade: CodigoPrioridade | null; score?: number | null; className?: string }) {
   if (prioridade === null) {

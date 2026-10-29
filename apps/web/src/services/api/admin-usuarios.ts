@@ -21,6 +21,7 @@ export interface UsuarioAdmin {
   nome: string;
   email: string;
   ativo: boolean;
+  convitePendente: boolean;
   perfis: PerfilAdmin[];
   organizacao: OrganizacaoAdmin | null;
   departamentos: DepartamentoAdmin[];
@@ -43,7 +44,6 @@ export interface PaginaUsuariosAdmin {
 export interface DadosUsuarioAdmin {
   nome: string;
   email: string;
-  senha?: string;
   perfis: string[];
   organizacaoId: string | null;
   departamentos: string[];
@@ -78,6 +78,13 @@ export function atualizarUsuarioAdmin(accessToken: string, id: string, dados: Da
     method: "PUT",
     headers: comToken(accessToken),
     body: JSON.stringify(dados),
+  });
+}
+
+export function reenviarConviteAdmin(accessToken: string, id: string) {
+  return requisitarApi<UsuarioAdmin>(`/api/admin/usuarios/${id}/convite`, {
+    method: "POST",
+    headers: comToken(accessToken),
   });
 }
 

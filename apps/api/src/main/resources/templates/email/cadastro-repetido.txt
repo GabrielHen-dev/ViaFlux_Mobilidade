@@ -1,0 +1,7 @@
+Olá, {{nome}}.
+
+Recebemos uma solicitação de cadastro com este e-mail, que já está vinculado a uma conta ViaFlux.
+
+Se foi você, acesse o portal com sua senha atual. Caso não lembre a senha, solicite a redefinição em {{linkRedefinicao}}
+
+Se não reconhece esta solicitação, desconsidere esta mensagem. Sua conta permanece protegida.

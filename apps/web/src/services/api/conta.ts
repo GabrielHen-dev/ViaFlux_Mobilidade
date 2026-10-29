@@ -12,6 +12,17 @@ export interface DadosDoCadastro {
   aceiteDosTermos: boolean;
 }
 
+export interface PerfilDoConvite {
+  codigo: string;
+  descricao: string;
+}
+
+export interface Convite {
+  nome: string;
+  email: string;
+  perfis: PerfilDoConvite[];
+}
+
 function enviar(caminho: string, corpo: unknown) {
   return requisitarApi<RespostaDaConta>(caminho, { method: "POST", body: JSON.stringify(corpo) });
 }
@@ -34,4 +45,12 @@ export function solicitarRedefinicaoDeSenha(email: string) {
 
 export function redefinirSenha(token: string, senha: string) {
   return enviar("/auth/senha/redefinicao", { token, senha });
+}
+
+export function consultarConvite(token: string) {
+  return requisitarApi<Convite>("/auth/convite/consulta", { method: "POST", body: JSON.stringify({ token }) });
+}
+
+export function aceitarConvite(token: string, senha: string) {
+  return enviar("/auth/convite/aceite", { token, senha });
 }

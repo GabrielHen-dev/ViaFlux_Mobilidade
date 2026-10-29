@@ -11,15 +11,16 @@ public record ResumoDeChamadosResponse(
         Map<TipoChamado, Long> porDepartamento,
         Sla sla,
         List<String> p1SemPrimeiraResposta,
-        Triagem triagem
+        Triagem triagem,
+        long escalonados
 ) {
 
     public record Contadores(long noPrazo, long emRisco, long violado) {
     }
 
-    public record Sla(Contadores primeiraResposta, Contadores resolucao) {
+    public record Sla(Contadores primeiraResposta, Contadores resolucao, Contadores vigente) {
     }
 
-    public record Triagem(long aguardando, long emAndamento, long emRisco, long atrasados, OffsetDateTime proximoLimite) {
+    public record Triagem(long aguardando, long emAndamento, long emRisco, long atrasados, OffsetDateTime proximoLimite, long aguardandoRevisao) {
     }
 }

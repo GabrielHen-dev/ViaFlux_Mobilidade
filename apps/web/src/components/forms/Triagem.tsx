@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
+import { toast } from "sonner";
 import type { Chamado } from "@/types/chamado";
 import ComChamado from "@/components/chamados/ComChamado";
 import PerfilRequerido from "@/components/auth/PerfilRequerido";
 import { PrioridadeIndicador, StatusBadge } from "@/components/ui/StatusBadge";
 import ConclusaoDaTriagem from "@/components/triagem/ConclusaoDaTriagem";
+import RevisaoDaClassificacao from "@/components/triagem/RevisaoDaClassificacao";
 import Reclassificacao from "@/components/triagem/Reclassificacao";
 import OverrideDePrioridade from "@/components/triagem/OverrideDePrioridade";
 import { cartaoClass } from "@/components/triagem/CamposDaTriagem";
@@ -15,11 +16,11 @@ import { NOME_TIPO, ROTULO_PESO } from "@/utils/prioridade";
 import { formatarDataHora } from "@/utils/date";
 import { PERFIS_DE_TRIAGEM } from "@/utils/perfis";
 
-function InformadoPeloCliente({ chamado }: { chamado: Chamado }) {
+function RelatoDoSolicitante({ chamado }: { chamado: Chamado }) {
   return (
     <section className={cartaoClass}>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-display text-sm font-semibold text-brand-navy">O que o cliente informou</h2>
+        <h2 className="font-display text-sm font-semibold text-brand-navy">Relato do solicitante</h2>
         <StatusBadge status={chamado.status} />
       </div>
       <p className="text-xs text-slate-500">{chamado.cliente} · aberto em {formatarDataHora(chamado.abertura)}</p>
@@ -27,6 +28,9 @@ function InformadoPeloCliente({ chamado }: { chamado: Chamado }) {
         <p className="mt-3 text-sm text-slate-600">
           <span className="font-semibold">Motivo:</span> {chamado.motivo.descricao} <span className="text-xs text-slate-400">({NOME_TIPO[chamado.motivo.tipo]} · severidade {ROTULO_PESO[chamado.motivo.severidade].toLowerCase()})</span>
         </p>
+      )}
+      {chamado.motivoOutro && (
+        <p className="mt-3 text-sm text-slate-600"><span className="font-semibold">Motivo informado:</span> {chamado.motivoOutro}</p>
       )}
       {chamado.contexto && (
         <p className="mt-1 text-sm text-slate-600">
@@ -52,15 +56,18 @@ function ClassificacaoVigente({ chamado }: { chamado: Chamado }) {
         <div><div className="text-xs text-slate-400">Calculada</div><PrioridadeIndicador prioridade={classificacao.prioridade} score={classificacao.score} /></div>
       </div>
       {chamado.triagem.concluidaEm && (
-        <p className="mt-3 text-xs text-slate-500">Triagem concluída por {chamado.triagem.concluidaPor?.nome ?? "—"} em {formatarDataHora(chamado.triagem.concluidaEm)}.</p>
+        <p className="mt-3 text-xs text-slate-500">{chamado.triagem.concluidaPor?.nome ?? "—"} · {formatarDataHora(chamado.triagem.concluidaEm)}</p>
       )}
     </section>
   );
 }
 
-function TriagemConteudo({ chamado }: { chamado: Chamado }) {
-  const [aviso, setAviso] = useState<string | null>(null);
-  const triado = chamado.classificacao !== null;
+function avisar(mensagem: string) {
+  toast.success(mensagem);
+}
+
+function ClassificacaoConteudo({ chamado }: { chamado: Chamado }) {
+  const emRevisao = chamado.triagem.revisaoPendente;
 
   return (
     <main id="conteudo" className="p-4 md:p-8">
@@ -70,25 +77,23 @@ function TriagemConteudo({ chamado }: { chamado: Chamado }) {
             <ChevronLeft size={16} />
           </Link>
           <div>
-            <h1 className="font-display text-2xl font-bold text-brand-navy">Triagem — #{chamado.id}</h1>
-            <p className="mt-0.5 text-sm text-[#64748B]">
-              {triado ? "Revise a classificação e, se preciso, ajuste a prioridade." : "Classifique o chamado para encaminhá-lo à fila do departamento."}
-            </p>
+            <h1 className="font-display text-2xl font-bold text-brand-navy">Classificação · #{chamado.id}</h1>
+            {chamado.departamento && <p className="mt-0.5 text-sm text-[#64748B]">{chamado.departamento.nome}</p>}
           </div>
         </div>
 
-        {aviso && <p role="status" className="mb-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">{aviso}</p>}
-
         <div className="space-y-5">
-          <InformadoPeloCliente chamado={chamado} />
+          <RelatoDoSolicitante chamado={chamado} />
           {chamado.classificacao && chamado.prioridade ? (
             <>
-              <ClassificacaoVigente chamado={chamado} />
-              <Reclassificacao chamado={chamado} vigente={chamado.classificacao} aoConcluir={setAviso} />
-              <OverrideDePrioridade chamado={chamado} prioridadeEfetiva={chamado.prioridade} aoConcluir={setAviso} />
+              {emRevisao
+                ? <RevisaoDaClassificacao chamado={chamado} vigente={chamado.classificacao} aoConcluir={avisar} />
+                : <ClassificacaoVigente chamado={chamado} />}
+              <Reclassificacao key={`${chamado.classificacao.tipo}-${chamado.classificacao.score}`} chamado={chamado} vigente={chamado.classificacao} aoConcluir={avisar} />
+              <OverrideDePrioridade chamado={chamado} prioridadeEfetiva={chamado.prioridade} aoConcluir={avisar} />
             </>
           ) : (
-            <ConclusaoDaTriagem chamado={chamado} aoConcluir={setAviso} />
+            <ConclusaoDaTriagem chamado={chamado} aoConcluir={avisar} />
           )}
         </div>
       </div>
@@ -99,7 +104,7 @@ function TriagemConteudo({ chamado }: { chamado: Chamado }) {
 export default function Triagem({ id }: { id: string }) {
   return (
     <PerfilRequerido perfis={PERFIS_DE_TRIAGEM}>
-      <ComChamado id={id}>{(chamado) => <TriagemConteudo key={chamado.id} chamado={chamado} />}</ComChamado>
+      <ComChamado id={id}>{(chamado) => <ClassificacaoConteudo key={chamado.id} chamado={chamado} />}</ComChamado>
     </PerfilRequerido>
   );
 }

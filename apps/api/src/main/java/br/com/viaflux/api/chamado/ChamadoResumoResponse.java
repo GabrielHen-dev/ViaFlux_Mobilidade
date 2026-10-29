@@ -17,6 +17,7 @@ public record ChamadoResumoResponse(
         OffsetDateTime atualizadoEm,
         SlaResponse sla,
         TriagemResponse triagem,
-        AtendimentoResponse atendimento
+        AtendimentoResponse atendimento,
+        EscalonamentoResponse escalonamento
 ) {
 }

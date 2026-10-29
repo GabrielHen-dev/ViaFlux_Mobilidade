@@ -13,7 +13,7 @@ import { type ClienteApi, abrirChamado, alterarStatus, concluirTriagem } from "@
 import { requisitarApi } from "@/services/api/cliente";
 import { render } from "@testing-library/react";
 import { USUARIOS, type UsuarioDeTeste, tokenDeAcesso } from "../support/backendFalso";
-import { derrubarRede, ligarBackendFalso, renderizarComo } from "../support/renderizar";
+import { derrubarRede, escolher, ligarBackendFalso, renderizarComo } from "../support/renderizar";
 
 type Usuario = typeof userEvent extends { setup: (...args: never[]) => infer U } ? U : never;
 
@@ -32,10 +32,10 @@ async function abrirPane(chave = "pane") {
 }
 
 async function preencherAbertura(usuario: Usuario) {
-  await usuario.selectOptions(await screen.findByLabelText("Motivo *"), "Veículo não liga / Pane elétrica ou mecânica");
-  const contexto = screen.getByLabelText("Contexto situacional *");
-  await waitFor(() => expect(contexto).toBeEnabled());
-  await usuario.selectOptions(contexto, "Veículo parado em rodovia, via rápida ou local de risco");
+  await waitFor(() => expect(screen.getByLabelText("Motivo *")).toBeEnabled());
+  await escolher(usuario, "Motivo *", "Veículo não liga / Pane elétrica ou mecânica");
+  await waitFor(() => expect(screen.getByLabelText("Contexto situacional *")).toBeEnabled());
+  await escolher(usuario, "Contexto situacional *", "Veículo parado em rodovia, via rápida ou local de risco");
   await usuario.type(screen.getByLabelText("Descrição *"), "Caminhão parou no acostamento da BR-116.");
 }
 
@@ -57,10 +57,10 @@ describe("abertura de chamado", () => {
     await renderizarComo(USUARIOS.cliente, <NovoChamado />);
     await preencherAbertura(usuario);
     await usuario.click(screen.getByRole("button", { name: "Abrir Chamado" }));
-    expect(await screen.findByRole("heading", { name: "Chamado aberto!" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Chamado aberto" })).toBeInTheDocument();
     expect(screen.getByTestId("protocolo")).toHaveTextContent("VF-0000");
-    expect(screen.getByText("Aguardando triagem")).toBeInTheDocument();
-    expect(screen.getByTestId("previsao-da-triagem")).toHaveTextContent(/Um atendente vai analisar e classificar o chamado até/);
+    expect(screen.getByText("Aguardando classificação")).toBeInTheDocument();
+    expect(screen.getByTestId("previsao-da-triagem")).toHaveTextContent(/Classificação prevista até/);
     expect(screen.queryByText(/P1/)).not.toBeInTheDocument();
   });
 
@@ -73,11 +73,11 @@ describe("abertura de chamado", () => {
     await usuario.click(screen.getByRole("button", { name: "Abrir Chamado" }));
     expect(await screen.findByText(/Envio não confirmado/)).toBeInTheDocument();
     expect(screen.getByLabelText("Descrição *")).toHaveValue("Caminhão parou no acostamento da BR-116.");
-    expect(screen.queryByRole("heading", { name: "Chamado aberto!" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Chamado aberto" })).not.toBeInTheDocument();
 
     ligarBackendFalso(backend);
-    await usuario.click(screen.getByRole("button", { name: "Tentar de novo" }));
-    expect(await screen.findByRole("heading", { name: "Chamado aberto!" })).toBeInTheDocument();
+    await usuario.click(screen.getByRole("button", { name: "Tentar novamente" }));
+    expect(await screen.findByRole("heading", { name: "Chamado aberto" })).toBeInTheDocument();
     expect(backend.contagem.aberturas).toBe(1);
   });
 
@@ -88,7 +88,7 @@ describe("abertura de chamado", () => {
     await usuario.type(screen.getByLabelText("Descrição *"), "Texto que não pode se perder");
     primeira.unmount();
     await renderizarComo(USUARIOS.cliente, <NovoChamado />);
-    expect(await screen.findByText(/Recuperamos o rascunho/)).toBeInTheDocument();
+    expect(await screen.findByText(/Rascunho restaurado/)).toBeInTheDocument();
     expect(screen.getByLabelText("Descrição *")).toHaveValue("Texto que não pode se perder");
   });
 });
@@ -102,54 +102,51 @@ describe("abertura pela Central", () => {
     await usuario.click(screen.getByRole("button", { name: "Abrir Chamado" }));
     expect(await screen.findByRole("link", { name: "Cliente solicitante" })).toBeInTheDocument();
 
-    const seletor = screen.getByLabelText("Cliente solicitante *");
-    await waitFor(() => expect(within(seletor).getByRole("option", { name: /Carla Cliente/ })).toBeInTheDocument());
-    await usuario.selectOptions(seletor, "u-cliente");
+    await escolher(usuario, "Cliente solicitante *", /Carla Cliente/);
     expect(screen.getByLabelText("Nome *")).toHaveValue("Carla Cliente");
     await usuario.click(screen.getByRole("button", { name: "Abrir Chamado" }));
-    expect(await screen.findByRole("heading", { name: "Chamado aberto!" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Chamado aberto" })).toBeInTheDocument();
     expect(backend.chamados[0].solicitanteId).toBe("u-cliente");
     expect(screen.getByRole("link", { name: "Acompanhar chamado" })).toHaveAttribute("href", "/chamados/VF-0000");
   });
 });
 
-describe("triagem", () => {
+describe("classificação", () => {
   it("chega sem prioridade, o atendente confirma a sugestão e o chamado vai para a fila do departamento", async () => {
     const usuario = userEvent.setup();
     ligarBackendFalso();
     await abrirPane();
     await renderizarComo(USUARIOS.atendente, <Triagem id="VF-0000" />);
-    expect(await screen.findByRole("heading", { name: "Triagem — #VF-0000" })).toBeInTheDocument();
-    expect(screen.getByText("sugestão")).toBeInTheDocument();
-    expect(screen.getByLabelText("Tipo")).toHaveValue("ASSISTENCIA_24H");
-    await usuario.click(screen.getByRole("button", { name: "Assumir triagem" }));
+    expect(await screen.findByRole("heading", { name: "Classificação · #VF-0000" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Tipo")).toHaveTextContent("Assistência 24h");
+    await usuario.click(screen.getByRole("button", { name: "Assumir análise" }));
     expect(await screen.findByText("você")).toBeInTheDocument();
     await usuario.click(within(screen.getByRole("group", { name: "Urgência (contexto)" })).getByText("Média (3)"));
-    await usuario.click(screen.getByRole("button", { name: "Concluir triagem e encaminhar" }));
-    expect(await screen.findByText("Triagem concluída: P2 · encaminhado para Assistência 24h.")).toBeInTheDocument();
+    await usuario.click(screen.getByRole("button", { name: "Classificar e encaminhar" }));
+    expect(await screen.findByText("Chamado classificado · P2 · Assistência 24h")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Confirmar reclassificação" })).toBeInTheDocument();
   });
 
-  it("reclassificar para outro tipo não muda a fila e aponta para a transferência", async () => {
+  it("reclassificar fora da revisão mantém a fila e aponta para a transferência", async () => {
     const usuario = userEvent.setup();
     ligarBackendFalso();
     await abrirPane();
     await concluirTriagem(apiComo(USUARIOS.atendente), "VF-0000", { tipo: "ASSISTENCIA_24H", severidade: 5, urgencia: 5 });
     await renderizarComo(USUARIOS.atendente, <Triagem id="VF-0000" />);
-    await usuario.selectOptions(await screen.findByLabelText("Tipo"), "MANUTENCAO");
-    expect(screen.getByText(/A reclassificação não muda a fila: o chamado continua em Assistência 24h/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Transferir o chamado" })).toHaveAttribute("href", "/chamados/VF-0000/encaminhamento");
+    await escolher(usuario, "Tipo", "Manutenção");
+    expect(screen.getByText(/O chamado permanece em Assistência 24h/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Transferir" })).toHaveAttribute("href", "/chamados/VF-0000/encaminhamento");
     await usuario.type(screen.getAllByLabelText("Justificativa *")[0], "Problema é mecânico, não de socorro");
     await usuario.click(screen.getByRole("button", { name: "Confirmar reclassificação" }));
-    expect(await screen.findByText(/Chamado reclassificado: score 10 · P1/)).toBeInTheDocument();
+    expect(await screen.findByText(/Chamado reclassificado · P1 \(score 10\)/)).toBeInTheDocument();
   });
 
-  it("bloqueia status e transferência enquanto o chamado não foi triado", async () => {
+  it("bloqueia status e transferência enquanto o chamado não foi classificado", async () => {
     ligarBackendFalso();
     await abrirPane();
     await renderizarComo(USUARIOS.atendente, <Encaminhamento id="VF-0000" />);
-    expect(await screen.findByText(/ainda não passou pela triagem/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Fazer triagem" })).toHaveAttribute("href", "/chamados/VF-0000/triagem");
+    expect(await screen.findByText("Disponível após a classificação do chamado.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Classificar" })).toHaveAttribute("href", "/chamados/VF-0000/triagem");
     expect(screen.queryByRole("button", { name: "Transferir" })).not.toBeInTheDocument();
   });
 
@@ -213,21 +210,21 @@ describe("o que cada perfil faz no chamado", () => {
     await chamadoTriado();
     await renderizarComo(USUARIOS.atendente, <DetalhesChamado id="VF-0000" />);
 
-    await usuario.selectOptions(await screen.findByLabelText("Alterar status"), "Em atendimento");
+    await escolher(usuario, "Alterar status", "Em atendimento");
     await usuario.click(screen.getByRole("button", { name: "Atualizar status" }));
     await screen.findByText("Status alterado para Em atendimento");
 
-    await usuario.selectOptions(screen.getByLabelText("Alterar status"), "Aguardando");
-    await usuario.selectOptions(screen.getByLabelText("Aguardando quem? *"), "FORNECEDOR");
+    await escolher(usuario, "Alterar status", "Aguardando");
+    await escolher(usuario, "Aguardando quem? *", /^Fornecedor/);
     await usuario.click(screen.getByRole("button", { name: "Atualizar status" }));
     await screen.findByText("Status alterado para Aguardando");
 
-    await usuario.selectOptions(screen.getByLabelText("Alterar status"), "Resolvido");
+    await escolher(usuario, "Alterar status", "Resolvido");
     await usuario.type(screen.getByLabelText("Resumo da solução *"), "Veículo reparado e entregue ao cliente.");
     await usuario.click(screen.getByRole("button", { name: "Atualizar status" }));
     await screen.findByText("Status alterado para Resolvido");
 
-    await usuario.selectOptions(screen.getByLabelText("Alterar status"), "Fechado");
+    await escolher(usuario, "Alterar status", "Fechado");
     await usuario.click(screen.getByRole("button", { name: "Atualizar status" }));
     expect(await screen.findByText("Este chamado está fechado.")).toBeInTheDocument();
   });
@@ -258,32 +255,31 @@ describe("dashboard", () => {
     return backend;
   }
 
-  it("destaca P1 sem 1ª resposta, mostra contadores e combina filtros", async () => {
+  it("destaca P1 sem início de atendimento, mostra contadores e combina filtros", async () => {
     const usuario = userEvent.setup();
     await criarChamados();
     await renderizarComo(USUARIOS.atendente, <Dashboard />);
-    expect(await screen.findByText(/P1 sem 1ª resposta \(1\)/)).toBeInTheDocument();
+    expect(await screen.findByText(/P1 sem início de atendimento \(1\)/)).toBeInTheDocument();
     expect(await screen.findByRole("link", { name: "#VF-0000" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "#VF-0001" })).toBeInTheDocument();
-    await usuario.selectOptions(screen.getByLabelText("Filtrar por prioridade"), "P4");
+    await escolher(usuario, "Filtrar por prioridade", /^P4/);
     await waitFor(() => expect(screen.queryByRole("link", { name: "#VF-0000" })).not.toBeInTheDocument());
     expect(screen.getByRole("link", { name: "#VF-0001" })).toBeInTheDocument();
-    await usuario.selectOptions(screen.getByLabelText("Filtrar por departamento"), "TI");
+    await escolher(usuario, "Filtrar por departamento", "Tecnologia");
     expect(await screen.findByText("Nenhum chamado encontrado com os filtros aplicados.")).toBeInTheDocument();
   });
 
-  it("conta as exceções na fila ativa e filtra os chamados que aguardam triagem", async () => {
+  it("conta os pendentes de análise e filtra os chamados a classificar", async () => {
     const usuario = userEvent.setup();
     await criarChamados();
     await renderizarComo(USUARIOS.atendente, <Dashboard />);
-    const contadores = await screen.findByRole("region", { name: "Fila ativa" });
-    expect(within(contadores).getByText("exceções").previousSibling).toHaveTextContent("1");
-    expect(screen.getByRole("region", { name: "SLA · 1ª resposta" })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "SLA · resolução" })).toBeInTheDocument();
-    await usuario.selectOptions(screen.getByLabelText("Filtrar por etapa"), "TRIAGEM");
+    const atencao = await screen.findByRole("region", { name: "Atenção" });
+    expect(within(atencao).getByText("a classificar").previousSibling).toHaveTextContent("1");
+    expect(screen.getByRole("region", { name: "Prazos (SLA)" })).toBeInTheDocument();
+    await escolher(usuario, "Filtrar por etapa", "Pendentes de análise");
     await waitFor(() => expect(screen.queryByRole("link", { name: "#VF-0000" })).not.toBeInTheDocument());
     expect(screen.getByRole("link", { name: "#VF-0002" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Triar" })).toHaveAttribute("href", "/chamados/VF-0002/triagem");
+    expect(screen.getByRole("link", { name: "Classificar" })).toHaveAttribute("href", "/chamados/VF-0002/triagem");
   });
 
   it("renova o token expirado e repete a consulta sem tirar o usuário da tela", async () => {
@@ -333,7 +329,7 @@ describe("meus chamados", () => {
     expect(await screen.findByText("Bateria substituída no local.")).toBeInTheDocument();
     await usuario.click(screen.getByRole("button", { name: "Confirmar solução" }));
     await usuario.click(await screen.findByRole("button", { name: "Reabrir chamado" }));
-    await usuario.type(screen.getByLabelText("Por que reabrir? *"), "O motor voltou a falhar hoje cedo.");
+    await usuario.type(screen.getByLabelText("Motivo da reabertura *"), "O motor voltou a falhar hoje cedo.");
     await usuario.click(screen.getByRole("button", { name: "Reabrir chamado" }));
 
     expect(await screen.findByText("Chamado reaberto pelo solicitante")).toBeInTheDocument();
@@ -345,10 +341,10 @@ describe("meus chamados", () => {
     await chamadoResolvidoDoCliente();
     await renderizarComo(USUARIOS.cliente, <ChamadoDoCliente id="VF-0000" />);
 
-    await usuario.click(await screen.findByRole("button", { name: "Ainda não resolveu" }));
-    const enviar = screen.getByRole("button", { name: "Enviar e voltar ao atendimento" });
+    await usuario.click(await screen.findByRole("button", { name: "Contestar solução" }));
+    const enviar = screen.getByRole("button", { name: "Enviar contestação" });
     expect(enviar).toBeDisabled();
-    await usuario.type(screen.getByLabelText("O que ainda não foi resolvido? *"), "A luz de alerta continua acesa.");
+    await usuario.type(screen.getByLabelText("Motivo da contestação *"), "A luz de alerta continua acesa.");
     await usuario.click(enviar);
 
     expect(await screen.findByText("Solução contestada pelo solicitante")).toBeInTheDocument();

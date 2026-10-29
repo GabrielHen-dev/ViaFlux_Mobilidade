@@ -6,21 +6,28 @@ import type { Solicitante } from "@/types/chamado";
 import { listarSolicitantes } from "@/services/api/operacao";
 import { useApi } from "@/store/AuthContext";
 import { mensagemDeErro } from "@/components/feedback/EstadoDaConsulta";
+import Select, { type OpcaoDoSelect } from "@/components/ui/Select";
 
 interface Props {
   id: string;
   valor: string;
   aoEscolher: (solicitante: Solicitante | null) => void;
-  selectClassName: string;
+  buscaClassName: string;
   invalido: boolean;
   descricaoDoErro?: string;
 }
 
-function rotuloDo(solicitante: Solicitante) {
-  return [solicitante.nome, solicitante.email, solicitante.organizacao].filter(Boolean).join(" · ");
+const OPCAO_SEM_SOLICITANTE: OpcaoDoSelect = { valor: "", rotulo: "Nenhum" };
+
+function opcaoDo(solicitante: Solicitante): OpcaoDoSelect {
+  return {
+    valor: solicitante.id,
+    rotulo: solicitante.nome,
+    descricao: [solicitante.email, solicitante.organizacao].filter(Boolean).join(" · ") || undefined,
+  };
 }
 
-export default function SeletorDeSolicitante({ id, valor, aoEscolher, selectClassName, invalido, descricaoDoErro }: Props) {
+export default function SeletorDeSolicitante({ id, valor, aoEscolher, buscaClassName, invalido, descricaoDoErro }: Props) {
   const api = useApi();
   const [busca, setBusca] = useState("");
   const [escolhido, setEscolhido] = useState<Solicitante | null>(null);
@@ -41,26 +48,24 @@ export default function SeletorDeSolicitante({ id, valor, aoEscolher, selectClas
         placeholder="Buscar cliente por nome ou e-mail…"
         value={busca}
         onChange={(evento) => setBusca(evento.target.value)}
-        className={selectClassName}
+        className={buscaClassName}
       />
-      <select
+      <Select
         id={id}
-        className={selectClassName}
         value={valor}
         aria-invalid={invalido ? true : undefined}
         aria-describedby={descricaoDoErro}
-        onChange={(evento) => {
-          const solicitante = opcoes.find((item) => item.id === evento.target.value) ?? null;
+        placeholder={consulta.isPending ? "Carregando clientes…" : "Selecione o cliente"}
+        opcoes={valor ? [OPCAO_SEM_SOLICITANTE, ...opcoes.map(opcaoDo)] : opcoes.map(opcaoDo)}
+        onChange={(escolha) => {
+          const solicitante = opcoes.find((item) => item.id === escolha) ?? null;
           setEscolhido(solicitante);
           aoEscolher(solicitante);
         }}
-      >
-        <option value="">{consulta.isPending ? "Carregando clientes…" : "Selecione o cliente"}</option>
-        {opcoes.map((solicitante) => <option key={solicitante.id} value={solicitante.id}>{rotuloDo(solicitante)}</option>)}
-      </select>
+      />
       {consulta.isError && <p className="text-xs font-medium text-red-600">Não foi possível carregar os clientes. {mensagemDeErro(consulta.error)}</p>}
       {consulta.isSuccess && encontrados.length === 0 && (
-        <p className="text-xs text-slate-500">Nenhum cliente encontrado. Cadastre um usuário com perfil Cliente ou Gestor de frota em Usuários.</p>
+        <p className="text-xs text-slate-500">Nenhum cliente encontrado.</p>
       )}
     </div>
   );

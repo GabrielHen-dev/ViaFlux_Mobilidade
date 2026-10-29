@@ -1,6 +1,7 @@
 package br.com.viaflux.api.notificacao;
 
 import br.com.viaflux.api.chamado.CanalDeNotificacao;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,9 +17,11 @@ class CentralDeNotificacoes implements CanalDeNotificacao {
     private static final int TAMANHO_MAXIMO_DA_MENSAGEM = 255;
 
     private final NotificacaoRepository notificacoes;
+    private final ApplicationEventPublisher eventos;
 
-    CentralDeNotificacoes(NotificacaoRepository notificacoes) {
+    CentralDeNotificacoes(NotificacaoRepository notificacoes, ApplicationEventPublisher eventos) {
         this.notificacoes = notificacoes;
+        this.eventos = eventos;
     }
 
     @Override
@@ -26,6 +29,7 @@ class CentralDeNotificacoes implements CanalDeNotificacao {
     public void enviar(UUID destinatarioId, UUID chamadoId, String codigoDoChamado, String novoStatus, String mensagem, OffsetDateTime instante) {
         String texto = mensagem.length() > TAMANHO_MAXIMO_DA_MENSAGEM ? mensagem.substring(0, TAMANHO_MAXIMO_DA_MENSAGEM) : mensagem;
         notificacoes.save(new Notificacao(destinatarioId, chamadoId, codigoDoChamado, novoStatus, texto, instante));
+        eventos.publishEvent(new NotificacaoRegistrada(destinatarioId, codigoDoChamado, novoStatus, mensagem));
     }
 
     @Transactional(readOnly = true)

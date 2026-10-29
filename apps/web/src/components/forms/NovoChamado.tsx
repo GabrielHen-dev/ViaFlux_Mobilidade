@@ -42,17 +42,14 @@ function FormularioDoChamado({ usuario }: { usuario: UsuarioAutenticado }) {
           <Link href={ehCliente ? "/portal" : "/"} aria-label="Voltar" className="alvo-toque flex h-9 w-9 items-center justify-center rounded-xl border border-[#E2E8F0] text-[#64748B] transition-all hover:border-[#CBD5E1] hover:bg-white">
             <ChevronLeft size={16} />
           </Link>
-          <div>
-            <h1 className="font-display text-2xl font-bold text-brand-navy">Novo Chamado</h1>
-            <p className="text-sm text-[#64748B]">O protocolo é gerado quando o servidor confirmar a abertura.</p>
-          </div>
+          <h1 className="font-display text-2xl font-bold text-brand-navy">Novo Chamado</h1>
         </div>
 
         <AvisoDeEmailNaoVerificado usuario={usuario} />
 
         {abertura.restaurado && (
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-            <span>Recuperamos o rascunho que você estava preenchendo. Anexos precisam ser selecionados de novo.</span>
+            <span>Rascunho restaurado. Selecione os anexos novamente.</span>
             <button type="button" onClick={abertura.descartarRascunho} className="text-xs font-semibold underline">Descartar rascunho</button>
           </div>
         )}
@@ -60,7 +57,7 @@ function FormularioDoChamado({ usuario }: { usuario: UsuarioAutenticado }) {
         {abertura.falhaDoEnvio && (
           <div ref={avisoDeFalha} tabIndex={-1} role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 outline-none">
             <p className="flex items-center gap-2 font-semibold"><CircleAlert size={16} aria-hidden /> Envio não confirmado: a abertura não foi registrada.</p>
-            <p className="mt-1">{abertura.falhaDoEnvio} Seus dados continuam preenchidos. Use “Tentar de novo”, sem risco de duplicar o chamado.</p>
+            <p className="mt-1">{abertura.falhaDoEnvio} Os dados foram mantidos e o reenvio não duplica o chamado.</p>
           </div>
         )}
 
@@ -82,7 +79,7 @@ function FormularioDoChamado({ usuario }: { usuario: UsuarioAutenticado }) {
           <SecaoDeAnexos arquivos={abertura.arquivos} aoAdicionar={abertura.adicionarArquivos} aoRemover={abertura.removerArquivo} />
 
           <button type="submit" disabled={abertura.enviando || emailPendente(usuario)} className="alvo-toque w-full rounded-xl bg-brand-green py-3.5 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60">
-            {abertura.enviando ? "Enviando…" : abertura.falhaDoEnvio ? "Tentar de novo" : "Abrir Chamado"}
+            {abertura.enviando ? "Enviando…" : abertura.falhaDoEnvio ? "Tentar novamente" : "Abrir Chamado"}
           </button>
         </form>
       </div>

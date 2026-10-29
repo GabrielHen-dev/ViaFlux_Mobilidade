@@ -3,8 +3,8 @@ import { ErroApi } from "@/services/api/cliente";
 
 export function mensagemDeErro(erro: unknown) {
   if (erro instanceof ErroApi) {
-    if (erro.status === 401) return "Sua sessão expirou. Entre novamente para continuar.";
-    if (erro.status === 403) return "Seu perfil não tem permissão para esta operação.";
+    if (erro.status === 401) return "Sua sessão expirou. Entre novamente.";
+    if (erro.status === 403) return "Seu perfil não possui permissão para esta operação.";
     return erro.message;
   }
   return "Não foi possível concluir a operação. Tente novamente.";
@@ -26,7 +26,7 @@ export function FalhaAoCarregar({ erro, aoTentarDeNovo }: { erro: unknown; aoTen
       <p className="text-sm font-semibold text-red-700">{mensagemDeErro(erro)}</p>
       {aoTentarDeNovo && (
         <button type="button" onClick={aoTentarDeNovo} className="alvo-toque rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50">
-          Tentar de novo
+          Tentar novamente
         </button>
       )}
     </div>

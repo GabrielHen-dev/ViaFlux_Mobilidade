@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, FileText, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
 import type { Anexo, Chamado } from "@/types/chamado";
 import { baixarAnexo, enviarAnexo } from "@/services/api/chamados";
 import { useApi } from "@/store/AuthContext";
@@ -52,11 +53,9 @@ function MiniaturaDaImagem({ codigo, anexo }: { codigo: string; anexo: Anexo }) 
 function BotaoDeDownload({ codigo, anexo }: { codigo: string; anexo: Anexo }) {
   const api = useApi();
   const [baixando, setBaixando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
 
   async function baixar() {
     setBaixando(true);
-    setErro(null);
     try {
       const conteudo = await baixarAnexo(api, codigo, anexo.id);
       const url = URL.createObjectURL(conteudo);
@@ -66,19 +65,16 @@ function BotaoDeDownload({ codigo, anexo }: { codigo: string; anexo: Anexo }) {
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1_000);
     } catch (falha) {
-      setErro(mensagemDeErro(falha));
+      toast.error("Não foi possível baixar o arquivo", { description: mensagemDeErro(falha) });
     } finally {
       setBaixando(false);
     }
   }
 
   return (
-    <>
-      <button type="button" onClick={baixar} disabled={baixando} aria-label={`Baixar ${anexo.nome}`} className="alvo-toque inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-brand-blue hover:bg-blue-50 disabled:opacity-50">
-        <Download size={12} aria-hidden /> {baixando ? "Baixando…" : "Baixar"}
-      </button>
-      {erro && <span role="alert" className="text-[10px] text-red-600">{erro}</span>}
-    </>
+    <button type="button" onClick={baixar} disabled={baixando} aria-label={`Baixar ${anexo.nome}`} className="alvo-toque inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-brand-blue hover:bg-blue-50 disabled:opacity-50">
+      <Download size={12} aria-hidden /> {baixando ? "Baixando…" : "Baixar"}
+    </button>
   );
 }
 
@@ -91,15 +87,18 @@ export default function AnexosDoChamado({ chamado, somenteLeitura = false }: { c
 
   async function enviar(lista: EnvioEmAndamento[]) {
     setEnviando(true);
+    let enviados = 0;
     for (const envio of lista) {
       try {
         await enviarAnexo(api, chamado.id, envio.arquivo, envio.id);
+        enviados += 1;
         setEnvios((atuais) => atuais.filter((atual) => atual.id !== envio.id));
       } catch (falha) {
         setEnvios((atuais) => atuais.map((atual) => (atual.id === envio.id ? { ...atual, erro: mensagemDeErro(falha) } : atual)));
       }
     }
     setEnviando(false);
+    if (enviados > 0) toast.success(enviados === 1 ? "Anexo enviado" : `${enviados} anexos enviados`);
     await clienteDeConsultas.invalidateQueries({ queryKey: chaves.detalhe(chamado.id) });
     void invalidarListas(clienteDeConsultas);
   }
@@ -114,7 +113,7 @@ export default function AnexosDoChamado({ chamado, somenteLeitura = false }: { c
 
   return (
     <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5" aria-labelledby={`anexos-${chamado.id}`}>
-      <h3 id={`anexos-${chamado.id}`} className="mb-3 font-display text-xs font-semibold uppercase tracking-wide text-brand-navy">Fotos / Documentos</h3>
+      <h3 id={`anexos-${chamado.id}`} className="mb-3 font-display text-xs font-semibold uppercase tracking-wide text-brand-navy">Anexos</h3>
       {imagens.length > 0 && (
         <div className="mb-3 grid grid-cols-3 gap-2">
           {imagens.map((anexo) => <MiniaturaDaImagem key={anexo.id} codigo={chamado.id} anexo={anexo} />)}
@@ -136,20 +135,20 @@ export default function AnexosDoChamado({ chamado, somenteLeitura = false }: { c
           ))}
         </ul>
       ) : (
-        <p className="mb-3 text-xs text-slate-400">Nenhum anexo registrado.</p>
+        <p className="mb-3 text-xs text-slate-400">Nenhum anexo.</p>
       )}
       {envios.length > 0 && (
         <ul className="mb-3 space-y-1 text-xs" aria-live="polite">
           {envios.map((envio) => (
             <li key={envio.id} className={envio.erro ? "text-red-600" : "text-slate-500"}>
-              {envio.arquivo.name}: {envio.erro ? `não enviado. ${envio.erro}` : "enviando…"}
+              {envio.arquivo.name}: {envio.erro ? `falha no envio. ${envio.erro}` : "enviando…"}
             </li>
           ))}
         </ul>
       )}
       {falhas.length > 0 && !enviando && (
         <button type="button" onClick={() => void enviar(falhas.map((falha) => ({ ...falha, erro: null })))} className="alvo-toque mb-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 py-2 text-xs font-semibold text-red-700">
-          <RotateCcw size={12} aria-hidden /> Tentar de novo
+          <RotateCcw size={12} aria-hidden /> Reenviar anexos
         </button>
       )}
       {!somenteLeitura && <SeletorDeArquivos compacto aoAceitar={aoAceitar} desabilitado={enviando} />}

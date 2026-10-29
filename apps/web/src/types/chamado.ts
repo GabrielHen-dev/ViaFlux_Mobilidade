@@ -75,7 +75,7 @@ export interface Sla {
 
 export type TipoEvento =
   | "ABERTURA" | "TRIAGEM" | "CLASSIFICACAO" | "RECLASSIFICACAO" | "OVERRIDE" | "ROTEAMENTO" | "TRANSFERENCIA"
-  | "STATUS" | "ATUALIZACAO" | "ANEXO" | "LOCALIZACAO" | "SLA" | "FORNECEDOR" | "NOTIFICACAO";
+  | "STATUS" | "ATUALIZACAO" | "ANEXO" | "LOCALIZACAO" | "SLA" | "FORNECEDOR" | "NOTIFICACAO" | "ESCALONAMENTO";
 
 export interface EventoTimeline {
   id: string;
@@ -177,6 +177,13 @@ export interface Triagem {
   concluidaEm: string | null;
   concluidaPor: Autor | null;
   situacao: SituacaoSla;
+  revisaoPendente: boolean;
+}
+
+export interface Escalonamento {
+  em: string;
+  por: Autor | null;
+  observacao: string | null;
 }
 
 export interface Atendimento {
@@ -200,6 +207,7 @@ export interface ChamadoResumo {
   sla: Sla | null;
   triagem: Triagem;
   atendimento: Atendimento | null;
+  escalonamento: Escalonamento | null;
 }
 
 export interface Chamado extends ChamadoResumo {
@@ -209,7 +217,7 @@ export interface Chamado extends ChamadoResumo {
   roteamentoVersao?: string | null;
   slaVersao?: string | null;
   resolucaoResumo?: string | null;
-  estadoClassificacao?: "CLASSIFICADA" | "PENDENTE_CLASSIFICACAO" | "PENDENTE_ROTEAMENTO";
+  estadoClassificacao?: "CLASSIFICADA" | "PENDENTE_CLASSIFICACAO" | "PENDENTE_ROTEAMENTO" | "REVISAO_PENDENTE";
   episodio?: number;
   confirmacaoAte?: string | null;
   reaberturaAte?: string | null;
@@ -245,9 +253,10 @@ export interface ResumoChamados {
   porStatus: Record<Status, number>;
   porPrioridade: Record<CodigoPrioridade, number>;
   porDepartamento: Record<TipoChamado, number>;
-  sla: { primeiraResposta: ContadoresSla; resolucao: ContadoresSla };
+  sla: { primeiraResposta: ContadoresSla; resolucao: ContadoresSla; vigente: ContadoresSla };
   p1SemPrimeiraResposta: string[];
   triagem: ResumoTriagem;
+  escalonados: number;
 }
 
 export interface ResumoTriagem {
@@ -256,6 +265,7 @@ export interface ResumoTriagem {
   emRisco: number;
   atrasados: number;
   proximoLimite: string | null;
+  aguardandoRevisao: number;
 }
 
 export interface Notificacao {

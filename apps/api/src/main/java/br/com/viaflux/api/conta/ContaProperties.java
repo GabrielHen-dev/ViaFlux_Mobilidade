@@ -11,6 +11,7 @@ public record ContaProperties(
         String termosVersao,
         Duration validadeDaVerificacao,
         Duration validadeDaRedefinicao,
+        Duration validadeDoConvite,
         int tentativasPorJanela,
         Duration janelaDeTentativas
 ) {

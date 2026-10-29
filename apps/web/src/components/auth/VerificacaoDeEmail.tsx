@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { confirmarEmail, reenviarVerificacao } from "@/services/api/conta";
 import { ErroApi } from "@/services/api/cliente";
 import { useAuth } from "@/store/AuthContext";
 import CartaoDeAcesso, {
-  AvisoDeAcesso, ErroDeAcesso, botaoDeAcessoClass, campoDeAcessoClass, labelDeAcessoClass,
+  ErroDeAcesso, botaoDeAcessoClass, campoDeAcessoClass, labelDeAcessoClass,
 } from "@/components/auth/CartaoDeAcesso";
 
 type Situacao = { etapa: "confirmando" } | { etapa: "confirmado"; mensagem: string } | { etapa: "reenvio"; erro: string | null };
@@ -17,17 +18,16 @@ function mensagemDaFalha(falha: unknown, padrao: string) {
 
 export function ReenvioDaVerificacao({ emailInicial = "" }: { emailInicial?: string }) {
   const [email, setEmail] = useState(emailInicial);
-  const [aviso, setAviso] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
   async function enviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     setErro(null);
-    setAviso(null);
     setEnviando(true);
     try {
-      setAviso((await reenviarVerificacao(email.trim())).mensagem);
+      const resposta = await reenviarVerificacao(email.trim());
+      toast.success("Solicitação enviada", { description: resposta.mensagem });
     } catch (falha) {
       setErro(mensagemDaFalha(falha, "Não foi possível reenviar o link. Tente novamente."));
     } finally {
@@ -41,7 +41,6 @@ export function ReenvioDaVerificacao({ emailInicial = "" }: { emailInicial?: str
         <label htmlFor="reenvio-email" className={labelDeAcessoClass}>E-mail da conta</label>
         <input id="reenvio-email" className={campoDeAcessoClass} type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
-      <AvisoDeAcesso mensagem={aviso} />
       <ErroDeAcesso mensagem={erro} />
       <button type="submit" disabled={enviando || !email.trim()} className={botaoDeAcessoClass}>
         {enviando ? "Enviando…" : "Reenviar link de confirmação"}
@@ -69,18 +68,17 @@ export default function VerificacaoDeEmail({ token }: { token: string }) {
 
   if (situacao.etapa === "confirmando") {
     return (
-      <CartaoDeAcesso titulo="Confirmando seu e-mail" subtitulo="Só um instante.">
-        <p role="status" className="text-sm text-slate-500">Validando o link…</p>
+      <CartaoDeAcesso titulo="Confirmação de e-mail">
+        <p role="status" className="text-sm text-slate-500">Validando link…</p>
       </CartaoDeAcesso>
     );
   }
 
   if (situacao.etapa === "confirmado") {
     return (
-      <CartaoDeAcesso titulo="E-mail confirmado" subtitulo="Sua conta está pronta.">
-        <AvisoDeAcesso mensagem={situacao.mensagem} />
+      <CartaoDeAcesso titulo="Verificação concluída" subtitulo={situacao.mensagem}>
         <Link href={estado.status === "autenticado" ? "/" : "/login"} className={`${botaoDeAcessoClass} block text-center`}>
-          {estado.status === "autenticado" ? "Ir para o portal" : "Entrar"}
+          {estado.status === "autenticado" ? "Ir para o início" : "Entrar"}
         </Link>
       </CartaoDeAcesso>
     );
@@ -89,7 +87,7 @@ export default function VerificacaoDeEmail({ token }: { token: string }) {
   return (
     <CartaoDeAcesso
       titulo="Confirmar e-mail"
-      subtitulo="Informe o e-mail da conta para receber um link novo. O anterior deixa de valer."
+      subtitulo="Informe o e-mail cadastrado para receber um novo link."
       rodape={<Link href="/login" className="font-semibold text-brand-green underline-offset-2 hover:underline">Voltar ao login</Link>}
     >
       <ErroDeAcesso mensagem={situacao.erro} />

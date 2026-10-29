@@ -1,0 +1,5 @@
+Olá, {{nome}}.
+
+Recebemos uma solicitação para redefinir a senha da sua conta.
+
+O link expira em {{validade}} e pode ser usado uma única vez. Se você não fez esta solicitação, desconsidere esta mensagem. Sua senha atual continua válida.

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ClipboardList, Hand, Trash, UserCheck } from "lucide-react";
+import { ChevronLeft, ClipboardCheck, ClipboardList, Hand, ScanSearch, Trash, UserCheck } from "lucide-react";
 import type { Chamado } from "@/types/chamado";
 import { assumirAtendimento, moverParaLixeira } from "@/services/api/chamados";
 import { useApi, useUsuarioAutenticado } from "@/store/AuthContext";
@@ -18,6 +18,7 @@ import ServicoTerceiroForm from "@/components/forms/ServicoTerceiroForm";
 import { PrioridadeIndicador, StatusBadge } from "@/components/ui/StatusBadge";
 import { SlaDoChamado } from "@/components/ui/SlaIndicador";
 import { PrazoDaTriagem } from "@/components/triagem/PrazoDaTriagem";
+import { BotaoDeEscalonamento, SeloDeEscalonamento } from "@/components/chamados/EscalonamentoDoChamado";
 import { AvisoDeErro } from "@/components/feedback/EstadoDaConsulta";
 import { NOME_TIPO, ROTULO_PESO } from "@/utils/prioridade";
 import { formatarDataHora } from "@/utils/date";
@@ -74,7 +75,7 @@ function DetalhesConteudo({ chamado }: { chamado: Chamado }) {
               <PrioridadeIndicador prioridade={chamado.prioridade} score={chamado.score} />
             </div>
             <p className="text-sm text-[#64748B]">
-              <span className="font-semibold text-brand-navy">{chamado.departamento?.nome ?? (triado ? "Sem departamento" : "Aguardando triagem")}</span> · Aberto em {formatarDataHora(chamado.abertura)}
+              <span className="font-semibold text-brand-navy">{chamado.departamento?.nome ?? (triado ? "Sem departamento" : "Aguardando classificação")}</span> · Aberto em {formatarDataHora(chamado.abertura)}
             </p>
           </div>
         </div>
@@ -85,13 +86,14 @@ function DetalhesConteudo({ chamado }: { chamado: Chamado }) {
                 <Hand size={14} aria-hidden /> {assumir.isPending ? "Assumindo…" : assumeNoLugar ? `Assumir no lugar de ${responsavel?.nome}` : "Assumir chamado"}
               </button>
             )}
+            {atende && <BotaoDeEscalonamento chamado={chamado} />}
             {fazTriagem && !triado && (
               <Link href={`/chamados/${chamado.id}/triagem`} className="alvo-toque inline-flex items-center gap-1.5 rounded-xl bg-brand-green px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90">
-                <ClipboardList size={14} aria-hidden /> Fazer triagem
+                <ClipboardList size={14} aria-hidden /> Classificar
               </Link>
             )}
             {fazTriagem && triado && (
-              <Link href={`/chamados/${chamado.id}/triagem`} className="alvo-toque rounded-xl border border-[#E2E8F0] px-4 py-2 text-sm font-semibold text-[#475569] transition-all hover:bg-white">Triagem</Link>
+              <Link href={`/chamados/${chamado.id}/triagem`} className="alvo-toque rounded-xl border border-[#E2E8F0] px-4 py-2 text-sm font-semibold text-[#475569] transition-all hover:bg-white">Classificação</Link>
             )}
             {triado && conduz && (
               <Link href={`/chamados/${chamado.id}/encaminhamento`} className="alvo-toque rounded-xl bg-brand-blue px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90">
@@ -107,6 +109,18 @@ function DetalhesConteudo({ chamado }: { chamado: Chamado }) {
         )}
       </div>
       {(assumir.isError || exclusao.isError) && <div className="mb-4"><AvisoDeErro erro={assumir.error ?? exclusao.error} /></div>}
+      {fazTriagem && triagem.revisaoPendente && (
+        <div role="status" className="mb-5 flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:flex-row sm:items-center">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-amber-600"><ScanSearch size={18} aria-hidden /></span>
+          <div className="min-w-0 flex-1 text-sm text-amber-900">
+            <p className="font-semibold">Classificação automática pendente de revisão</p>
+            <p className="mt-0.5 text-amber-800">Classificado a partir do relato do solicitante. Confirme ou reclassifique.</p>
+          </div>
+          <Link href={`/chamados/${chamado.id}/triagem`} className="alvo-toque inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600">
+            <ClipboardCheck size={14} aria-hidden /> Revisar classificação
+          </Link>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         <div className="min-w-0 space-y-5 lg:col-span-2">
@@ -123,7 +137,7 @@ function DetalhesConteudo({ chamado }: { chamado: Chamado }) {
               <Informacao rotulo="Telefone" valor={chamado.telefone} />
               <Informacao rotulo="Veículo" valor={chamado.modelo} />
               <Informacao rotulo="Placa" valor={chamado.placa} />
-              <Informacao rotulo="Tipo" valor={chamado.tipo ? NOME_TIPO[chamado.tipo] : "A classificar — revisão da Central"} />
+              <Informacao rotulo="Tipo" valor={chamado.tipo ? NOME_TIPO[chamado.tipo] : "Aguardando classificação"} />
               <Informacao rotulo="Última atualização" valor={formatarDataHora(chamado.atualizadoEm)} />
             </div>
             {chamado.descricao && (
@@ -162,22 +176,23 @@ function DetalhesConteudo({ chamado }: { chamado: Chamado }) {
                 </div>
               ) : (
                 <div>
-                  <dt className="mb-1 text-xs text-[#94A3B8]">Prazo da triagem</dt>
+                  <dt className="mb-1 text-xs text-[#94A3B8]">Prazo de classificação</dt>
                   <dd><PrazoDaTriagem triagem={triagem} /></dd>
-                  {triagem.responsavel && <dd className="mt-1 text-xs text-slate-500">Em triagem com {triagem.responsavel.nome}</dd>}
+                  {triagem.responsavel && <dd className="mt-1 text-xs text-slate-500">Em análise com {triagem.responsavel.nome}</dd>}
                 </div>
               )}
               {triagem.concluidaEm && (
                 <div>
-                  <dt className="mb-1 text-xs text-[#94A3B8]">Triagem</dt>
+                  <dt className="mb-1 text-xs text-[#94A3B8]">Classificação</dt>
                   <dd className="text-xs text-slate-600">
-                    Concluída por {triagem.concluidaPor?.nome ?? "—"} em {formatarDataHora(triagem.concluidaEm)}
+                    {triagem.concluidaPor?.nome ?? "—"} · {formatarDataHora(triagem.concluidaEm)}
+                    {triagem.revisaoPendente && <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 font-semibold text-amber-800">revisão pendente</span>}
                   </dd>
                 </div>
               )}
               {chamado.override && (
                 <div className="rounded-lg bg-amber-50 p-2 text-xs text-amber-800">
-                  Override para {chamado.override.prioridade} por {chamado.override.autor.nome}: “{chamado.override.justificativa}”
+                  Prioridade manual {chamado.override.prioridade} · {chamado.override.autor.nome}: “{chamado.override.justificativa}”
                 </div>
               )}
               <div>
@@ -198,9 +213,10 @@ function DetalhesConteudo({ chamado }: { chamado: Chamado }) {
             </dl>
           </section>
           {chamado.sla && chamado.status !== "Fechado" && (
-            <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5" aria-label="SLA do chamado">
-              <h3 className="mb-3 font-display text-xs font-semibold uppercase tracking-wide text-brand-navy">SLA</h3>
-              <SlaDoChamado sla={chamado.sla} />
+            <section className="space-y-4 rounded-2xl border border-[#E2E8F0] bg-white p-5" aria-label="Prazos do chamado">
+              <h3 className="font-display text-xs font-semibold uppercase tracking-wide text-brand-navy">Prazos (SLA)</h3>
+              <SlaDoChamado sla={chamado.sla} abertura={chamado.abertura} />
+              <SeloDeEscalonamento chamado={chamado} detalhado />
             </section>
           )}
           <LocalizacaoDoChamado chamado={chamado} somenteLeitura={!conduz} />

@@ -1,0 +1,5 @@
+Olá, {{nome}}.
+
+Confirme seu endereço de e-mail para ativar sua conta na ViaFlux Mobilidade.
+
+O link expira em {{validade}} e pode ser usado uma única vez. Caso não tenha criado esta conta, desconsidere esta mensagem.

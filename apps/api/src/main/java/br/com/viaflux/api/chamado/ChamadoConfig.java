@@ -34,4 +34,12 @@ class ChamadoConfig {
     RelogioCorrido relogioCorrido() {
         return new RelogioCorrido();
     }
+
+    @Bean
+    ArmazenamentoDeArquivos armazenamentoDeArquivos(AnexosProperties propriedades) {
+        return switch (propriedades.armazenamento()) {
+            case DISCO -> new ArmazenamentoEmDisco(propriedades);
+            case S3 -> ArmazenamentoEmS3.conectar(propriedades.s3());
+        };
+    }
 }

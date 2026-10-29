@@ -6,7 +6,7 @@ import { redefinirSenha } from "@/services/api/conta";
 import { ErroApi } from "@/services/api/cliente";
 import { useAuth } from "@/store/AuthContext";
 import CartaoDeAcesso, {
-  AvisoDeAcesso, ErroDeAcesso, ErroDoCampo, botaoDeAcessoClass, campoDeAcessoClass, labelDeAcessoClass, linkDeAcessoClass,
+  ErroDeAcesso, ErroDoCampo, botaoDeAcessoClass, campoDeAcessoClass, labelDeAcessoClass, linkDeAcessoClass,
 } from "@/components/auth/CartaoDeAcesso";
 
 const SENHA_MINIMA = 8;
@@ -40,18 +40,15 @@ export default function RedefinicaoDeSenha({ token }: { token: string }) {
 
   if (!token) {
     return (
-      <CartaoDeAcesso titulo="Link incompleto" subtitulo="Abra o link exatamente como chegou no e-mail.">
-        <p className="text-sm text-slate-600">
-          Se o link expirou, <Link href="/esqueci-a-senha" className={linkDeAcessoClass}>peça um novo</Link>.
-        </p>
+      <CartaoDeAcesso titulo="Link inválido" subtitulo="O link de redefinição está incompleto ou expirou.">
+        <Link href="/esqueci-a-senha" className={`${botaoDeAcessoClass} block text-center`}>Solicitar novo link</Link>
       </CartaoDeAcesso>
     );
   }
 
   if (concluido) {
     return (
-      <CartaoDeAcesso titulo="Senha alterada" subtitulo="As sessões abertas foram encerradas por segurança.">
-        <AvisoDeAcesso mensagem={concluido} />
+      <CartaoDeAcesso titulo="Redefinição concluída" subtitulo={concluido}>
         <Link href="/login" className={`${botaoDeAcessoClass} block text-center`}>Entrar</Link>
       </CartaoDeAcesso>
     );
@@ -59,8 +56,8 @@ export default function RedefinicaoDeSenha({ token }: { token: string }) {
 
   return (
     <CartaoDeAcesso
-      titulo="Criar senha nova"
-      subtitulo="Use pelo menos 8 caracteres."
+      titulo="Redefinir senha"
+      subtitulo={`Mínimo de ${SENHA_MINIMA} caracteres.`}
       rodape={<Link href="/login" className="font-semibold text-brand-green underline-offset-2 hover:underline">Voltar ao login</Link>}
     >
       <form noValidate onSubmit={enviar}>
@@ -78,7 +75,7 @@ export default function RedefinicaoDeSenha({ token }: { token: string }) {
         <ErroDeAcesso mensagem={erro} />
         {erro && (
           <p className="mb-4 text-xs text-slate-500">
-            <Link href="/esqueci-a-senha" className={linkDeAcessoClass}>Pedir um link novo</Link>
+            <Link href="/esqueci-a-senha" className={linkDeAcessoClass}>Solicitar novo link</Link>
           </p>
         )}
         <button type="submit" disabled={enviando || !senha || !confirmacao} className={botaoDeAcessoClass}>

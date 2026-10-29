@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { ExternalLink, MapPin } from "lucide-react";
+import { toast } from "sonner";
 import type { Chamado, Localizacao } from "@/types/chamado";
 import { registrarLocalizacao } from "@/services/api/chamados";
 import { useAcaoNoChamado } from "@/hooks/consultas";
 import CampoDeLocalizacao, { descreverCoordenadas } from "@/components/forms/CampoDeLocalizacao";
-import { AvisoDeErro } from "@/components/feedback/EstadoDaConsulta";
+import { mensagemDeErro } from "@/components/feedback/EstadoDaConsulta";
 import { completarLocalizacao, formatarCep, linkNoOpenStreetMap, temCoordenadas, temEnderecoEstruturado } from "@/utils/endereco";
 
 const inputClass = "w-full px-3 py-2 rounded-lg border border-[#E2E8F0] text-sm text-brand-dark outline-none focus:border-brand-blue";
@@ -73,7 +74,7 @@ export default function LocalizacaoDoChamado({ chamado, somenteLeitura = false }
             rel="noreferrer"
             className="alvo-toque inline-flex items-center gap-1.5 text-xs font-semibold text-brand-blue hover:underline"
           >
-            {temCoordenadas(atual) ? "Abrir no mapa (OpenStreetMap)" : "Abrir no mapa"} <ExternalLink size={12} aria-hidden />
+            Abrir no mapa <ExternalLink size={12} aria-hidden />
           </a>
         </div>
       ) : (
@@ -87,13 +88,18 @@ export default function LocalizacaoDoChamado({ chamado, somenteLeitura = false }
             <button
               type="button"
               disabled={salvar.isPending || (!rascunho.endereco.trim() && rascunho.latitude === null)}
-              onClick={() => salvar.mutate(rascunho, { onSuccess: () => setEditando(false) })}
+              onClick={() => salvar.mutate(rascunho, {
+                onSuccess: () => {
+                  setEditando(false);
+                  toast.success("Localização atualizada");
+                },
+                onError: (erro) => toast.error("Não foi possível salvar a localização", { description: mensagemDeErro(erro) }),
+              })}
               className="alvo-toque flex-1 rounded-lg bg-brand-green py-2 text-xs font-semibold text-white disabled:opacity-40"
             >
               {salvar.isPending ? "Salvando…" : "Salvar localização"}
             </button>
           </div>
-          {salvar.isError && <AvisoDeErro erro={salvar.error} />}
         </div>
       )}
     </section>

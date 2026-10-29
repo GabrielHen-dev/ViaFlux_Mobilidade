@@ -2,18 +2,21 @@
 
 import { useMemo, type ReactNode } from "react";
 import { FileText, X } from "lucide-react";
-import type { Motivo, TipoChamado } from "@/types/chamado";
+import type { TipoChamado } from "@/types/chamado";
 import { useContextos, useMotivos } from "@/hooks/consultas";
 import { mensagemDeErro } from "@/components/feedback/EstadoDaConsulta";
 import SeletorDeArquivos from "@/components/forms/SeletorDeArquivos";
 import SeletorDeSolicitante from "@/components/forms/SeletorDeSolicitante";
 import CampoDeLocalizacao from "@/components/forms/CampoDeLocalizacao";
+import Select, { type OpcaoDoSelect } from "@/components/ui/Select";
 import { NOME_TIPO } from "@/utils/prioridade";
 import { formatarTamanho } from "@/utils/anexos";
 import {
   type AlterarCampo, type ArquivoPendente, type CampoDoFormulario, type CamposDoRascunho, type ErrosDoFormulario,
   ID_DO_CAMPO, inputClass, labelClass, propriedadesDoCampo,
 } from "@/components/forms/novo-chamado/formulario";
+
+const OPCAO_OUTRO_MOTIVO: OpcaoDoSelect = { valor: "OUTRO", rotulo: "Outro motivo", grupo: "Outros" };
 
 interface PropsDaSecao {
   campos: CamposDoRascunho;
@@ -44,11 +47,14 @@ export function SecaoDoProblema({ campos, erros, alterar, escolherMotivo }: Prop
   const outroSelecionado = campos.motivoId === "OUTRO";
   const contextos = useContextos(motivoSelecionado?.tipo ?? null);
   const listaDeMotivos = motivos.data;
-  const motivosPorTipo = useMemo(() => {
-    const grupos = new Map<TipoChamado, Motivo[]>();
-    for (const motivo of listaDeMotivos ?? []) grupos.set(motivo.tipo, [...(grupos.get(motivo.tipo) ?? []), motivo]);
-    return [...grupos.entries()];
+  const opcoesDeMotivo = useMemo<OpcaoDoSelect[]>(() => {
+    const grupos = new Map<TipoChamado, OpcaoDoSelect[]>();
+    for (const motivo of listaDeMotivos ?? []) {
+      grupos.set(motivo.tipo, [...(grupos.get(motivo.tipo) ?? []), { valor: motivo.id, rotulo: motivo.descricao, grupo: NOME_TIPO[motivo.tipo] }]);
+    }
+    return [...[...grupos.values()].flat(), OPCAO_OUTRO_MOTIVO];
   }, [listaDeMotivos]);
+  const opcoesDeContexto = (contextos.data ?? []).map((contexto) => ({ valor: contexto.id, rotulo: contexto.descricao }));
 
   const aoEscolherMotivo = (motivoId: string) => {
     const novoTipo = motivos.data?.find((motivo) => motivo.id === motivoId)?.tipo;
@@ -60,31 +66,34 @@ export function SecaoDoProblema({ campos, erros, alterar, escolherMotivo }: Prop
       <div className="space-y-4">
         <div>
           <label htmlFor={ID_DO_CAMPO.motivoId} className={labelClass}>Motivo *</label>
-          <select {...propriedadesDoCampo("motivoId", erros)} className={inputClass} value={campos.motivoId} onChange={(evento) => aoEscolherMotivo(evento.target.value)} disabled={motivos.isPending}>
-            <option value="">{motivos.isPending ? "Carregando motivos…" : "Selecione o motivo"}</option>
-            {motivosPorTipo.map(([tipo, lista]) => (
-              <optgroup key={tipo} label={NOME_TIPO[tipo]}>
-                {lista.map((motivo) => <option key={motivo.id} value={motivo.id}>{motivo.descricao}</option>)}
-              </optgroup>
-            ))}
-            <option value="OUTRO">Outro motivo</option>
-          </select>
+          <Select
+            {...propriedadesDoCampo("motivoId", erros)}
+            value={campos.motivoId}
+            onChange={aoEscolherMotivo}
+            opcoes={motivos.isPending ? [] : opcoesDeMotivo}
+            placeholder={motivos.isPending ? "Carregando motivos…" : "Selecione o motivo"}
+            disabled={motivos.isPending}
+          />
           <ErroDoCampo campo="motivoId" erros={erros} />
           {motivos.isError && <p className="mt-1 text-xs font-medium text-red-600">Não foi possível carregar os motivos. {mensagemDeErro(motivos.error)}</p>}
         </div>
         <div>
-          <label htmlFor={ID_DO_CAMPO.contextoId} className={labelClass}>Contexto situacional {outroSelecionado ? "(não se aplica)" : "*"}</label>
-          <select {...propriedadesDoCampo("contextoId", erros)} className={inputClass} value={campos.contextoId} onChange={(evento) => alterar("contextoId", evento.target.value)} disabled={!motivoSelecionado || contextos.isPending || outroSelecionado}>
-            <option value="">{outroSelecionado ? "A Central classificará este chamado" : motivoSelecionado ? "Selecione a situação atual" : "Escolha o motivo primeiro"}</option>
-            {(contextos.data ?? []).map((contexto) => <option key={contexto.id} value={contexto.id}>{contexto.descricao}</option>)}
-          </select>
+          <label htmlFor={ID_DO_CAMPO.contextoId} className={labelClass}>{outroSelecionado ? "Contexto situacional" : "Contexto situacional *"}</label>
+          <Select
+            {...propriedadesDoCampo("contextoId", erros)}
+            value={campos.contextoId}
+            onChange={(valor) => alterar("contextoId", valor)}
+            opcoes={outroSelecionado ? [] : opcoesDeContexto}
+            placeholder={outroSelecionado ? "Não se aplica" : !motivoSelecionado ? "Escolha o motivo primeiro" : contextos.isPending ? "Carregando situações…" : "Selecione a situação atual"}
+            disabled={!motivoSelecionado || contextos.isPending || outroSelecionado}
+          />
           <ErroDoCampo campo="contextoId" erros={erros} />
         </div>
         {outroSelecionado && <div>
           <label htmlFor={ID_DO_CAMPO.motivoOutro} className={labelClass}>Descreva brevemente o outro motivo *</label>
           <input {...propriedadesDoCampo("motivoOutro", erros)} className={inputClass} maxLength={200} value={campos.motivoOutro} onChange={(evento) => alterar("motivoOutro", evento.target.value)} />
           <ErroDoCampo campo="motivoOutro" erros={erros} />
-          <p className="mt-1 text-xs text-slate-500">A Central fará a classificação. Em risco imediato à vida ou segurança, ligue para a Central 24h.</p>
+          <p className="mt-1 text-xs text-slate-500">Em risco imediato à vida ou segurança, ligue para a Central 24h.</p>
         </div>}
         <div>
           <label htmlFor={ID_DO_CAMPO.descricao} className={labelClass}>Descrição *</label>
@@ -111,13 +120,13 @@ export function SecaoDoSolicitante({ campos, erros, alterar, abrePelaCentral, ge
           <SeletorDeSolicitante
             id={ID_DO_CAMPO.solicitanteId}
             valor={campos.solicitanteId}
-            selectClassName={inputClass}
+            buscaClassName={inputClass}
             invalido={Boolean(erros.solicitanteId)}
             descricaoDoErro={erros.solicitanteId ? `${ID_DO_CAMPO.solicitanteId}-erro` : undefined}
             aoEscolher={escolherSolicitante}
           />
           <ErroDoCampo campo="solicitanteId" erros={erros} />
-          <p className="mt-1 text-xs text-slate-500">{abrePelaCentral ? "Selecione o cliente validado para esta abertura." : "A lista é limitada à organização vinculada à sua conta."}</p>
+          {!abrePelaCentral && <p className="mt-1 text-xs text-slate-500">Apenas motoristas da sua organização.</p>}
         </div>
       )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

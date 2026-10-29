@@ -14,9 +14,9 @@ export default function PerfilRequerido({ perfis, children }: { perfis: readonly
       <div className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center">
         <ShieldAlert size={28} className="mx-auto mb-3 text-amber-600" aria-hidden />
         <h1 className="mb-2 text-xl font-bold text-brand-navy">Acesso não permitido</h1>
-        <p className="mb-6 text-sm text-slate-500">Seu perfil não tem acesso a esta tela.</p>
+        <p className="mb-6 text-sm text-slate-500">Seu perfil não possui permissão para acessar esta página.</p>
         <Link href={rotaInicialDo(usuario)} className="alvo-toque inline-flex items-center justify-center rounded-xl bg-brand-green px-4 py-2.5 text-sm font-semibold text-white">
-          Ir para o início
+          Voltar ao início
         </Link>
       </div>
     </main>

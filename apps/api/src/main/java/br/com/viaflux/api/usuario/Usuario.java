@@ -33,7 +33,7 @@ public class Usuario {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(name = "senha_hash", nullable = false)
+    @Column(name = "senha_hash")
     private String senhaHash;
 
     @Column(nullable = false)
@@ -97,6 +97,16 @@ public class Usuario {
         this.departamentos = new HashSet<>(departamentos);
     }
 
+    public static Usuario convidado(
+            String nome,
+            String email,
+            Set<Perfil> perfis,
+            Organizacao organizacao,
+            Set<Departamento> departamentos
+    ) {
+        return new Usuario(nome, email, null, perfis, organizacao, departamentos);
+    }
+
     public static String normalizarEmail(String email) {
         return email.trim().toLowerCase(Locale.ROOT);
     }
@@ -115,6 +125,10 @@ public class Usuario {
 
     public String getSenhaHash() {
         return senhaHash;
+    }
+
+    public boolean convitePendente() {
+        return senhaHash == null;
     }
 
     public boolean isAtivo() {
