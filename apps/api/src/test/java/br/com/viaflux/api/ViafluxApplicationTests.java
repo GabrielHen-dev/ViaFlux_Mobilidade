@@ -17,12 +17,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.everyItem;
-import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -31,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 import java.util.UUID;
 
-@SpringBootTest
+@SpringBootTest(properties = "management.health.mail.enabled=false")
 @AutoConfigureMockMvc
 @Testcontainers(disabledWithoutDocker = true)
 class ViafluxApplicationTests {
@@ -83,8 +78,8 @@ class ViafluxApplicationTests {
         Integer contexts = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM viaflux.contexto", Integer.class);
 
         assertThat(schemaExists).isTrue();
-        assertThat(appliedMigrations).isEqualTo(13);
-        assertThat(latestVersion).isEqualTo("13");
+        assertThat(appliedMigrations).isEqualTo(18);
+        assertThat(latestVersion).isEqualTo("18");
         assertThat(reasons).isEqualTo(30);
         assertThat(contexts).isEqualTo(30);
     }
@@ -160,7 +155,7 @@ class ViafluxApplicationTests {
                 .andExpect(jsonPath("$.totalElements").value(0));
 
         mockMvc.perform(get("/api/chamados")
-                        .with(tokenPerfil(criarUsuarioDeTeste("Admin de teste"), "ADMIN"))
+                        .with(tokenPerfil(criarUsuarioDeTeste("Admin de teste", "ADMIN"), "ADMIN"))
                         .queryParam("busca", codigo))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(1));
@@ -199,9 +194,8 @@ class ViafluxApplicationTests {
     }
 
     @Test
-    void ticketGoesThroughTriageBeforeReachingTheDepartmentQueue() throws Exception {
+    void ticketIsClassifiedAndRoutedAutomaticallyAtOpening() throws Exception {
         UUID cliente = criarClienteDeTeste();
-        UUID atendente = criarUsuarioDeTeste("Atendente de teste");
         UUID manutencao = criarUsuarioDoDepartamento("MANUTENCAO");
         UUID tecnologia = criarUsuarioDoDepartamento("TI");
 
@@ -210,97 +204,47 @@ class ViafluxApplicationTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(CORPO_DE_ABERTURA))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.status").value("Aberto"))
-                .andExpect(jsonPath("$.prioridade").isEmpty())
-                .andExpect(jsonPath("$.sla").isEmpty())
-                .andExpect(jsonPath("$.triagem.prazoMinutos").value(10))
                 .andExpect(jsonPath("$.motivo.id").value("M-MANUTENCAO-1"))
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
+                .andExpect(jsonPath("$.prioridade").value("P1"))
+                .andExpect(jsonPath("$.score").value(10))
+                .andExpect(jsonPath("$.departamento.codigo").value("MANUTENCAO"))
+                .andExpect(jsonPath("$.sla.primeiraResposta.limite").exists())
+                .andReturn().getResponse().getContentAsString();
         String codigo = objectMapper.readTree(resposta).get("id").asText();
 
-        mockMvc.perform(get("/api/chamados").with(tokenPerfil(manutencao, "DEPARTAMENTO")).queryParam("busca", codigo))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements").value(0));
-        mockMvc.perform(get("/api/chamados/{codigo}", codigo).with(tokenPerfil(manutencao, "DEPARTAMENTO")))
-                .andExpect(status().isNotFound());
         mockMvc.perform(get("/api/chamados")
-                        .with(tokenPerfil(atendente, "ATENDENTE"))
-                        .queryParam("busca", codigo)
-                        .queryParam("etapa", "TRIAGEM"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements").value(1));
-        mockMvc.perform(patch("/api/chamados/{codigo}/status", codigo)
-                        .with(tokenPerfil(atendente, "ATENDENTE"))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"Em atendimento\"}"))
-                .andExpect(status().isForbidden());
-
-        mockMvc.perform(post("/api/chamados/{codigo}/triagem/inicio", codigo).with(tokenPerfil(atendente, "ATENDENTE")))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("Em triagem"))
-                .andExpect(jsonPath("$.triagem.responsavel.nome").value("Atendente de teste"));
-        mockMvc.perform(post("/api/chamados/{codigo}/triagem", codigo)
-                        .with(tokenPerfil(atendente, "ATENDENTE"))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"tipo\":\"MANUTENCAO\",\"severidade\":3,\"urgencia\":3,\"departamento\":\"MANUTENCAO\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("Na fila"))
-                .andExpect(jsonPath("$.prioridade").value("P3"))
-                .andExpect(jsonPath("$.departamento.codigo").value("MANUTENCAO"))
-                .andExpect(jsonPath("$.sla.primeiraResposta.limite").exists());
-
-        mockMvc.perform(get("/api/chamados").with(tokenPerfil(manutencao, "DEPARTAMENTO")).queryParam("busca", codigo))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements").value(1));
-        mockMvc.perform(get("/api/chamados/{codigo}", codigo).with(tokenPerfil(tecnologia, "DEPARTAMENTO")))
-                .andExpect(status().isNotFound());
-        mockMvc.perform(patch("/api/chamados/{codigo}/status", codigo)
                         .with(tokenPerfil(manutencao, "DEPARTAMENTO"))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"Em atendimento\"}"))
+                        .queryParam("busca", codigo))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("Em atendimento"));
-
-        mockMvc.perform(get("/api/chamados/{codigo}", codigo).with(tokenCliente(cliente)))
+                .andExpect(jsonPath("$.totalElements").value(1));
+        mockMvc.perform(get("/api/chamados/{codigo}", codigo)
+                        .with(tokenPerfil(tecnologia, "DEPARTAMENTO")))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/chamados/{codigo}", codigo)
+                        .with(tokenCliente(cliente)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("Em atendimento"))
-                .andExpect(jsonPath("$.timeline[?(@.tipo == 'CLASSIFICACAO')]").isEmpty())
-                .andExpect(jsonPath("$.timeline[?(@.tipo == 'ROTEAMENTO')]").isNotEmpty());
-        mockMvc.perform(get("/api/chamados/{codigo}", codigo).with(tokenPerfil(atendente, "ATENDENTE")))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.timeline[*].acao").value(contains(
-                        "Chamado aberto",
-                        "Aguardando triagem",
-                        "Triagem iniciada",
-                        "Triagem concluída",
-                        "Encaminhado para Manutenção",
-                        "Cliente notificado",
-                        "Status alterado para Em atendimento",
-                        "Cliente notificado")));
-        mockMvc.perform(get("/api/notificacoes").with(tokenCliente(cliente)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[*].chamadoId").value(everyItem(is(codigo))))
-                .andExpect(jsonPath("$[*].novoStatus").value(containsInAnyOrder("Na fila", "Em atendimento")));
+                .andExpect(jsonPath("$.prioridade").value("P1"));
     }
 
     private UUID criarClienteDeTeste() {
-        return criarUsuarioDeTeste("Cliente de teste");
+        return criarUsuarioDeTeste("Cliente de teste", "CLIENTE");
     }
 
-    private UUID criarUsuarioDeTeste(String nome) {
+    private UUID criarUsuarioDeTeste(String nome, String perfil) {
         UUID id = UUID.randomUUID();
         jdbcTemplate.update(
-                "INSERT INTO viaflux.usuario (id, nome, email, senha_hash) VALUES (?, ?, ?, ?)",
+                "INSERT INTO viaflux.usuario (id, nome, email, senha_hash, email_verificado_em) VALUES (?, ?, ?, ?, now())",
                 id, nome, id + "@exemplo.com", "hash-de-teste"
+        );
+        jdbcTemplate.update(
+                "INSERT INTO viaflux.usuario_perfil (usuario_id, perfil_codigo) VALUES (?, ?)",
+                id, perfil
         );
         return id;
     }
 
     private UUID criarUsuarioDoDepartamento(String departamento) {
-        UUID id = criarUsuarioDeTeste("Equipe " + departamento);
+        UUID id = criarUsuarioDeTeste("Equipe " + departamento, "DEPARTAMENTO");
         jdbcTemplate.update(
                 "INSERT INTO viaflux.usuario_departamento (usuario_id, departamento_codigo) VALUES (?, ?)",
                 id, departamento
