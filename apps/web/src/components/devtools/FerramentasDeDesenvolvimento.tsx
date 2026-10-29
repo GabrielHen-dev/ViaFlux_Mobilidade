@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Database, Eraser, FlaskConical, Trash } from "lucide-react";
+import { Check, Database, Eraser, FlaskConical, Trash, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import { ErroApi } from "@/services/api/cliente";
-import { complementarComAcoesDeExemplo, consultarEstadoDosDados, limparDadosDeExemplo, popularBanco } from "@/services/api/devtools";
+import { apagarTudoExcetoAdministradores, complementarComAcoesDeExemplo, consultarEstadoDosDados, limparDadosDeExemplo, popularBanco } from "@/services/api/devtools";
 import { useApi } from "@/store/AuthContext";
 import { invalidarListas } from "@/hooks/consultas";
 import PerfilRequerido from "@/components/auth/PerfilRequerido";
@@ -16,6 +16,7 @@ const LIMITE_POR_VEZ = 200;
 const PREFIXO_DOS_DADOS_DO_NAVEGADOR = "viaflux.";
 const CHAVES_PRESERVADAS = ["viaflux.refreshToken"];
 const BANCO_DA_SIMULACAO_ANTIGA = "viaflux-simulacao";
+const PALAVRA_DE_CONFIRMACAO = "APAGAR";
 
 function apagarDadosDoNavegador() {
   try {
@@ -40,12 +41,14 @@ function ConteudoDasFerramentas() {
   const clienteDeConsultas = useQueryClient();
   const [quantidade, setQuantidade] = useState(QUANTIDADE_PADRAO);
   const [enriquecer, setEnriquecer] = useState(true);
-  const [confirmandoLimpeza, setConfirmandoLimpeza] = useState<"banco" | "navegador" | null>(null);
+  const [confirmandoLimpeza, setConfirmandoLimpeza] = useState<"banco" | "navegador" | "tudo" | null>(null);
+  const [confirmacaoDigitada, setConfirmacaoDigitada] = useState("");
 
   const estado = useQuery({ queryKey: ["dev-tools", "estado"], queryFn: () => consultarEstadoDosDados(api), retry: false });
   const aposMudanca = async (titulo: string, linhas: string[] = []) => {
     toast.success(titulo, { description: linhas.length > 0 ? linhas.join(" ") : undefined });
     setConfirmandoLimpeza(null);
+    setConfirmacaoDigitada("");
     await Promise.all([estado.refetch(), invalidarListas(clienteDeConsultas)]);
   };
 
@@ -67,10 +70,19 @@ function ConteudoDasFerramentas() {
     onSuccess: (resultado) => aposMudanca("Dados de exemplo removidos", [`${resultado.chamadosRemovidos} chamados, ${resultado.usuariosRemovidos} usuários e ${resultado.organizacoesRemovidas} organizações.`]),
     onError: (erro) => toast.error("Não foi possível remover os dados de exemplo", { description: mensagemDeErro(erro) }),
   });
+  const limpezaGeral = useMutation({
+    mutationFn: () => apagarTudoExcetoAdministradores(api),
+    onSuccess: (resultado) => aposMudanca("Banco apagado", [
+      `${resultado.chamadosRemovidos} chamados, ${resultado.usuariosRemovidos} usuários e ${resultado.organizacoesRemovidas} organizações removidos.`,
+      `${resultado.administradoresMantidos} administrador(es) mantido(s).`,
+    ]),
+    onError: (erro) => toast.error("Não foi possível apagar o banco", { description: mensagemDeErro(erro) }),
+  });
 
   const desabilitadoNaApi = estado.error instanceof ErroApi && estado.error.status === 404;
   const quantidadeValida = Number.isInteger(quantidade) && quantidade >= 1 && quantidade <= LIMITE_POR_VEZ;
-  const ocupado = populacao.isPending || limpezaDoBanco.isPending;
+  const ocupado = populacao.isPending || limpezaDoBanco.isPending || limpezaGeral.isPending;
+  const cancelarConfirmacao = () => { setConfirmandoLimpeza(null); setConfirmacaoDigitada(""); };
 
   return (
     <main id="conteudo" className="p-4 md:p-8">
@@ -98,7 +110,9 @@ function ConteudoDasFerramentas() {
                 <p role="alert" className="mb-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900"><code>DEV_TOOLS_SENHA</code> não configurada em <code>infra/.env</code>. Os usuários de exemplo não serão criados.</p>
               )}
               <p className="mb-4 text-sm text-slate-600">
-                Cria 3 organizações e 10 usuários de exemplo (um por perfil), se ainda não existirem, e adiciona chamados variados dos últimos 5 dias. Execuções repetidas acumulam chamados.
+                Cria {estado.data.usuarios.length} usuários de exemplo cobrindo todos os perfis e as organizações deles, se ainda não existirem, e adiciona chamados variados.
+                Os chamados em aberto nascem com o prazo atual (triagem, primeira resposta ou resolução) faltando de 3 a 12 minutos para vencer; os resolvidos e fechados ficam espalhados pelos últimos 5 dias.
+                Execuções repetidas acumulam chamados.
               </p>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                 <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -142,7 +156,7 @@ function ConteudoDasFerramentas() {
                   {confirmandoLimpeza === "banco" ? (
                     <div className="flex gap-2">
                       <button type="button" disabled={ocupado} onClick={() => limpezaDoBanco.mutate()} className="alvo-toque rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white">Confirmar exclusão</button>
-                      <button type="button" onClick={() => setConfirmandoLimpeza(null)} className="alvo-toque rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600">Cancelar</button>
+                      <button type="button" onClick={cancelarConfirmacao} className="alvo-toque rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600">Cancelar</button>
                     </div>
                   ) : (
                     <button type="button" disabled={ocupado} onClick={() => setConfirmandoLimpeza("banco")} className="alvo-toque inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-600">
@@ -155,11 +169,33 @@ function ConteudoDasFerramentas() {
                   {confirmandoLimpeza === "navegador" ? (
                     <div className="flex gap-2">
                       <button type="button" onClick={() => { apagarDadosDoNavegador(); void aposMudanca("Rascunhos removidos"); }} className="alvo-toque rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white">Confirmar</button>
-                      <button type="button" onClick={() => setConfirmandoLimpeza(null)} className="alvo-toque rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600">Cancelar</button>
+                      <button type="button" onClick={cancelarConfirmacao} className="alvo-toque rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600">Cancelar</button>
                     </div>
                   ) : (
                     <button type="button" onClick={() => setConfirmandoLimpeza("navegador")} className="alvo-toque inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">
                       <Eraser size={14} aria-hidden /> Limpar rascunhos do navegador
+                    </button>
+                  )}
+                </div>
+                <div className="rounded-xl border border-red-300 bg-red-50/40 p-4 md:col-span-2">
+                  <p className="mb-3 text-sm text-slate-700">
+                    Apaga <strong>todos</strong> os chamados, usuários e organizações do banco, inclusive os que não são de exemplo, e reinicia a numeração dos protocolos.
+                    Só os usuários com perfil ADMIN são mantidos. Catálogos, regras e feriados não são alterados.
+                  </p>
+                  {confirmandoLimpeza === "tudo" ? (
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                      <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Digite {PALAVRA_DE_CONFIRMACAO} para confirmar
+                        <input value={confirmacaoDigitada} onChange={(evento) => setConfirmacaoDigitada(evento.target.value)} autoFocus className="alvo-toque mt-1 block w-48 rounded-lg border border-red-200 px-3 py-2 text-sm" />
+                      </label>
+                      <button type="button" disabled={ocupado || confirmacaoDigitada.trim().toUpperCase() !== PALAVRA_DE_CONFIRMACAO} onClick={() => limpezaGeral.mutate()} className="alvo-toque rounded-xl bg-red-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">
+                        {limpezaGeral.isPending ? "Apagando…" : "Apagar tudo"}
+                      </button>
+                      <button type="button" onClick={cancelarConfirmacao} className="alvo-toque rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600">Cancelar</button>
+                    </div>
+                  ) : (
+                    <button type="button" disabled={ocupado} onClick={() => setConfirmandoLimpeza("tudo")} className="alvo-toque inline-flex items-center gap-2 rounded-xl bg-red-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">
+                      <TriangleAlert size={14} aria-hidden /> Apagar tudo, exceto ADMIN
                     </button>
                   )}
                 </div>

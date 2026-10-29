@@ -1,6 +1,9 @@
 package br.com.viaflux.api.devtools;
 
 import br.com.viaflux.api.chamado.TipoChamado;
+import br.com.viaflux.api.chamado.sla.Relogio;
+import br.com.viaflux.api.chamado.sla.RelogioCorrido;
+import br.com.viaflux.api.chamado.sla.RelogioDeHorasUteis;
 import br.com.viaflux.api.devtools.DadosDeExemplo.CenarioDeChamado;
 import br.com.viaflux.api.devtools.DadosDeExemplo.OrganizacaoDeExemplo;
 import br.com.viaflux.api.devtools.DadosDeExemplo.UsuarioDeExemplo;
@@ -14,6 +17,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
@@ -41,7 +46,10 @@ class PopuladorDeDados {
             "EM_ATENDIMENTO", "AGUARDANDO", "NA_FILA", "RESOLVIDO", "FECHADO"
     );
     private static final List<String> STATUS_ANTES_DA_TRIAGEM = List.of("ABERTO", "EM_TRIAGEM");
-    private static final int JANELA_DA_FILA_DE_TRIAGEM_EM_MINUTOS = 45;
+    private static final List<String> STATUS_ENCERRADOS = List.of("RESOLVIDO", "FECHADO");
+    private static final int MENOR_FOLGA_DO_PRAZO_EM_MINUTOS = 3;
+    private static final int MAIOR_FOLGA_DO_PRAZO_EM_MINUTOS = 12;
+    private static final int JANELA_DE_BUSCA_DA_ABERTURA_EM_DIAS = 60;
     private static final int HORIZONTE_DO_HISTORICO_EM_MINUTOS = 30;
     private static final String AUTOR_SISTEMA = "Sistema";
     private static final String ATENDENTE_DE_EXEMPLO = "Paula Atendente";
@@ -51,6 +59,9 @@ class PopuladorDeDados {
     }
 
     record ResultadoDaLimpeza(int chamadosRemovidos, int usuariosRemovidos, int organizacoesRemovidas) {
+    }
+
+    record ResultadoDaLimpezaGeral(int chamadosRemovidos, int usuariosRemovidos, int organizacoesRemovidas, long administradoresMantidos) {
     }
 
     record UsuarioDeExemploResponse(
@@ -74,6 +85,8 @@ class PopuladorDeDados {
     private final JdbcTemplate jdbc;
     private final PasswordEncoder passwordEncoder;
     private final DevToolsProperties propriedades;
+    private final RelogioCorrido relogioCorrido;
+    private final RelogioDeHorasUteis expediente;
     private final int prazoUrgenciaAlta;
     private final int prazoUrgenciaMedia;
     private final int prazoUrgenciaBaixa;
@@ -82,6 +95,8 @@ class PopuladorDeDados {
             JdbcTemplate jdbc,
             PasswordEncoder passwordEncoder,
             DevToolsProperties propriedades,
+            RelogioCorrido relogioCorrido,
+            RelogioDeHorasUteis expediente,
             @Value("${viaflux.triagem.urgencia-alta-minutos:10}") int prazoUrgenciaAlta,
             @Value("${viaflux.triagem.urgencia-media-minutos:20}") int prazoUrgenciaMedia,
             @Value("${viaflux.triagem.urgencia-baixa-minutos:40}") int prazoUrgenciaBaixa
@@ -89,6 +104,8 @@ class PopuladorDeDados {
         this.jdbc = jdbc;
         this.passwordEncoder = passwordEncoder;
         this.propriedades = propriedades;
+        this.relogioCorrido = relogioCorrido;
+        this.expediente = expediente;
         this.prazoUrgenciaAlta = prazoUrgenciaAlta;
         this.prazoUrgenciaMedia = prazoUrgenciaMedia;
         this.prazoUrgenciaBaixa = prazoUrgenciaBaixa;
@@ -151,9 +168,9 @@ class PopuladorDeDados {
             CenarioDeChamado cenario = DadosDeExemplo.CENARIOS.get(indice % DadosDeExemplo.CENARIOS.size());
             UsuarioCadastrado solicitante = solicitantes.get(indice % solicitantes.size());
             String status = STATUS_EM_ORDEM_DE_FREQUENCIA.get(indice % STATUS_EM_ORDEM_DE_FREQUENCIA.size());
-            OffsetDateTime abertura = STATUS_ANTES_DA_TRIAGEM.contains(status)
-                    ? agora.minusMinutes(ThreadLocalRandom.current().nextInt(1, JANELA_DA_FILA_DE_TRIAGEM_EM_MINUTOS))
-                    : aberturaDoChamado(indice, agora);
+            OffsetDateTime abertura = STATUS_ENCERRADOS.contains(status)
+                    ? aberturaDoChamado(indice, agora)
+                    : aberturaComPrazoPertoDeVencer(cenario, status, agora);
             protocolos.add(criarChamado(cenario, solicitante, atendenteId, status, abertura, agora));
         }
         log.info("Dev tools: {} organizações, {} usuários e {} chamados de exemplo criados.", organizacoesCriadas, usuariosCriados, protocolos.size());
@@ -177,7 +194,26 @@ class PopuladorDeDados {
         return new ResultadoDaLimpeza(chamados, usuarios, organizacoes);
     }
 
+    @Transactional
+    ResultadoDaLimpezaGeral apagarTudoExcetoAdministradores() {
+        String semPerfilAdmin = "NOT EXISTS (SELECT 1 FROM viaflux.usuario_perfil up WHERE up.usuario_id = u.id AND up.perfil_codigo = 'ADMIN')";
+        jdbc.update("DELETE FROM viaflux.concessao_acesso_chamado");
+        int chamados = jdbc.update("DELETE FROM viaflux.chamados");
+        jdbc.update("DELETE FROM viaflux.token_de_conta t USING viaflux.usuario u WHERE t.usuario_id = u.id AND " + semPerfilAdmin);
+        int usuarios = jdbc.update("DELETE FROM viaflux.usuario u WHERE " + semPerfilAdmin);
+        int organizacoes = jdbc.update(
+                "DELETE FROM viaflux.organizacao o WHERE NOT EXISTS (SELECT 1 FROM viaflux.usuario u WHERE u.organizacao_id = o.id)");
+        jdbc.queryForObject("SELECT setval('viaflux.chamados_numero_seq', 0, false)", Long.class);
+        long administradores = contar("SELECT count(*) FROM viaflux.usuario");
+        log.warn("Dev tools: banco limpo. {} chamados, {} usuários e {} organizações removidos; {} administradores mantidos.",
+                chamados, usuarios, organizacoes, administradores);
+        return new ResultadoDaLimpezaGeral(chamados, usuarios, organizacoes, administradores);
+    }
+
     private record UsuarioCadastrado(UUID id, String nomeDoCliente) {
+    }
+
+    private record PrazosDoSla(int primeiraRespostaMinutos, int resolucaoMinutos, Relogio relogio) {
     }
 
     private long contar(String sql, Object... parametros) {
@@ -204,6 +240,50 @@ class PopuladorDeDados {
         boolean recente = indice % ABERTURAS_RECENTES_A_CADA == 0;
         int minutosAtras = recente ? aleatorio.nextInt(1, JANELA_RECENTE_EM_MINUTOS) : aleatorio.nextInt(30, JANELA_DE_ABERTURA_EM_MINUTOS);
         return agora.minusMinutes(minutosAtras);
+    }
+
+    private OffsetDateTime aberturaComPrazoPertoDeVencer(CenarioDeChamado cenario, String status, OffsetDateTime agora) {
+        if (STATUS_ANTES_DA_TRIAGEM.contains(status)) {
+            Integer urgenciaDeclarada = jdbc.queryForObject("SELECT urgencia FROM viaflux.contexto WHERE id = ?", Integer.class, cenario.contextoId());
+            return aberturaQueVenceEmMinutos(relogioCorrido, agora, prazoDeTriagem(urgenciaDeclarada));
+        }
+        Integer score = jdbc.queryForObject(
+                "SELECT m.severidade + c.urgencia FROM viaflux.motivo m, viaflux.contexto c WHERE m.id = ? AND c.id = ?",
+                Integer.class, cenario.motivoId(), cenario.contextoId());
+        PrazosDoSla prazos = prazosDoSla(score == null ? 0 : score);
+        int prazo = status.equals("NA_FILA") ? prazos.primeiraRespostaMinutos() : prazos.resolucaoMinutos();
+        return aberturaQueVenceEmMinutos(prazos.relogio(), agora, prazo);
+    }
+
+    private PrazosDoSla prazosDoSla(int score) {
+        if (score >= 10) {
+            return new PrazosDoSla(15, 2 * 60, relogioCorrido);
+        }
+        if (score >= 8) {
+            return new PrazosDoSla(30, 4 * 60, relogioCorrido);
+        }
+        if (score >= 6) {
+            return new PrazosDoSla(2 * 60, 24 * 60, expediente);
+        }
+        return new PrazosDoSla(4 * 60, 48 * 60, expediente);
+    }
+
+    static OffsetDateTime aberturaQueVenceEmMinutos(Relogio relogio, OffsetDateTime agora, int prazoEmMinutos) {
+        int maiorFolga = Math.max(1, Math.min(MAIOR_FOLGA_DO_PRAZO_EM_MINUTOS, prazoEmMinutos - 1));
+        int folga = ThreadLocalRandom.current().nextInt(Math.min(MENOR_FOLGA_DO_PRAZO_EM_MINUTOS, maiorFolga), maiorFolga + 1);
+        double minutosConsumidos = prazoEmMinutos - folga;
+        Instant fim = agora.toInstant();
+        Instant maisAntiga = fim.minus(Duration.ofDays(JANELA_DE_BUSCA_DA_ABERTURA_EM_DIAS));
+        Instant maisRecente = fim;
+        while (Duration.between(maisAntiga, maisRecente).toSeconds() > 1) {
+            Instant meio = maisAntiga.plus(Duration.between(maisAntiga, maisRecente).dividedBy(2));
+            if (relogio.minutosEntre(meio, fim) >= minutosConsumidos) {
+                maisAntiga = meio;
+            } else {
+                maisRecente = meio;
+            }
+        }
+        return maisAntiga.atOffset(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS);
     }
 
     private String criarChamado(CenarioDeChamado cenario, UsuarioCadastrado solicitante, UUID atendenteId, String status, OffsetDateTime abertura, OffsetDateTime agora) {

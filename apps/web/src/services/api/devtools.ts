@@ -32,6 +32,13 @@ export interface ResultadoDaLimpeza {
   organizacoesRemovidas: number;
 }
 
+export interface ResultadoDaLimpezaGeral {
+  chamadosRemovidos: number;
+  usuariosRemovidos: number;
+  organizacoesRemovidas: number;
+  administradoresMantidos: number;
+}
+
 export function consultarEstadoDosDados(api: ClienteApi) {
   return api.requisitar<EstadoDosDados>("/api/dev/estado");
 }
@@ -42,6 +49,10 @@ export function popularBanco(api: ClienteApi, quantidadeDeChamados: number) {
 
 export function limparDadosDeExemplo(api: ClienteApi) {
   return api.requisitar<ResultadoDaLimpeza>("/api/dev/dados-de-exemplo", { method: "DELETE" });
+}
+
+export function apagarTudoExcetoAdministradores(api: ClienteApi) {
+  return api.requisitar<ResultadoDaLimpezaGeral>("/api/dev/banco", { method: "DELETE" });
 }
 
 const DESTINO_DA_TRANSFERENCIA: Partial<Record<TipoChamado, TipoChamado>> = {
@@ -70,10 +81,10 @@ export async function complementarComAcoesDeExemplo(api: ClienteApi, protocolos:
     acoes.push(`${paraTransferir.id}: transferido`);
   }
 
-  const paraOverride = abertos.find((chamado) => chamado.prioridade === "P4");
+  const paraOverride = abertos.find((chamado) => chamado.prioridade === "P3");
   if (paraOverride) {
-    await definirOverride(api, paraOverride.id, { prioridade: "P2", justificativa: "Override de exemplo gerado pelo /dev-tools" });
-    acoes.push(`${paraOverride.id}: override para P2`);
+    await definirOverride(api, paraOverride.id, { prioridade: "P4", justificativa: "Override de exemplo gerado pelo /dev-tools" });
+    acoes.push(`${paraOverride.id}: override para P4`);
   }
   return acoes;
 }
