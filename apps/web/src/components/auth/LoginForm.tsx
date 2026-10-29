@@ -26,7 +26,7 @@ export default function LoginForm() {
     try {
       await entrar(email, senha);
     } catch (falha) {
-      setErro(falha instanceof ErroApi ? falha.message : "Não foi possível entrar. Tente novamente.");
+      setErro(falha instanceof ErroApi ? falha.message : "Não foi possível acessar a conta. Tente novamente.");
       setEnviando(false);
     }
   }
@@ -35,9 +35,9 @@ export default function LoginForm() {
 
   return (
     <CartaoDeAcesso
-      titulo="Central de Chamados"
-      subtitulo="Entre com seu e-mail e senha."
-      rodape={<>Ainda não tem conta? <Link href="/cadastro" className="font-semibold text-brand-green underline-offset-2 hover:underline">Criar conta</Link></>}
+      titulo="Acessar conta"
+      subtitulo="Central de Chamados ViaFlux"
+      rodape={<>Não tem uma conta? <Link href="/cadastro" className="font-semibold text-brand-green underline-offset-2 hover:underline">Criar conta</Link></>}
     >
       <form onSubmit={enviar}>
         <div className="mb-4">
@@ -49,7 +49,7 @@ export default function LoginForm() {
           <input id="login-senha" className={campoDeAcessoClass} type="password" autoComplete="current-password" required value={senha} onChange={(e) => setSenha(e.target.value)} />
         </div>
         <p className="mb-6 text-right text-xs">
-          <Link href="/esqueci-a-senha" className={linkDeAcessoClass}>Esqueci minha senha</Link>
+          <Link href="/esqueci-a-senha" className={linkDeAcessoClass}>Esqueceu a senha?</Link>
         </p>
 
         <ErroDeAcesso mensagem={erro} />

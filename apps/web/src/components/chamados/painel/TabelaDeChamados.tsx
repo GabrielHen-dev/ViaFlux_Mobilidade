@@ -11,6 +11,7 @@ import { useApi } from "@/store/AuthContext";
 import { invalidarListas } from "@/hooks/consultas";
 import { PrioridadeIndicador, StatusBadge } from "@/components/ui/StatusBadge";
 import { SlaResumo } from "@/components/ui/SlaIndicador";
+import { BotaoDeEscalonamento, SeloDeEscalonamento } from "@/components/chamados/EscalonamentoDoChamado";
 import { PrazoDaTriagem } from "@/components/triagem/PrazoDaTriagem";
 import { AvisoDeErro } from "@/components/feedback/EstadoDaConsulta";
 import { cn } from "@/utils/cn";
@@ -24,7 +25,12 @@ function slaCritico(chamado: ChamadoResumo) {
 
 function PrazoDoChamado({ chamado }: { chamado: ChamadoResumo }) {
   if (chamado.prioridade === null) return <PrazoDaTriagem triagem={chamado.triagem} compacto />;
-  return <SlaResumo sla={chamado.status === "Fechado" ? null : chamado.sla} />;
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <SlaResumo sla={chamado.status === "Fechado" ? null : chamado.sla} />
+      <SeloDeEscalonamento chamado={chamado} />
+    </div>
+  );
 }
 
 function ExclusaoDaLinha({ chamado }: { chamado: ChamadoResumo }) {
@@ -56,10 +62,11 @@ interface Props {
   pagina: number;
   podeExcluir: boolean;
   podeTriar: boolean;
+  podeAtender: boolean;
   aoMudarDePagina: (pagina: number) => void;
 }
 
-export default function TabelaDeChamados({ resultado, pagina, podeExcluir, podeTriar, aoMudarDePagina }: Props) {
+export default function TabelaDeChamados({ resultado, pagina, podeExcluir, podeTriar, podeAtender, aoMudarDePagina }: Props) {
   const router = useRouter();
   return (
     <>
@@ -83,8 +90,11 @@ export default function TabelaDeChamados({ resultado, pagina, podeExcluir, podeT
                   <div className="mt-0.5 text-xs text-[#94A3B8]">{[chamado.modelo, chamado.placa].filter(Boolean).join(" · ")}</div>
                 </td>
                 <td className="px-5 py-4 text-sm text-[#475569]">
-                  <div>{chamado.departamento?.nome ?? (chamado.prioridade === null ? "Exceção · Central" : "—")}</div>
-                  <div className="mt-0.5 text-xs text-[#94A3B8]">{chamado.tipo ? `Tipo: ${NOME_TIPO[chamado.tipo]}` : "A classificar — revisão da Central"}</div>
+                  <div>{chamado.departamento?.nome ?? (chamado.prioridade === null ? "Central" : "—")}</div>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-[#94A3B8]">
+                    {chamado.tipo ? `Tipo: ${NOME_TIPO[chamado.tipo]}` : "Aguardando classificação"}
+                    {chamado.triagem.revisaoPendente && <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-700">revisar</span>}
+                  </div>
                 </td>
                 <td className="px-5 py-4">
                   <StatusBadge status={chamado.status} />
@@ -94,11 +104,12 @@ export default function TabelaDeChamados({ resultado, pagina, podeExcluir, podeT
                 <td className="px-5 py-4"><PrazoDoChamado chamado={chamado} /></td>
                 <td className="px-5 py-4">
                   <div className="flex items-center gap-2" onClick={(evento) => evento.stopPropagation()}>
-                    {podeTriar && chamado.prioridade === null ? (
-                      <Link href={`/chamados/${chamado.id}/triagem`} className="text-xs font-semibold text-brand-green hover:underline">Triar</Link>
+                    {podeTriar && (chamado.prioridade === null || chamado.triagem.revisaoPendente) ? (
+                      <Link href={`/chamados/${chamado.id}/triagem`} className="text-xs font-semibold text-brand-green hover:underline">{chamado.prioridade === null ? "Classificar" : "Revisar"}</Link>
                     ) : (
                       <Link href={`/chamados/${chamado.id}`} className="text-xs font-semibold text-brand-blue hover:underline">Ver</Link>
                     )}
+                    {podeAtender && <BotaoDeEscalonamento chamado={chamado} compacto />}
                     {podeExcluir && <ExclusaoDaLinha chamado={chamado} />}
                   </div>
                 </td>

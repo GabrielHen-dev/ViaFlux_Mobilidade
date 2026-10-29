@@ -25,7 +25,7 @@ export function ErroDoCampo({ id, mensagem }: { id: string; mensagem?: string })
 
 export default function CartaoDeAcesso({ titulo, subtitulo, children, rodape }: {
   titulo: string;
-  subtitulo: string;
+  subtitulo?: string;
   children: ReactNode;
   rodape?: ReactNode;
 }) {
@@ -41,8 +41,8 @@ export default function CartaoDeAcesso({ titulo, subtitulo, children, rodape }: 
         </div>
 
         <div className="rounded-2xl bg-white p-8 shadow-xl">
-          <h1 className="mb-1 text-xl font-bold text-brand-navy">{titulo}</h1>
-          <p className="mb-6 text-sm text-slate-500">{subtitulo}</p>
+          <h1 className={subtitulo ? "mb-1 text-xl font-bold text-brand-navy" : "mb-6 text-xl font-bold text-brand-navy"}>{titulo}</h1>
+          {subtitulo && <p className="mb-6 text-sm text-slate-500">{subtitulo}</p>}
           {children}
         </div>
         {rodape && <div className="mt-6 text-center text-sm text-slate-300">{rodape}</div>}

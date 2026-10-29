@@ -32,7 +32,8 @@ class PoliticaDeTriagem {
                 chamado.getTriagemResponsavel(),
                 Datas.local(chamado.getTriadoEm()),
                 chamado.getTriadoPor(),
-                avaliacao.situacao()
+                avaliacao.situacao(),
+                chamado.revisaoPendente()
         );
     }
 }

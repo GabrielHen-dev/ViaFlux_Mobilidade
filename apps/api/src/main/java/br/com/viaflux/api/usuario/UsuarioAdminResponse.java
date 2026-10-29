@@ -9,6 +9,7 @@ public record UsuarioAdminResponse(
         String nome,
         String email,
         boolean ativo,
+        boolean convitePendente,
         List<UsuarioResponse.PerfilResponse> perfis,
         UsuarioResponse.OrganizacaoResponse organizacao,
         List<UsuarioResponse.DepartamentoResponse> departamentos
@@ -32,7 +33,7 @@ public record UsuarioAdminResponse(
                 ))
                 .toList();
         return new UsuarioAdminResponse(
-                usuario.getId(), usuario.getNome(), usuario.getEmail(), usuario.isAtivo(),
+                usuario.getId(), usuario.getNome(), usuario.getEmail(), usuario.isAtivo(), usuario.convitePendente(),
                 perfis, organizacaoResponse, departamentos
         );
     }

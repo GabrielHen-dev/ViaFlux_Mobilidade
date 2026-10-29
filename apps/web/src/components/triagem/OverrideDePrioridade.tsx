@@ -30,18 +30,18 @@ export default function OverrideDePrioridade({ chamado, prioridadeEfetiva, aoCon
 
   return (
     <section className={cartaoClass}>
-      <h2 className="mb-1 font-display text-sm font-semibold text-brand-navy">Override manual de prioridade</h2>
-      <p className="mb-4 text-xs text-slate-500">O score calculado continua registrado. O SLA passa a seguir a prioridade efetiva.</p>
+      <h2 className="mb-1 font-display text-sm font-semibold text-brand-navy">Prioridade manual</h2>
+      <p className="mb-4 text-xs text-slate-500">O SLA segue a prioridade efetiva.</p>
       {chamado.override && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
-          <span>Prioridade efetiva {chamado.override.prioridade} definida por {chamado.override.autor.nome}: “{chamado.override.justificativa}”</span>
+          <span>{chamado.override.prioridade} definida por {chamado.override.autor.nome}: “{chamado.override.justificativa}”</span>
           <button
             type="button"
             disabled={remocao.isPending}
-            onClick={() => remocao.mutate(undefined, { onSuccess: () => aoConcluir("Override removido: vale a prioridade calculada.") })}
+            onClick={() => remocao.mutate(undefined, { onSuccess: () => aoConcluir("Prioridade calculada restabelecida") })}
             className="font-semibold underline"
           >
-            Voltar à prioridade calculada
+            Restaurar prioridade calculada
           </button>
         </div>
       )}
@@ -62,11 +62,11 @@ export default function OverrideDePrioridade({ chamado, prioridadeEfetiva, aoCon
         type="button"
         disabled={!valido || override.isPending}
         onClick={() => override.mutate({ prioridade: prioridadeManual, justificativa: justificativa.trim() }, {
-          onSuccess: (atualizado) => { setJustificativa(""); aoConcluir(`Prioridade efetiva alterada para ${atualizado.prioridade}.`); },
+          onSuccess: (atualizado) => { setJustificativa(""); aoConcluir(`Prioridade alterada para ${atualizado.prioridade}`); },
         })}
         className="alvo-toque mt-4 w-full rounded-xl bg-brand-blue py-3 text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-40"
       >
-        {override.isPending ? "Salvando…" : "Aplicar override"}
+        {override.isPending ? "Salvando…" : "Aplicar prioridade"}
       </button>
     </section>
   );

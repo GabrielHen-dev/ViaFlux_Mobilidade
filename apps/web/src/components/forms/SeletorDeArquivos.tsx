@@ -57,7 +57,7 @@ export default function SeletorDeArquivos({ aoAceitar, compacto = false, desabil
   async function abrirCamera() {
     setErroDaCamera("");
     if (!navigator.mediaDevices?.getUserMedia) {
-      setErroDaCamera("Este navegador não disponibiliza a câmera nesta página. Use Anexar arquivo para escolher uma foto.");
+      setErroDaCamera("Câmera indisponível neste navegador. Anexe um arquivo.");
       return;
     }
     const sessao = ++sessaoDaCamera.current;
@@ -74,10 +74,10 @@ export default function SeletorDeArquivos({ aoAceitar, compacto = false, desabil
       if (sessao !== sessaoDaCamera.current) return;
       const nome = erro instanceof DOMException ? erro.name : "";
       setErroDaCamera(nome === "NotAllowedError" || nome === "SecurityError"
-        ? "Permissão da câmera negada. Autorize o acesso no navegador ou use Anexar arquivo."
+        ? "Permissão da câmera negada. Autorize o acesso no navegador ou anexe um arquivo."
         : nome === "NotFoundError"
-          ? "Nenhuma câmera foi encontrada. Use Anexar arquivo para escolher uma foto."
-          : "Não foi possível abrir a câmera. Verifique se ela está disponível ou use Anexar arquivo.");
+          ? "Nenhuma câmera encontrada. Anexe um arquivo."
+          : "Não foi possível acessar a câmera. Anexe um arquivo.");
     } finally {
       if (sessao === sessaoDaCamera.current) setAbrindoCamera(false);
     }
@@ -91,13 +91,13 @@ export default function SeletorDeArquivos({ aoAceitar, compacto = false, desabil
     tela.height = video.videoHeight;
     const contexto = tela.getContext("2d");
     if (!contexto) {
-      setErroDaCamera("Não foi possível capturar a foto. Tente novamente ou use Anexar arquivo.");
+      setErroDaCamera("Não foi possível capturar a foto. Tente novamente.");
       return;
     }
     contexto.drawImage(video, 0, 0, tela.width, tela.height);
     tela.toBlob((imagem) => {
       if (!imagem) {
-        setErroDaCamera("Não foi possível capturar a foto. Tente novamente ou use Anexar arquivo.");
+        setErroDaCamera("Não foi possível capturar a foto. Tente novamente.");
         return;
       }
       selecionar([new File([imagem], `foto-${Date.now()}.jpg`, { type: "image/jpeg" })]);
@@ -140,7 +140,7 @@ export default function SeletorDeArquivos({ aoAceitar, compacto = false, desabil
             className={cn("w-full rounded-xl border-2 border-dashed border-slate-300 p-6 text-center transition-colors hover:border-brand-blue", desabilitado && "opacity-40")}
           >
             <Upload className="mx-auto mb-2 text-slate-400" size={26} strokeWidth={1.5} aria-hidden />
-            <span className="block text-sm text-slate-500">Arraste arquivos ou <span className="font-semibold text-brand-blue">clique para anexar arquivo</span></span>
+            <span className="block text-sm text-slate-500">Arraste arquivos ou <span className="font-semibold text-brand-blue">clique para anexar</span></span>
           </button>
           <button type="button" disabled={desabilitado || abrindoCamera || cameraAberta} onClick={() => void abrirCamera()} className={cn(botaoSecundario, "w-full")}>
             <Camera size={14} aria-hidden /> {abrindoCamera ? "Abrindo câmera…" : "Tirar foto com a câmera"}
@@ -157,7 +157,7 @@ export default function SeletorDeArquivos({ aoAceitar, compacto = false, desabil
         </div>
       )}
       {erroDaCamera && <p role="alert" className="mt-2 text-xs font-medium text-red-600">{erroDaCamera}</p>}
-      <p id={idDaDica} className="mt-2 text-xs text-slate-400">Fotos PNG ou JPG e documentos PDF · até {LIMITE_ANEXO_MB} MB por arquivo. Para usar a câmera, permita o acesso no navegador; se não estiver disponível, escolha uma foto em “Anexar arquivo”. Anexar imagem é opcional.</p>
+      <p id={idDaDica} className="mt-2 text-xs text-slate-400">Opcional · PNG, JPG ou PDF · até {LIMITE_ANEXO_MB} MB por arquivo.</p>
       {rejeicoes.length > 0 && (
         <ul role="alert" className="mt-2 space-y-1 text-xs font-medium text-red-600">
           {rejeicoes.map((mensagem) => <li key={mensagem}>{mensagem}</li>)}

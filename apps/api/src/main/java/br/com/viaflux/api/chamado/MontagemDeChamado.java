@@ -52,7 +52,8 @@ class MontagemDeChamado {
                 Datas.local(chamado.getAtualizadoEm()),
                 politicaDeSla.avaliar(chamado, agora),
                 politicaDeTriagem.avaliar(chamado, agora),
-                AtendimentoResponse.de(chamado)
+                AtendimentoResponse.de(chamado),
+                EscalonamentoResponse.de(chamado)
         );
     }
 
@@ -107,7 +108,8 @@ class MontagemDeChamado {
                 chamado.getClassificacaoEstado(),
                 chamado.getEpisodio(),
                 Datas.local(janelaDeEncerramento.confirmacaoAte(chamado)),
-                Datas.local(janelaDeEncerramento.reaberturaAte(chamado))
+                Datas.local(janelaDeEncerramento.reaberturaAte(chamado)),
+                visaoDeCliente ? null : resumo.escalonamento()
         );
     }
 }

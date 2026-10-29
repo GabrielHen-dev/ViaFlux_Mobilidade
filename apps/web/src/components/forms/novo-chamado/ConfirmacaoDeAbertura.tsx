@@ -31,8 +31,8 @@ export default function ConfirmacaoDeAbertura({ chamado, arquivos, ehCliente, ao
         <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#ECFDF5]">
           <Check size={32} color="#10B981" strokeWidth={2.5} aria-hidden />
         </div>
-        <h2 className="mb-2 font-display text-xl font-bold text-brand-navy">Chamado aberto!</h2>
-        <p className="mb-1 text-sm text-[#64748B]">Abertura confirmada pelo servidor. Guarde o protocolo:</p>
+        <h2 className="mb-2 font-display text-xl font-bold text-brand-navy">Chamado aberto</h2>
+        <p className="mb-1 text-sm text-[#64748B]">Protocolo</p>
         <p className="mb-4 text-2xl font-bold text-brand-blue" data-testid="protocolo">{chamado.id}</p>
         <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
           <PrioridadeIndicador prioridade={chamado.prioridade} score={chamado.score} />
@@ -40,11 +40,11 @@ export default function ConfirmacaoDeAbertura({ chamado, arquivos, ehCliente, ao
         </div>
         {aguardandoTriagem ? (
           <p className="mb-4 text-xs text-[#64748B]" data-testid="previsao-da-triagem">
-            Um atendente vai analisar e classificar o chamado até {formatarDataHora(chamado.triagem.limite)}.
+            Classificação prevista até {formatarDataHora(chamado.triagem.limite)}.
           </p>
         ) : chamado.sla && (
           <p className="mb-4 text-xs text-[#64748B]">
-            1ª resposta até {formatarDataHora(chamado.sla.primeiraResposta.limite)} · resolução até {formatarDataHora(chamado.sla.resolucao.limite)}
+            Início do atendimento até {formatarDataHora(chamado.sla.primeiraResposta.limite)} · Solução até {formatarDataHora(chamado.sla.resolucao.limite)}
           </p>
         )}
         {arquivos.length > 0 && (
@@ -60,7 +60,7 @@ export default function ConfirmacaoDeAbertura({ chamado, arquivos, ehCliente, ao
             </ul>
             {falhas.length > 0 && (
               <button type="button" onClick={aoReenviarAnexos} className="alvo-toque mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 bg-white py-2 text-xs font-semibold text-red-700">
-                <RotateCcw size={12} aria-hidden /> Tentar enviar os anexos de novo
+                <RotateCcw size={12} aria-hidden /> Reenviar anexos
               </button>
             )}
           </div>

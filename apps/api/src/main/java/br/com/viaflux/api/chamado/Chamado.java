@@ -26,6 +26,9 @@ import java.util.UUID;
 @Table(name = "chamados")
 class Chamado {
 
+    static final String ESTADO_CLASSIFICADA = "CLASSIFICADA";
+    static final String ESTADO_REVISAO_PENDENTE = "REVISAO_PENDENTE";
+
     @Id
     private UUID id;
 
@@ -189,6 +192,18 @@ class Chamado {
     @Column(name = "excluido_em")
     private OffsetDateTime excluidoEm;
 
+    @Column(name = "escalonado_em")
+    private OffsetDateTime escalonadoEm;
+
+    @Column(name = "escalonado_por_id")
+    private UUID escalonadoPorId;
+
+    @Column(name = "escalonado_por_nome", length = 150)
+    private String escalonadoPorNome;
+
+    @Column(name = "escalonamento_motivo", columnDefinition = "text")
+    private String escalonamentoMotivo;
+
     @Column(name = "chave_idempotencia", length = 160, updatable = false)
     private String chaveIdempotencia;
 
@@ -240,11 +255,21 @@ class Chamado {
         }
     }
 
+    boolean revisaoPendente() {
+        return ESTADO_REVISAO_PENDENTE.equals(classificacaoEstado);
+    }
+
+    boolean aguardaAnalise() {
+        return !triado() || revisaoPendente();
+    }
+
     void iniciarTriagem(Autor responsavel, OffsetDateTime agora) {
-        if (triado()) {
-            throw ErroDeChamado.conflito("A triagem deste chamado já foi concluída.");
+        if (!aguardaAnalise()) {
+            throw ErroDeChamado.conflito("A classificação deste chamado já foi analisada.");
         }
-        this.status = StatusChamado.EM_TRIAGEM;
+        if (!triado()) {
+            this.status = StatusChamado.EM_TRIAGEM;
+        }
         if (triagemIniciadaEm == null) {
             this.triagemIniciadaEm = agora;
         }
@@ -274,6 +299,16 @@ class Chamado {
         tocar(agora);
     }
 
+    void confirmarClassificacao(Autor revisor, OffsetDateTime agora) {
+        if (!revisaoPendente()) {
+            throw ErroDeChamado.conflito("A classificação deste chamado não está pendente de revisão.");
+        }
+        this.classificacaoEstado = ESTADO_CLASSIFICADA;
+        this.triagemResponsavelId = revisor.id();
+        this.triagemResponsavelNome = revisor.nome();
+        tocar(agora);
+    }
+
     void reclassificar(TipoChamado tipo, int severidade, int urgencia, OffsetDateTime agora) {
         exigirTriagemConcluida();
         if (tipo == classificacaoTipo && severidade == this.severidade && urgencia == this.urgencia) {
@@ -298,9 +333,29 @@ class Chamado {
         this.status = StatusChamado.NA_FILA;
         this.triagemIniciadaEm = agora;
         this.triadoEm = agora;
-        this.triadoPorNome = "Classificação automática V1";
+        this.triadoPorNome = "Classificação automática";
         this.roteamentoVersao = "roteamento-v1";
         this.slaVersao = "sla-v1";
+        tocar(agora);
+    }
+
+    void classificarPorTexto(TipoChamado tipo, int severidade, int urgencia, TipoChamado destino, OffsetDateTime agora) {
+        classificarAutomaticamente(tipo, severidade, urgencia, destino, agora);
+        this.classificacaoEstado = ESTADO_REVISAO_PENDENTE;
+        this.triadoPorNome = "Classificação automática por texto";
+    }
+
+    void escalonar(Autor autor, String motivo, OffsetDateTime agora) {
+        if (status == StatusChamado.RESOLVIDO || status == StatusChamado.FECHADO) {
+            throw ErroDeChamado.conflito("Chamados resolvidos ou fechados não podem ser escalonados.");
+        }
+        if (escalonadoEm != null) {
+            throw ErroDeChamado.conflito("Este chamado já foi escalonado à liderança.");
+        }
+        this.escalonadoEm = agora;
+        this.escalonadoPorId = autor.id();
+        this.escalonadoPorNome = autor.nome();
+        this.escalonamentoMotivo = motivo == null || motivo.isBlank() ? null : motivo.trim();
         tocar(agora);
     }
 
@@ -357,6 +412,7 @@ class Chamado {
         fechadoEm = null;
         lembreteConfirmacaoEm = null;
         motivoAguardando = null;
+        limparEscalonamento();
         liberarResponsavel();
         tocar(agora);
     }
@@ -486,6 +542,13 @@ class Chamado {
         this.atendimentoResponsavelId = responsavel.id();
         this.atendimentoResponsavelNome = responsavel.nome();
         this.atendimentoAssumidoEm = agora;
+    }
+
+    private void limparEscalonamento() {
+        this.escalonadoEm = null;
+        this.escalonadoPorId = null;
+        this.escalonadoPorNome = null;
+        this.escalonamentoMotivo = null;
     }
 
     private void liberarResponsavel() {
@@ -685,6 +748,18 @@ class Chamado {
 
     OffsetDateTime getExcluidoEm() {
         return excluidoEm;
+    }
+
+    OffsetDateTime getEscalonadoEm() {
+        return escalonadoEm;
+    }
+
+    Autor getEscalonadoPor() {
+        return Autor.de(escalonadoPorId, escalonadoPorNome);
+    }
+
+    String getEscalonamentoMotivo() {
+        return escalonamentoMotivo;
     }
 
     String getMotivoOutro() { return motivoOutro; }

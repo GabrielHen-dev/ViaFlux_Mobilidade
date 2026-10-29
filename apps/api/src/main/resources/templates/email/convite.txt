@@ -1,0 +1,8 @@
+Olá, {{nome}}.
+
+{{convidante}} convidou você para acessar a ViaFlux Mobilidade. Para ativar seu acesso, crie sua senha.
+
+E-mail de acesso: {{email}}
+{{rotuloDosPerfis}}: {{perfis}}
+
+O convite expira em {{validade}} e pode ser usado uma única vez.

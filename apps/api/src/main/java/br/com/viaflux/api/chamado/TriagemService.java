@@ -43,11 +43,16 @@ class TriagemService {
         OffsetDateTime agora = agora();
         Autor anterior = chamado.getTriagemResponsavel();
         Autor responsavel = autor(usuario);
+        boolean revisao = chamado.revisaoPendente();
         chamado.iniciarTriagem(responsavel, agora);
         String detalhe = anterior == null || anterior.nome().equals(responsavel.nome())
-                ? "Triagem assumida por " + responsavel.nome() + "."
-                : "Triagem assumida por " + responsavel.nome() + " (antes com " + anterior.nome() + ").";
-        historico.registrarParaTodos(chamado, TipoEvento.TRIAGEM, "Triagem iniciada", detalhe, responsavel, agora);
+                ? "Análise assumida por " + responsavel.nome() + "."
+                : "Análise assumida por " + responsavel.nome() + " (antes com " + anterior.nome() + ").";
+        if (revisao) {
+            historico.registrarInterno(chamado, TipoEvento.TRIAGEM, "Revisão da classificação iniciada", detalhe, responsavel, agora);
+        } else {
+            historico.registrarParaTodos(chamado, TipoEvento.TRIAGEM, "Análise iniciada", detalhe, responsavel, agora);
+        }
         return montagem.completo(chamado, false);
     }
 
@@ -83,14 +88,37 @@ class TriagemService {
         Chamado chamado = acesso.paraConduzir(codigo, usuario);
         OffsetDateTime agora = agora();
         String anterior = descreverClassificacao(chamado.getClassificacaoTipo(), chamado.getSeveridade(), chamado.getUrgencia());
+        boolean emRevisao = chamado.revisaoPendente();
+        Autor autor = autor(usuario);
         chamado.reclassificar(tipo, request.severidade(), request.urgencia(), agora);
-        String departamentoMantido = chamado.getDepartamento() != null && chamado.getDepartamento() != tipo
+        TipoChamado destino = emRevisao && chamado.getStatus() == StatusChamado.NA_FILA
+                ? roteamento.destino(tipo, chamado.prioridadeCalculada(), request.urgencia(), agora.toInstant())
+                : null;
+        boolean reencaminhar = destino != null && destino != chamado.getDepartamento();
+        String departamentoMantido = !reencaminhar && chamado.getDepartamento() != null && chamado.getDepartamento() != tipo
                 ? " · continua em " + chamado.getDepartamento().getNome()
                 : "";
         historico.registrarInterno(chamado, TipoEvento.RECLASSIFICACAO, "Chamado reclassificado",
                 anterior + " → " + descreverClassificacao(tipo, request.severidade(), request.urgencia())
                         + departamentoMantido + " · " + request.justificativa().trim(),
-                autor(usuario), agora);
+                autor, agora);
+        if (reencaminhar) {
+            TipoChamado origem = chamado.transferir(destino, agora);
+            historico.registrarParaTodos(chamado, TipoEvento.ROTEAMENTO, "Encaminhado para " + destino.getNome(),
+                    "Chamado transferido de " + origem.getNome() + " para " + destino.getNome() + " após revisão da classificação.",
+                    autor, agora);
+        }
+        return montagem.completo(chamado, false);
+    }
+
+    @Transactional
+    ChamadoResponse confirmarClassificacao(String codigo, UsuarioAtual usuario) {
+        Chamado chamado = acesso.paraConduzir(codigo, usuario);
+        OffsetDateTime agora = agora();
+        Autor autor = autor(usuario);
+        chamado.confirmarClassificacao(autor, agora);
+        historico.registrarInterno(chamado, TipoEvento.CLASSIFICACAO, "Classificação confirmada",
+                descreverClassificacao(chamado.getClassificacaoTipo(), chamado.getSeveridade(), chamado.getUrgencia()), autor, agora);
         return montagem.completo(chamado, false);
     }
 

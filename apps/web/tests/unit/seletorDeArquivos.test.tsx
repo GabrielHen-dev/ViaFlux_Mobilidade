@@ -36,5 +36,5 @@ it("explica a permissão negada e mantém a opção de anexar arquivo", async ()
   await usuario.click(screen.getByRole("button", { name: "Tirar foto com a câmera" }));
 
   expect(await screen.findByRole("alert")).toHaveTextContent("Permissão da câmera negada");
-  expect(screen.getByRole("button", { name: /anexar arquivo/i })).toBeEnabled();
+  expect(screen.getByRole("button", { name: /clique para anexar/i })).toBeEnabled();
 });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Hand, Lightbulb } from "lucide-react";
+import { Hand } from "lucide-react";
 import type { Chamado, Peso, TipoChamado } from "@/types/chamado";
 import type { DadosConclusaoTriagem } from "@/services/api/contratos";
 import { concluirTriagem, iniciarTriagem } from "@/services/api/chamados";
@@ -10,7 +10,7 @@ import { useUsuarioAutenticado } from "@/store/AuthContext";
 import { AvisoDeErro } from "@/components/feedback/EstadoDaConsulta";
 import { PrazoDaTriagem } from "@/components/triagem/PrazoDaTriagem";
 import { ResultadoDoScore, SeletorDePeso, SeletorDeTipo, cartaoClass, inputClass, labelClass } from "@/components/triagem/CamposDaTriagem";
-import { NOME_TIPO, ROTULO_PESO } from "@/utils/prioridade";
+import { NOME_TIPO } from "@/utils/prioridade";
 
 export interface Sugestao {
   tipo: TipoChamado | null;
@@ -26,7 +26,7 @@ export function sugestaoDoCliente(chamado: Chamado): Sugestao {
   };
 }
 
-function ResponsavelDaTriagem({ chamado }: { chamado: Chamado }) {
+export function ResponsavelPelaAnalise({ chamado }: { chamado: Chamado }) {
   const usuario = useUsuarioAutenticado();
   const assumir = useAcaoNoChamado<void>(chamado.id, (api) => iniciarTriagem(api, chamado.id));
   const responsavel = chamado.triagem.responsavel;
@@ -35,7 +35,7 @@ function ResponsavelDaTriagem({ chamado }: { chamado: Chamado }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <p className="text-sm text-slate-600">
-        {responsavel ? <>Em triagem com <span className="font-semibold text-brand-dark">{comigo ? "você" : responsavel.nome}</span></> : "Ninguém assumiu esta triagem ainda."}
+        {responsavel ? <>Responsável: <span className="font-semibold text-brand-dark">{comigo ? "você" : responsavel.nome}</span></> : "Sem responsável"}
       </p>
       {!comigo && (
         <button
@@ -44,7 +44,7 @@ function ResponsavelDaTriagem({ chamado }: { chamado: Chamado }) {
           onClick={() => assumir.mutate()}
           className="alvo-toque inline-flex items-center gap-1.5 rounded-xl border border-brand-green px-4 py-2 text-sm font-semibold text-brand-green transition-all hover:bg-emerald-50 disabled:opacity-50"
         >
-          <Hand size={14} aria-hidden /> {assumir.isPending ? "Assumindo…" : "Assumir triagem"}
+          <Hand size={14} aria-hidden /> {assumir.isPending ? "Assumindo…" : "Assumir análise"}
         </button>
       )}
       {assumir.isError && <div className="w-full"><AvisoDeErro erro={assumir.error} /></div>}
@@ -62,26 +62,20 @@ export default function ConclusaoDaTriagem({ chamado, aoConcluir }: { chamado: C
 
   const confirmar = () => conclusao.mutate(
     { tipo: tipo as TipoChamado, severidade: severidade as Peso, urgencia: urgencia as Peso, observacao: observacao.trim() },
-    { onSuccess: (atualizado) => aoConcluir(`Triagem concluída: ${atualizado.prioridade} · encaminhado para ${atualizado.departamento?.nome ?? (tipo ? NOME_TIPO[tipo] : "Central")}.`) },
+    { onSuccess: (atualizado) => aoConcluir(`Chamado classificado · ${atualizado.prioridade} · ${atualizado.departamento?.nome ?? (tipo ? NOME_TIPO[tipo] : "Central")}`) },
   );
 
   return (
     <div className="space-y-5">
-      <section className={cartaoClass} aria-label="Prazo e responsável da triagem">
+      <section className={cartaoClass} aria-label="Prazo e responsável">
         <div className="space-y-3">
           <PrazoDaTriagem triagem={chamado.triagem} />
-          <ResponsavelDaTriagem chamado={chamado} />
+          <ResponsavelPelaAnalise chamado={chamado} />
         </div>
       </section>
 
       <section className={cartaoClass}>
-        <h2 className="mb-1 font-display text-sm font-semibold text-brand-navy">Concluir triagem</h2>
-        <p className="mb-4 flex items-start gap-1.5 text-xs text-slate-500">
-          <Lightbulb size={14} className="mt-0.5 flex-shrink-0 text-amber-500" aria-hidden />
-          <span>
-            {sugestao.tipo ? <>Os campos vêm com uma <strong>sugestão</strong> baseada no catálogo ({NOME_TIPO[sugestao.tipo]}, severidade {ROTULO_PESO[sugestao.severidade!].toLowerCase()}, urgência {ROTULO_PESO[sugestao.urgencia!].toLowerCase()}). Nada é aplicado sem a sua confirmação.</> : <>Este é um chamado de exceção. Defina tipo, severidade e urgência após revisar o relato; não há valores sugeridos.</>}
-          </span>
-        </p>
+        <h2 className="mb-4 font-display text-sm font-semibold text-brand-navy">Classificar chamado</h2>
         <div className="space-y-4">
           <SeletorDeTipo id="conclusao-tipo" rotulo="Tipo" valor={tipo} aoAlterar={setTipo} />
           <SeletorDePeso nome="conclusao-severidade" rotulo="Severidade (impacto)" valor={severidade} aoAlterar={setSeveridade} />
@@ -92,13 +86,11 @@ export default function ConclusaoDaTriagem({ chamado, aoConcluir }: { chamado: C
             <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-brand-dark">
               {tipo ? NOME_TIPO[tipo] : "Selecione o tipo"}
             </p>
-            <p className="mt-1 text-xs text-slate-400">
-              Definido pelo tipo. Fora do horário comercial, P1 e P2 operacionais com urgência imediata vão para o plantão da Assistência 24h. Para outro departamento, use Transferir depois da triagem.
-            </p>
+            <p className="mt-1 text-xs text-slate-400">Fora do horário comercial, P1 e P2 operacionais seguem para o plantão da Assistência 24h.</p>
           </div>
           <div>
-            <label htmlFor="conclusao-observacao" className={labelClass}>Observação da triagem</label>
-            <textarea id="conclusao-observacao" className={`${inputClass} resize-none`} rows={2} maxLength={2000} value={observacao} onChange={(evento) => setObservacao(evento.target.value)} placeholder="Opcional. Fica no histórico interno do chamado." />
+            <label htmlFor="conclusao-observacao" className={labelClass}>Observação</label>
+            <textarea id="conclusao-observacao" className={`${inputClass} resize-none`} rows={2} maxLength={2000} value={observacao} onChange={(evento) => setObservacao(evento.target.value)} placeholder="Opcional · histórico interno" />
           </div>
           {conclusao.isError && <AvisoDeErro erro={conclusao.error} />}
           <button
@@ -107,7 +99,7 @@ export default function ConclusaoDaTriagem({ chamado, aoConcluir }: { chamado: C
             onClick={confirmar}
             className="alvo-toque w-full rounded-xl bg-brand-green py-3 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 disabled:opacity-40"
           >
-            {conclusao.isPending ? "Concluindo…" : "Concluir triagem e encaminhar"}
+            {conclusao.isPending ? "Salvando…" : "Classificar e encaminhar"}
           </button>
         </div>
       </section>

@@ -77,6 +77,20 @@ class AuthServiceTests {
         assertThat(servico.renovar("novo").accessToken()).isEqualTo("acesso");
     }
 
+    @Test
+    void convitePendenteRecusaOLoginComMensagemPropria() {
+        Usuario paula = Usuario.convidado("Paula Atendente", "paula@exemplo.com", Set.of(), null, Set.of());
+        given(usuarios.findByEmail("paula@exemplo.com")).willReturn(Optional.of(paula));
+
+        ResponseStatusException erro = catchThrowableOfType(ResponseStatusException.class,
+                () -> servico.entrar("paula@exemplo.com", "qualquer-senha"));
+
+        assertThat(erro.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(erro.getReason()).isEqualTo(AuthService.CONVITE_PENDENTE);
+        assertThat(catchThrowableOfType(ResponseStatusException.class, () -> servico.entrar("ana@exemplo.com", "errada")).getReason())
+                .isEqualTo("E-mail ou senha inválidos.");
+    }
+
     private static HttpStatus status(Runnable acao) {
         ResponseStatusException erro = catchThrowableOfType(ResponseStatusException.class, acao::run);
         return HttpStatus.valueOf(erro.getStatusCode().value());

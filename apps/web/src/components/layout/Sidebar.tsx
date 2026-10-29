@@ -46,7 +46,7 @@ export interface PerfisDoMenu {
 export function itensDeMenuPara(perfis: PerfisDoMenu): ItemDeMenu[] {
   const itens: ItemDeMenu[] = [];
   if (perfis.central) itens.push({ href: "/", rotulo: perfis.global ? "Dashboard" : "Fila do departamento", icone: perfis.global ? <LayoutGrid size={18} /> : <ListOrdered size={18} />, ativo: ehTelaDaCentral });
-  if (perfis.triagem) itens.push({ href: "/triagem", rotulo: "Triagem", icone: <ClipboardList size={18} />, ativo: ehTelaDeTriagem });
+  if (perfis.triagem) itens.push({ href: "/triagem", rotulo: "Classificação", icone: <ClipboardList size={18} />, ativo: ehTelaDeTriagem });
   if (perfis.abrePelaCentral && !perfis.cliente) itens.push({ href: "/chamados/novo", rotulo: "Novo Chamado", icone: <CirclePlus size={18} />, ativo: (caminho) => caminho === "/chamados/novo" });
   if (perfis.metricas) itens.push({ href: "/metricas", rotulo: "Métricas", icone: <ChartColumn size={18} />, ativo: (caminho) => caminho.startsWith("/metricas") });
   if (perfis.cliente) {

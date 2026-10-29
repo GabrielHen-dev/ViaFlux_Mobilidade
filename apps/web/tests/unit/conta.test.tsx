@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import Provedores from "@/components/providers/Provedores";
+import AceiteDeConvite from "@/components/auth/AceiteDeConvite";
 import CadastroForm from "@/components/auth/CadastroForm";
 import RecuperacaoDeSenha from "@/components/auth/RecuperacaoDeSenha";
 import RedefinicaoDeSenha from "@/components/auth/RedefinicaoDeSenha";
@@ -152,7 +153,56 @@ describe("recuperação de senha", () => {
     await usuario.click(screen.getByRole("button", { name: "Salvar senha nova" }));
 
     expect(await screen.findByText("Este link é inválido, já foi usado ou expirou. Peça um novo.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Pedir um link novo" })).toHaveAttribute("href", "/esqueci-a-senha");
+    expect(screen.getByRole("link", { name: "Solicitar novo link" })).toHaveAttribute("href", "/esqueci-a-senha");
+  });
+});
+
+describe("aceite de convite", () => {
+  const convite = {
+    nome: "Paula Atendente",
+    email: "paula@viaflux.test",
+    perfis: [{ codigo: "ATENDENTE", descricao: "Atendente" }, { codigo: "LIDER_OPERACIONAL", descricao: "Líder operacional" }],
+  };
+
+  it("mostra os dados do convidado, confere as senhas e ativa o acesso", async () => {
+    const usuario = userEvent.setup();
+    const chamadas = programarApi({
+      "/auth/convite/consulta": { status: 200, corpo: convite },
+      "/auth/convite/aceite": { status: 200, corpo: { mensagem: "Acesso ativado. Entre com seu e-mail e a senha criada." } },
+    });
+    emProvedores(<AceiteDeConvite token="token-do-convite" />);
+
+    expect(await screen.findByRole("heading", { name: "Ative seu acesso" })).toBeInTheDocument();
+    expect(screen.getByText("Paula Atendente")).toBeInTheDocument();
+    expect(screen.getByText("paula@viaflux.test")).toBeInTheDocument();
+    expect(screen.getByText("Líder operacional")).toBeInTheDocument();
+
+    await usuario.type(screen.getByLabelText("Senha"), "senha-da-paula");
+    await usuario.type(screen.getByLabelText("Confirme a senha"), "outra-senha");
+    await usuario.click(screen.getByRole("button", { name: "Ativar acesso" }));
+    expect(screen.getByText("As senhas não conferem.")).toBeInTheDocument();
+
+    await usuario.clear(screen.getByLabelText("Confirme a senha"));
+    await usuario.type(screen.getByLabelText("Confirme a senha"), "senha-da-paula");
+    await usuario.click(screen.getByRole("button", { name: "Ativar acesso" }));
+
+    expect(await screen.findByRole("heading", { name: "Acesso ativado" })).toBeInTheDocument();
+    expect(screen.getByText("Acesso ativado. Entre com seu e-mail e a senha criada.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Entrar" })).toHaveAttribute("href", "/login");
+    expect(chamadas.filter((chamada) => chamada.caminho.startsWith("/auth/convite"))).toEqual([
+      { caminho: "/auth/convite/consulta", corpo: { token: "token-do-convite" } },
+      { caminho: "/auth/convite/aceite", corpo: { token: "token-do-convite", senha: "senha-da-paula" } },
+    ]);
+  });
+
+  it("com convite expirado ou já usado não mostra o formulário", async () => {
+    programarApi({ "/auth/convite/consulta": { status: 400, corpo: { detail: "Este link é inválido, já foi usado ou expirou. Peça um novo." } } });
+    emProvedores(<AceiteDeConvite token="usado" />);
+
+    expect(await screen.findByRole("heading", { name: "Convite indisponível" })).toBeInTheDocument();
+    expect(screen.getByText("Este link é inválido, já foi usado ou expirou. Peça um novo.")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Senha")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Entrar" })).toHaveAttribute("href", "/login");
   });
 });
 

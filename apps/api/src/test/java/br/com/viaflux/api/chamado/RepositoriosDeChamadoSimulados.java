@@ -34,6 +34,11 @@ public class RepositoriosDeChamadoSimulados {
     }
 
     @Bean
+    LiderancaRepository liderancaRepository() {
+        return mock(LiderancaRepository.class);
+    }
+
+    @Bean
     MotivoRepository motivoRepository() {
         return mock(MotivoRepository.class);
     }

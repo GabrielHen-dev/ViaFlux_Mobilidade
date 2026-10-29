@@ -3,7 +3,6 @@ package br.com.viaflux.api.usuario;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.util.Set;
@@ -17,8 +16,6 @@ public record AtualizarUsuarioRequest(
         @Email(message = "Informe um e-mail válido.")
         @Size(max = 254, message = "O e-mail deve ter no máximo 254 caracteres.")
         String email,
-        @Pattern(regexp = "^(|.{8,100})$", message = "A nova senha deve ter entre 8 e 100 caracteres.")
-        String senha,
         @NotEmpty(message = "Informe ao menos um perfil.")
         Set<@NotBlank(message = "O código do perfil não pode ficar vazio.") String> perfis,
         UUID organizacaoId,

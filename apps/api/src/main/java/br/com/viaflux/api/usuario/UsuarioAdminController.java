@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -72,14 +74,19 @@ class UsuarioAdminController {
 
     @PostMapping("/usuarios")
     @Operation(
-            summary = "Cadastrar usuário",
-            description = "Regras: e-mail único (409 se já existir); DEPARTAMENTO exige ao menos um departamento ativo; CLIENTE e "
+            summary = "Convidar usuário",
+            description = "Cria o usuário com o convite pendente e envia por e-mail o link para ele definir a própria senha "
+                    + "(validade configurável, padrão de 7 dias). Até aceitar o convite, o usuário não consegue entrar. "
+                    + "Regras: e-mail único (409 se já existir); DEPARTAMENTO exige ao menos um departamento ativo; CLIENTE e "
                     + "GESTOR_FROTA exigem organização do tipo CLIENTE; FORNECEDOR exige organização do tipo FORNECEDOR; um usuário "
                     + "não pode ser cliente e fornecedor ao mesmo tempo; a organização precisa estar ativa. Perfil: ADMIN.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    ResponseEntity<UsuarioAdminResponse> criar(@Valid @RequestBody CriarUsuarioRequest request) {
-        UsuarioAdminResponse response = service.criar(request);
+    ResponseEntity<UsuarioAdminResponse> criar(
+            @Valid @RequestBody CriarUsuarioRequest request,
+            @AuthenticationPrincipal Jwt token
+    ) {
+        UsuarioAdminResponse response = service.criar(request, idDo(token));
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
                 .buildAndExpand(response.id())
@@ -93,11 +100,28 @@ class UsuarioAdminController {
             description = "Regras: e-mail único (409 se já existir); DEPARTAMENTO exige ao menos um departamento ativo; CLIENTE e "
                     + "GESTOR_FROTA exigem organização do tipo CLIENTE; FORNECEDOR exige organização do tipo FORNECEDOR; um usuário "
                     + "não pode ser cliente e fornecedor ao mesmo tempo; a organização precisa estar ativa. Também não é possível "
-                    + "tirar o perfil do último ADMIN ativo. Perfil: ADMIN.",
+                    + "tirar o perfil do último ADMIN ativo. Se o convite estiver pendente e o e-mail mudar, um convite novo "
+                    + "é enviado para o endereço atualizado. Perfil: ADMIN.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    UsuarioAdminResponse atualizar(@PathVariable UUID id, @Valid @RequestBody AtualizarUsuarioRequest request) {
-        return service.atualizar(id, request);
+    UsuarioAdminResponse atualizar(
+            @PathVariable UUID id,
+            @Valid @RequestBody AtualizarUsuarioRequest request,
+            @AuthenticationPrincipal Jwt token
+    ) {
+        return service.atualizar(id, request, idDo(token));
+    }
+
+    @PostMapping("/usuarios/{id}/convite")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    @Operation(
+            summary = "Reenviar convite",
+            description = "Envia um link de convite novo e invalida o anterior. Só vale para usuário ativo com convite pendente: "
+                    + "409 se o acesso já foi ativado, 400 se o usuário estiver inativo. Perfil: ADMIN.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    UsuarioAdminResponse reenviarConvite(@PathVariable UUID id, @AuthenticationPrincipal Jwt token) {
+        return service.reenviarConvite(id, idDo(token));
     }
 
     @PatchMapping("/usuarios/{id}/ativo")
@@ -112,7 +136,7 @@ class UsuarioAdminController {
             @Valid @RequestBody AlterarAtivoRequest request,
             @AuthenticationPrincipal Jwt token
     ) {
-        return service.alterarAtivo(id, request.ativo(), UUID.fromString(token.getSubject()));
+        return service.alterarAtivo(id, request.ativo(), idDo(token));
     }
 
     @PostMapping("/organizacoes")
@@ -131,5 +155,9 @@ class UsuarioAdminController {
                 .buildAndExpand(response.id())
                 .toUri();
         return ResponseEntity.created(location).body(response);
+    }
+
+    private static UUID idDo(Jwt token) {
+        return token == null ? null : UUID.fromString(token.getSubject());
     }
 }

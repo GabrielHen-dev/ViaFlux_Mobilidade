@@ -56,6 +56,10 @@ O objetivo 6 depende de o cliente definir o que conta como impacto, e o 9 depend
 
 **SLA é baseline operacional do MVP, não penalidade contratual.** Motivo e contexto definem severidade e urgência; a soma dá o score e a prioridade (10 = P1, 8 = P2, 6 = P3, 4 ou 2 = P4). Os prazos são P1 15 min / 2 h e P2 30 min / 4 h corridos, P3 2 h / 24 h e P4 4 h / 48 h úteis, de segunda a sexta, das 08:00 às 18:00, no fuso America/Fortaleza.
 
+O SLA é acompanhado em duas etapas: **início do atendimento** (primeiro prazo) e **solução** (segundo prazo); a interface destaca a etapa vigente. Chamado com prazo vencido pode ser escalonado à liderança operacional, que é notificada no portal e por e-mail.
+
+A classificação é automática: o motivo e o contexto escolhidos definem tipo, severidade e urgência. Quando o solicitante escolhe "Outro", a plataforma classifica pelo texto do relato, encaminha o chamado e o marca para revisão; o atendente confirma ou reclassifica e, se o tipo mudar enquanto o chamado estiver na fila, ele é reencaminhado ao departamento correto.
+
 ### Premissas
 
 1. **Operação 24/7**, com acesso por navegador nas unidades e por celular nas equipes de campo e na assistência. Parte dos usuários está em deslocamento com conexão instável no celular pessoal — por isso o rascunho do formulário fica no aparelho por até 24 h, isolado por usuário, e a câmera é um recurso extra ao lado da seleção de arquivo.
@@ -85,9 +89,9 @@ A API aplica as regras abaixo em cada requisição; a interface só esconde o qu
 |---|---|---|---|
 | `CLIENTE` | Sim, em nome próprio | Os próprios chamados, no portal | Acompanha, complementa, confirma ou contesta a solução e reabre em até 5 dias úteis após o fechamento |
 | `GESTOR_FROTA` | Sim, para si ou para um motorista da sua organização | Os chamados da sua organização | O mesmo que o cliente; não altera classificação nem prioridade |
-| `ATENDENTE` | Sim, pela Central, em nome de um cliente | Todos os chamados | Trata a fila de exceções, revisa classificação e prioridade com justificativa, transfere, atende qualquer fila, aciona fornecedor e usa a lixeira |
-| `DEPARTAMENTO` | Não | A fila do próprio departamento | Assume, muda status, resolve com resumo da solução, transfere e aciona fornecedor |
-| `LIDER_OPERACIONAL` | Não | Todos os chamados, só leitura | Acompanha o painel e consulta e exporta métricas |
+| `ATENDENTE` | Sim, pela Central, em nome de um cliente | Todos os chamados | Revisa as classificações automáticas, reclassifica e ajusta prioridade com justificativa, transfere, atende qualquer fila, escalona chamados com SLA vencido, aciona fornecedor e usa a lixeira |
+| `DEPARTAMENTO` | Não | A fila do próprio departamento | Assume, muda status, resolve com resumo da solução, transfere, escalona chamados com SLA vencido e aciona fornecedor |
+| `LIDER_OPERACIONAL` | Não | Todos os chamados, só leitura | Acompanha o painel, recebe os escalonamentos de SLA vencido e consulta e exporta métricas |
 | `FORNECEDOR` | Não | Só os serviços atribuídos à sua empresa | Atualiza o status do serviço e registra observações |
 | `ADMIN` | Sim, pela Central | Todos os chamados (visão global no MVP) | Tudo o que o atendente faz, mais gestão de usuários e ferramentas de desenvolvimento |
 
@@ -234,7 +238,7 @@ ViaFlux_Mobilidade/
 
 ## Como rodar localmente
 
-> **Estado desta etapa.** A API Spring Boot e o frontend Next.js cobrem o ciclo completo do chamado: abertura com classificação e roteamento automáticos, fila de exceções da Central, atendimento pelos departamentos, fornecedores, anexos, notificações, confirmação da solução pelo solicitante com fechamento automático em 3 dias úteis, reabertura, métricas e lixeira.
+> **Estado desta etapa.** A API Spring Boot e o frontend Next.js cobrem o ciclo completo do chamado: abertura com classificação e roteamento automáticos (inclusive pelo relato, com revisão do atendente), escalonamento de SLA vencido à liderança, atendimento pelos departamentos, fornecedores, anexos, notificações, confirmação da solução pelo solicitante com fechamento automático em 3 dias úteis, reabertura, métricas e lixeira.
 
 ### Pré-requisitos
 

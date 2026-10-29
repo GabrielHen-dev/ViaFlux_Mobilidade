@@ -1,0 +1,9 @@
+{{titulo}}
+
+{{conteudo}}
+
+{{acao}}: {{link}}
+
+--
+ViaFlux Mobilidade
+Mensagem automática. Não responda este e-mail.

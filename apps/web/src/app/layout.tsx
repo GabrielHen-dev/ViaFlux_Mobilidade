@@ -6,7 +6,10 @@ import "@/styles/globals.css";
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-inter", display: "swap" });
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["500", "600", "700", "800"], variable: "--font-montserrat", display: "swap" });
 
-export const metadata: Metadata = { title: "ViaFlux Mobilidade · Central de Chamados", description: "Protótipo navegável da Central de Chamados ViaFlux Mobilidade." };
+export const metadata: Metadata = {
+  title: { default: "Central de Chamados · ViaFlux Mobilidade", template: "%s · ViaFlux Mobilidade" },
+  description: "Central de Chamados da ViaFlux Mobilidade: abertura, classificação e acompanhamento de chamados de assistência veicular e gestão de frotas.",
+};
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return <html lang="pt-BR"><body className={`${inter.variable} ${montserrat.variable}`}>

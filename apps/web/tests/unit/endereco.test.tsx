@@ -73,7 +73,7 @@ describe("campo de localização", () => {
     expect(screen.getByLabelText("Número")).toHaveValue("1500");
     expect(screen.getByLabelText("Bairro")).toHaveValue("Bela Vista");
     expect(screen.getByLabelText("Cidade")).toHaveValue("São Paulo");
-    expect(screen.getByLabelText("UF")).toHaveValue("SP");
+    expect(screen.getByLabelText("UF")).toHaveTextContent("SP");
     expect(ultimoValor()?.endereco).toBe("Avenida Paulista, 1500 · Bela Vista · São Paulo – SP · CEP 01310-100");
     expect(screen.getByText("Não sabe o CEP? Use sua localização ou digite o nome da rua.")).toBeInTheDocument();
   });
@@ -106,7 +106,7 @@ describe("campo de localização", () => {
     expect(screen.getByLabelText("CEP")).toHaveValue("01310-200");
     expect(screen.getByLabelText("Bairro")).toHaveValue("Bela Vista");
     expect(screen.getByLabelText("Cidade")).toHaveValue("São Paulo");
-    expect(screen.getByLabelText("UF")).toHaveValue("SP");
+    expect(screen.getByLabelText("UF")).toHaveTextContent("SP");
     expect(ultimoValor()).toMatchObject({ latitude: -23.561414, longitude: -46.655881, endereco: formatarEndereco(ultimoValor()!) });
 
     await usuario.type(screen.getByLabelText("Complemento / ponto de referência"), "Em frente ao posto");
@@ -160,7 +160,7 @@ describe("campo de localização", () => {
     expect(rua).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByRole("listbox", { name: "Sugestões de endereço" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("Cidade")).toHaveValue("São Paulo");
-    expect(screen.getByLabelText("UF")).toHaveValue("SP");
+    expect(screen.getByLabelText("UF")).toHaveTextContent("SP");
     expect(screen.getByLabelText("Bairro")).toHaveValue("Bela Vista");
     expect(screen.getByLabelText("CEP")).toHaveValue("01310-200");
     expect(ultimoValor()).toMatchObject({ latitude: -23.5614, longitude: -46.6558, numero: "1500" });

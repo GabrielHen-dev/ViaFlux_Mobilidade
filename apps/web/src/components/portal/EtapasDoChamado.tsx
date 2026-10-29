@@ -37,10 +37,10 @@ export default function EtapasDoChamado({ chamado }: { chamado: Chamado }) {
       </ol>
       {emAnalise && (
         <p className="mt-4 rounded-xl bg-blue-50 px-3 py-2 text-xs text-blue-800">
-          A Central está analisando o seu chamado para definir a prioridade e o departamento responsável.{" "}
+          Chamado em análise pela Central.{" "}
           {chamado.triagem.situacao === "VIOLADO"
-            ? `A análise está levando mais tempo que o previsto (${formatarDataHora(chamado.triagem.limite)}), mas o seu chamado continua na fila.`
-            : `Previsão de análise: até ${formatarDataHora(chamado.triagem.limite)}.`}
+            ? `Prazo previsto excedido (${formatarDataHora(chamado.triagem.limite)}). O chamado permanece na fila.`
+            : `Previsão: até ${formatarDataHora(chamado.triagem.limite)}.`}
         </p>
       )}
       {chamado.departamento && !emAnalise && (

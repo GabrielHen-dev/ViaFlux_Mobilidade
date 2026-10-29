@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { MailWarning } from "lucide-react";
+import { toast } from "sonner";
 import { reenviarVerificacao } from "@/services/api/conta";
 import { ErroApi } from "@/services/api/cliente";
 import { useAuth } from "@/store/AuthContext";
@@ -13,7 +14,6 @@ export function emailPendente(usuario: UsuarioAutenticado) {
 
 export default function AvisoDeEmailNaoVerificado({ usuario }: { usuario: UsuarioAutenticado }) {
   const { atualizarUsuario } = useAuth();
-  const [mensagem, setMensagem] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
   if (!emailPendente(usuario)) return null;
@@ -21,9 +21,10 @@ export default function AvisoDeEmailNaoVerificado({ usuario }: { usuario: Usuari
   async function reenviar() {
     setEnviando(true);
     try {
-      setMensagem((await reenviarVerificacao(usuario.email)).mensagem);
+      const resposta = await reenviarVerificacao(usuario.email);
+      toast.success("Link reenviado", { description: resposta.mensagem });
     } catch (falha) {
-      setMensagem(falha instanceof ErroApi ? falha.message : "Não foi possível reenviar o link. Tente novamente.");
+      toast.error("Não foi possível reenviar o link", { description: falha instanceof ErroApi ? falha.message : "Tente novamente." });
     } finally {
       setEnviando(false);
     }
@@ -32,14 +33,13 @@ export default function AvisoDeEmailNaoVerificado({ usuario }: { usuario: Usuari
   return (
     <div role="status" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
       <p className="flex items-center gap-2 font-semibold"><MailWarning size={16} aria-hidden /> Confirme seu e-mail para abrir chamados</p>
-      <p className="mt-1">Enviamos um link para <strong>{usuario.email}</strong>. Depois de confirmar, volte aqui.</p>
+      <p className="mt-1">Link de confirmação enviado para <strong>{usuario.email}</strong>.</p>
       <div className="mt-2 flex flex-wrap gap-3">
         <button type="button" disabled={enviando} onClick={reenviar} className="text-xs font-semibold underline disabled:opacity-50">
           {enviando ? "Reenviando…" : "Reenviar link"}
         </button>
-        <button type="button" onClick={() => void atualizarUsuario()} className="text-xs font-semibold underline">Já confirmei</button>
+        <button type="button" onClick={() => void atualizarUsuario()} className="text-xs font-semibold underline">Verificar novamente</button>
       </div>
-      {mensagem && <p className="mt-2 text-xs">{mensagem}</p>}
     </div>
   );
 }

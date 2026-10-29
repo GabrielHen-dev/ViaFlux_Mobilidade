@@ -91,6 +91,14 @@ export function reclassificarChamado(api: ClienteApi, codigo: string, dados: Dad
   return api.requisitar<Chamado>(caminhoDo(codigo, "/classificacao"), json("PUT", dados));
 }
 
+export function confirmarClassificacao(api: ClienteApi, codigo: string) {
+  return api.requisitar<Chamado>(caminhoDo(codigo, "/classificacao/confirmacao"), json("POST"));
+}
+
+export function escalonarChamado(api: ClienteApi, codigo: string, observacao: string) {
+  return api.requisitar<Chamado>(caminhoDo(codigo, "/escalonamento"), json("POST", { observacao: observacao || null }));
+}
+
 export function definirOverride(api: ClienteApi, codigo: string, dados: DadosOverride) {
   return api.requisitar<Chamado>(caminhoDo(codigo, "/override"), json("PUT", dados));
 }

@@ -12,6 +12,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -100,5 +102,41 @@ class ContaControllerTests {
         mockMvc.perform(post("/auth/senha/recuperacao").contentType(MediaType.APPLICATION_JSON).content("{\"email\":\"ana@exemplo.com\"}"))
                 .andExpect(status().isTooManyRequests())
                 .andExpect(jsonPath("$.detail").value("Muitas tentativas seguidas. Tente de novo em 15 minutos."));
+    }
+
+    @Test
+    void consultaDoConviteEhPublicaEDevolveOsDadosDoConvidado() throws Exception {
+        given(contas.consultarConvite("convite")).willReturn(new ContaController.ConviteResponse("Paula Atendente", "paula@viaflux.local",
+                List.of(new ContaController.PerfilDoConvite("ATENDENTE", "Atendente"))));
+
+        mockMvc.perform(post("/auth/convite/consulta").contentType(MediaType.APPLICATION_JSON).content("{\"token\":\"convite\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome").value("Paula Atendente"))
+                .andExpect(jsonPath("$.email").value("paula@viaflux.local"))
+                .andExpect(jsonPath("$.perfis[0].codigo").value("ATENDENTE"))
+                .andExpect(jsonPath("$.perfis[0].descricao").value("Atendente"));
+    }
+
+    @Test
+    void consultaDeConviteInvalidoResponde400() throws Exception {
+        given(contas.consultarConvite("velho")).willThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, ContaService.LINK_INVALIDO));
+
+        mockMvc.perform(post("/auth/convite/consulta").contentType(MediaType.APPLICATION_JSON).content("{\"token\":\"velho\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(ContaService.LINK_INVALIDO));
+    }
+
+    @Test
+    void aceiteDoConviteEhPublicoEExigeSenhaDeOitoCaracteres() throws Exception {
+        mockMvc.perform(post("/auth/convite/aceite").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"convite\",\"senha\":\"senha-da-paula-1\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mensagem").value("Acesso ativado. Entre com seu e-mail e a senha criada."));
+        then(contas).should().aceitarConvite("convite", "senha-da-paula-1");
+
+        mockMvc.perform(post("/auth/convite/aceite").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"convite\",\"senha\":\"curta\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.senha").value("A senha deve ter entre 8 e 72 caracteres."));
     }
 }
