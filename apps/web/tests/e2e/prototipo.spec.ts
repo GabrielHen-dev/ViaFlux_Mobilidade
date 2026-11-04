@@ -82,14 +82,14 @@ test("ciclo completo: cliente abre, atendente tria, central atende, fornecedor a
   await sair(page);
 
   await entrarComo(page, USUARIOS.admin);
-  await expect(page.getByRole("region", { name: "Fila de triagem" })).toBeVisible();
-  await page.getByRole("navigation", { name: "Menu principal" }).getByRole("link", { name: "Triagem" }).click();
-  await expect(page.getByRole("heading", { name: "Fila de triagem" })).toBeVisible();
-  await page.getByRole("button", { name: "Assumir triagem do chamado VF-0000" }).click();
-  await expect(page.getByRole("heading", { name: "Triagem — #VF-0000" })).toBeVisible();
-  await expect(page.getByText("Em triagem com você")).toBeVisible();
-  await page.getByRole("button", { name: "Concluir triagem e encaminhar" }).click();
-  await expect(page.getByText("Triagem concluída: P1 · encaminhado para Assistência 24h.")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Atenção" }).getByRole("link", { name: "Analisar" })).toHaveAttribute("href", "/triagem");
+  await page.getByRole("navigation", { name: "Menu principal" }).getByRole("link", { name: "Classificação" }).click();
+  await expect(page.getByRole("heading", { name: "Classificação", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Analisar chamado VF-0000" }).click();
+  await expect(page.getByRole("heading", { name: "Classificação · #VF-0000" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Prazo e responsável" }).getByText("Responsável: você")).toBeVisible();
+  await page.getByRole("button", { name: "Classificar e encaminhar" }).click();
+  await expect(page.getByText("Chamado classificado · P1 · Assistência 24h")).toBeVisible();
   await page.getByRole("link", { name: "Voltar ao chamado" }).click();
   await expect(page.getByRole("heading", { name: "#VF-0000" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Baixar painel.png" })).toBeVisible();
@@ -113,11 +113,11 @@ test("ciclo completo: cliente abre, atendente tria, central atende, fornecedor a
   await page.getByRole("button", { name: "Transferir", exact: true }).click();
   await expect(page.getByText("Chamado transferido para Manutenção.")).toBeVisible();
   await page.getByRole("link", { name: "Voltar ao chamado" }).click();
-  await page.getByRole("main").getByRole("link", { name: "Triagem", exact: true }).click();
+  await page.getByRole("main").getByRole("link", { name: "Classificação", exact: true }).click();
   await page.getByText("Média (3)").first().click();
   await page.getByLabel("Justificativa *").first().fill("Veículo já está em local seguro, sem risco");
   await page.getByRole("button", { name: "Confirmar reclassificação" }).click();
-  await expect(page.getByText(/Chamado reclassificado: score 8 · P2/)).toBeVisible();
+  await expect(page.getByText("Chamado reclassificado · P2 (score 8)")).toBeVisible();
   await sair(page);
 
   await entrarComo(page, USUARIOS.fornecedor);
@@ -211,7 +211,7 @@ test("rotas diretas, recarregamento e protocolo inexistente", async ({ page }) =
   await entrarComo(page, USUARIOS.atendente);
   for (const [url, titulo] of [
     ["/chamados/VF-0000", "#VF-0000"],
-    ["/chamados/VF-0000/triagem", "Triagem — #VF-0000"],
+    ["/chamados/VF-0000/triagem", "Classificação · #VF-0000"],
     ["/chamados/VF-0000/encaminhamento", "Transferência — #VF-0000"],
     ["/lixeira", "Lixeira"],
   ]) {
