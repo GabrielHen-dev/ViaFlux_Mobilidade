@@ -78,8 +78,8 @@ class ViafluxApplicationTests {
         Integer contexts = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM viaflux.contexto", Integer.class);
 
         assertThat(schemaExists).isTrue();
-        assertThat(appliedMigrations).isEqualTo(18);
-        assertThat(latestVersion).isEqualTo("18");
+        assertThat(appliedMigrations).isEqualTo(19);
+        assertThat(latestVersion).isEqualTo("19");
         assertThat(reasons).isEqualTo(30);
         assertThat(contexts).isEqualTo(30);
     }

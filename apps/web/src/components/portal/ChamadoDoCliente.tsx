@@ -6,6 +6,7 @@ import type { Chamado } from "@/types/chamado";
 import ComChamado from "@/components/chamados/ComChamado";
 import PerfilRequerido from "@/components/auth/PerfilRequerido";
 import TimelineChamado from "@/components/chamados/TimelineChamado";
+import ChatDoChamado from "@/components/chamados/ChatDoChamado";
 import AnexosDoChamado from "@/components/chamados/AnexosDoChamado";
 import LocalizacaoDoChamado from "@/components/chamados/LocalizacaoDoChamado";
 import { PrioridadeIndicador, StatusBadge } from "@/components/ui/StatusBadge";
@@ -48,6 +49,7 @@ function ConteudoDoChamado({ chamado }: { chamado: Chamado }) {
 
         <EtapasDoChamado chamado={chamado} />
         <EncerramentoPeloSolicitante chamado={chamado} />
+        <ChatDoChamado chamado={chamado} visaoDeCliente />
         <TimelineChamado chamado={chamado} visaoDeCliente />
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <LocalizacaoDoChamado chamado={chamado} />

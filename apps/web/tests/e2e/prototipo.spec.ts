@@ -96,8 +96,9 @@ test("ciclo completo: cliente abre, atendente tria, central atende, fornecedor a
   await expect(page.getByRole("link", { name: /Abrir no mapa/ })).toHaveAttribute("href", /-23\.4356/);
   await page.getByRole("button", { name: "Assumir chamado" }).click();
   await expect(page.getByText("Status alterado para Em atendimento")).toBeVisible();
-  await page.getByLabel("Adicionar atualização ao histórico").fill("Anotação interna: cliente com contrato corporativo");
-  await page.getByRole("button", { name: "Registrar", exact: true }).click();
+  await page.getByRole("radio", { name: "Nota interna" }).click();
+  await page.getByLabel("Escrever nota interna").fill("Anotação interna: cliente com contrato corporativo");
+  await page.getByRole("button", { name: "Salvar nota" }).click();
   await expect(page.getByText("Anotação interna: cliente com contrato corporativo")).toBeVisible();
 
   await page.getByRole("button", { name: "Incluir serviço terceirizado" }).click();

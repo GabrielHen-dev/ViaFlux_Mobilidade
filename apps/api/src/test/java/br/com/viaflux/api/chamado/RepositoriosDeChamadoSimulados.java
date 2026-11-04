@@ -24,6 +24,11 @@ public class RepositoriosDeChamadoSimulados {
     }
 
     @Bean
+    LeituraDaConversaRepository leituraDaConversaRepository() {
+        return mock(LeituraDaConversaRepository.class);
+    }
+
+    @Bean
     ConcessaoAcessoChamadoRepository concessaoAcessoChamadoRepository() {
         return mock(ConcessaoAcessoChamadoRepository.class);
     }

@@ -1,10 +1,13 @@
 package br.com.viaflux.api.chamado;
 
+import br.com.viaflux.api.shared.seguranca.LimiteDeTentativas;
 import br.com.viaflux.api.usuario.UsuarioAtual;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Locale;
@@ -12,18 +15,31 @@ import java.util.Locale;
 @Service
 class AtendimentoService {
 
+    private static final int MENSAGENS_POR_MINUTO = 30;
+    private static final int TAMANHO_MAXIMO_DA_MENSAGEM = 5000;
+    private static final String ACAO_DO_SOLICITANTE = "Complemento do solicitante";
+    private static final String ACAO_MENSAGEM_DA_EQUIPE = "Mensagem ao solicitante";
+    private static final String ACAO_NOTA_INTERNA = "Registro interno";
+
     private final AcessoAosChamados acesso;
     private final HistoricoDoChamado historico;
     private final AvisoAoSolicitante aviso;
+    private final AvisosDaConversa avisosDaConversa;
+    private final AnexoService anexos;
     private final MontagemDeChamado montagem;
     private final Clock relogio;
+    private final LimiteDeTentativas limiteDeMensagens;
 
-    AtendimentoService(AcessoAosChamados acesso, HistoricoDoChamado historico, AvisoAoSolicitante aviso, MontagemDeChamado montagem, Clock relogio) {
+    AtendimentoService(AcessoAosChamados acesso, HistoricoDoChamado historico, AvisoAoSolicitante aviso, AvisosDaConversa avisosDaConversa,
+                       AnexoService anexos, MontagemDeChamado montagem, Clock relogio) {
         this.acesso = acesso;
         this.historico = historico;
         this.aviso = aviso;
+        this.avisosDaConversa = avisosDaConversa;
+        this.anexos = anexos;
         this.montagem = montagem;
         this.relogio = relogio;
+        this.limiteDeMensagens = new LimiteDeTentativas(MENSAGENS_POR_MINUTO, Duration.ofMinutes(1), relogio);
     }
 
     @Transactional
@@ -91,19 +107,64 @@ class AtendimentoService {
 
     @Transactional
     ChamadoResponse registrarAtualizacao(String codigo, AtualizacaoRequest request, UsuarioAtual usuario) {
+        Chamado chamado = chamadoParaAConversa(codigo, usuario);
+        publicarMensagem(chamado, request.texto().trim(), usuario.apenasCliente() || request.visivelCliente(), null, usuario);
+        return montagem.completo(chamado, usuario.apenasCliente());
+    }
+
+    @Transactional
+    ChamadoResponse enviarArquivoNaConversa(String codigo, MultipartFile arquivo, String texto, boolean visivelCliente, String chaveIdempotencia, UsuarioAtual usuario) {
+        String textoInformado = texto == null ? "" : texto.trim();
+        if (textoInformado.length() > TAMANHO_MAXIMO_DA_MENSAGEM) {
+            throw ErroDeChamado.campoInvalido("texto", "A atualização deve ter no máximo " + TAMANHO_MAXIMO_DA_MENSAGEM + " caracteres.");
+        }
+        Chamado chamado = chamadoParaAConversa(codigo, usuario);
+        boolean publica = usuario.apenasCliente() || visivelCliente;
+        VisibilidadeDoConteudo visibilidade = publica ? VisibilidadeDoConteudo.SOLICITANTE : VisibilidadeDoConteudo.INTERNO;
+        AnexoService.Resultado resultado = anexos.enviar(codigo, arquivo, chaveIdempotencia, visibilidade, usuario);
+        if (resultado.criado()) {
+            String conteudo = textoInformado.isEmpty() ? "Arquivo enviado: " + resultado.anexo().nome() : textoInformado;
+            publicarMensagem(chamado, conteudo, publica, resultado.anexo(), usuario);
+        }
+        return montagem.completo(chamado, usuario.apenasCliente());
+    }
+
+    private Chamado chamadoParaAConversa(String codigo, UsuarioAtual usuario) {
         Chamado chamado = acesso.visivel(codigo, usuario);
-        boolean doSolicitante = usuario.apenasCliente();
-        if (!doSolicitante && !acesso.podeConduzir(chamado, usuario)) {
+        if (!usuario.apenasCliente() && !acesso.podeConduzir(chamado, usuario)) {
             throw ErroDeChamado.proibido("Este chamado não está na fila do seu departamento.");
         }
+        chamado.exigirConversaAberta();
+        limiteDeMensagens.consumir(usuario.id().toString());
+        return chamado;
+    }
+
+    private void publicarMensagem(Chamado chamado, String texto, boolean visivelCliente, AnexoResponse anexo, UsuarioAtual usuario) {
+        boolean doSolicitante = usuario.apenasCliente();
         OffsetDateTime agora = agora();
-        boolean visivelCliente = doSolicitante || request.visivelCliente();
-        String acao = doSolicitante ? "Complemento do solicitante" : visivelCliente ? "Mensagem ao solicitante" : "Registro interno";
-        historico.registrar(chamado, TipoEvento.ATUALIZACAO, acao, request.texto().trim(), autor(usuario), visivelCliente, agora);
-        if (!doSolicitante && visivelCliente) {
+        String acao = doSolicitante ? ACAO_DO_SOLICITANTE : visivelCliente ? ACAO_MENSAGEM_DA_EQUIPE : ACAO_NOTA_INTERNA;
+        OrigemDaMensagem origem = doSolicitante ? OrigemDaMensagem.SOLICITANTE : OrigemDaMensagem.EQUIPE;
+        Autor autor = autor(usuario);
+        historico.registrarMensagem(chamado, acao, texto, autor, visivelCliente, origem, anexo == null ? null : anexo.id(), agora);
+        if (doSolicitante) {
+            avisosDaConversa.mensagemDoSolicitante(chamado, texto, autor, agora);
+            retomarSeAguardavaOCliente(chamado, agora);
+        } else if (visivelCliente) {
             chamado.registrarPrimeiraResposta(agora);
+            avisosDaConversa.mensagemDaEquipe(chamado, texto, autor, agora);
         }
-        return montagem.completo(chamado, doSolicitante);
+    }
+
+    private void retomarSeAguardavaOCliente(Chamado chamado, OffsetDateTime agora) {
+        if (!chamado.aguardaCliente()) {
+            return;
+        }
+        StatusChamado destino = chamado.getAtendimentoResponsavel() == null ? StatusChamado.NA_FILA : StatusChamado.EM_ATENDIMENTO;
+        StatusChamado anterior = chamado.alterarStatus(destino, null, agora);
+        historico.registrarParaTodos(chamado, TipoEvento.STATUS, "Status alterado para " + destino.getRotulo(),
+                anterior.getRotulo() + " → " + destino.getRotulo() + " · resposta do solicitante · relógio de resolução retomado",
+                Autor.SISTEMA, agora);
+        aviso.avisar(chamado, destino.getRotulo(), "O chamado " + chamado.getCodigo() + " mudou para " + destino.getRotulo() + ".", agora);
     }
 
     @Transactional

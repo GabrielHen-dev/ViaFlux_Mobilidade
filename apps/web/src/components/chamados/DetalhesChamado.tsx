@@ -12,6 +12,7 @@ import { invalidarListas, useAcaoNoChamado } from "@/hooks/consultas";
 import ComChamado from "@/components/chamados/ComChamado";
 import AlteracaoDeStatus from "@/components/chamados/AlteracaoDeStatus";
 import TimelineChamado from "@/components/chamados/TimelineChamado";
+import ChatDoChamado from "@/components/chamados/ChatDoChamado";
 import AnexosDoChamado from "@/components/chamados/AnexosDoChamado";
 import LocalizacaoDoChamado from "@/components/chamados/LocalizacaoDoChamado";
 import ServicoTerceiroForm from "@/components/forms/ServicoTerceiroForm";
@@ -147,8 +148,9 @@ function DetalhesConteudo({ chamado }: { chamado: Chamado }) {
               </div>
             )}
           </section>
+          <ChatDoChamado chamado={chamado} somenteLeitura={!conduz} />
           {conduz && triado && <ServicoTerceiroForm chamado={chamado} />}
-          <TimelineChamado chamado={chamado} somenteLeitura={!conduz} />
+          <TimelineChamado chamado={chamado} />
         </div>
 
         <div className="min-w-0 space-y-5">

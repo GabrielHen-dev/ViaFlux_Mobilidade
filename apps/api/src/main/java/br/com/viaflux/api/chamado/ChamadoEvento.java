@@ -53,6 +53,13 @@ class ChamadoEvento {
     @Column(name = "sequencia", insertable = false, updatable = false)
     private Long sequencia;
 
+    @Column(name = "anexo_id")
+    private UUID anexoId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "origem_mensagem", length = 12)
+    private OrigemDaMensagem origemDaMensagem;
+
     protected ChamadoEvento() {
     }
 
@@ -67,6 +74,19 @@ class ChamadoEvento {
         this.visivelCliente = visivelCliente;
         this.visibilidade = visivelCliente ? VisibilidadeDoConteudo.SOLICITANTE : VisibilidadeDoConteudo.INTERNO;
         this.ocorridoEm = ocorridoEm;
+    }
+
+    void marcarComoMensagem(OrigemDaMensagem origem, UUID anexoId) {
+        this.origemDaMensagem = origem;
+        this.anexoId = anexoId;
+    }
+
+    OrigemDaMensagem getOrigemDaMensagem() {
+        return origemDaMensagem;
+    }
+
+    UUID getAnexoId() {
+        return anexoId;
     }
 
     UUID getId() {

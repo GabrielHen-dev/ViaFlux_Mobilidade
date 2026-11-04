@@ -30,11 +30,17 @@ class Notificacao {
     @Column(nullable = false, length = 255)
     private String mensagem;
 
-    @Column(name = "criada_em", nullable = false, updatable = false)
+    @Column(name = "criada_em", nullable = false)
     private OffsetDateTime criadaEm;
 
     @Column(nullable = false)
     private boolean lida;
+
+    @Column(name = "email_adiado_desde")
+    private OffsetDateTime emailAdiadoDesde;
+
+    @Column(name = "email_tentativas", nullable = false)
+    private int emailTentativas;
 
     protected Notificacao() {
     }
@@ -49,8 +55,37 @@ class Notificacao {
         this.criadaEm = criadaEm;
     }
 
+    static Notificacao comEmailAdiado(UUID destinatarioId, UUID chamadoId, String chamadoCodigo, String novoStatus, String mensagem, OffsetDateTime criadaEm) {
+        Notificacao notificacao = new Notificacao(destinatarioId, chamadoId, chamadoCodigo, novoStatus, mensagem, criadaEm);
+        notificacao.emailAdiadoDesde = criadaEm;
+        return notificacao;
+    }
+
     void marcarComoLida() {
         this.lida = true;
+        this.emailAdiadoDesde = null;
+    }
+
+    void atualizarMensagem(String mensagem, OffsetDateTime instante) {
+        this.mensagem = mensagem;
+        this.criadaEm = instante;
+    }
+
+    void concluirEsperaDoEmail() {
+        this.emailAdiadoDesde = null;
+    }
+
+    int registrarFalhaDoEmail() {
+        this.emailTentativas += 1;
+        return emailTentativas;
+    }
+
+    UUID getChamadoId() {
+        return chamadoId;
+    }
+
+    UUID getDestinatarioId() {
+        return destinatarioId;
     }
 
     UUID getId() {

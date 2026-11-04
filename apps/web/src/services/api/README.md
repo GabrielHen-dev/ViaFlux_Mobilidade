@@ -6,7 +6,7 @@ Cliente HTTP e contratos da API Spring Boot. A URL base vem de `NEXT_PUBLIC_API_
 - `transporte.ts`: o `fetch` usado pelo cliente.
 - `auth.ts`: login e renovação de sessão.
 - `contratos.ts`: corpos de requisição e filtros (abertura, triagem, status, transferência, métricas…).
-- `chamados.ts`: chamados, triagem (`iniciarTriagem`, `concluirTriagem`), classificação, override, anexos e lixeira.
+- `chamados.ts`: chamados, triagem (`iniciarTriagem`, `concluirTriagem`), classificação, override, conversa do chamado, anexos e lixeira.
 - `operacao.ts`: fornecedores, serviços terceirizados, notificações e métricas.
 - `enderecos.ts`: CEP, endereço pelo GPS e busca de rua.
 - `admin-usuarios.ts` e `devtools.ts`: gestão de usuários e dados de exemplo.

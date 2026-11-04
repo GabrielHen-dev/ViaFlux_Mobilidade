@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -28,6 +29,15 @@ public class IdentificacaoDoUsuario {
                 .filter(Usuario::isAtivo)
                 .filter(encontrado -> sessaoVigente(token, encontrado))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não encontrado ou inativo."));
+        return paraUsuarioAtual(usuario);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<UsuarioAtual> ativoPorId(UUID id) {
+        return usuarios.findById(id).filter(Usuario::isAtivo).map(IdentificacaoDoUsuario::paraUsuarioAtual);
+    }
+
+    private static UsuarioAtual paraUsuarioAtual(Usuario usuario) {
         Set<String> perfis = usuario.getPerfis().stream()
                 .map(Perfil::getCodigo)
                 .collect(Collectors.toUnmodifiableSet());
@@ -35,7 +45,7 @@ public class IdentificacaoDoUsuario {
                 .map(Departamento::getCodigo)
                 .collect(Collectors.toUnmodifiableSet());
         UUID organizacaoId = usuario.getOrganizacao() == null ? null : usuario.getOrganizacao().getId();
-        return new UsuarioAtual(id, usuario.getNome(), perfis, departamentos, organizacaoId, usuario.emailVerificado());
+        return new UsuarioAtual(usuario.getId(), usuario.getNome(), perfis, departamentos, organizacaoId, usuario.emailVerificado());
     }
 
     private static boolean sessaoVigente(Jwt token, Usuario usuario) {

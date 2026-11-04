@@ -70,6 +70,41 @@ class AnexoServiceTests {
     }
 
     @Test
+    void anexoDaEquipeEhInternoENaoApareceNoHistoricoDoCliente() {
+        AnexoService.Resultado resultado = servico.enviar("VF-0001", foto("laudo.png"), null, atendente());
+
+        assertThat(resultado.anexo().visibilidade()).isEqualTo(VisibilidadeDoConteudo.INTERNO);
+        assertThat(ambiente.unicoEventoDoTipo(TipoEvento.ANEXO).isVisivelCliente()).isFalse();
+    }
+
+    @Test
+    void equipePodeEnviarAnexoVisivelAoSolicitante() {
+        AnexoService.Resultado resultado = servico.enviar("VF-0001", foto("orcamento.png"), null, VisibilidadeDoConteudo.SOLICITANTE, atendente());
+
+        assertThat(resultado.anexo().visibilidade()).isEqualTo(VisibilidadeDoConteudo.SOLICITANTE);
+        assertThat(ambiente.unicoEventoDoTipo(TipoEvento.ANEXO).isVisivelCliente()).isTrue();
+    }
+
+    @Test
+    void chamadoFechadoNaoRecebeAnexos() {
+        chamado.concluirTriagem(TipoChamado.MANUTENCAO, 3, 3, TipoChamado.MANUTENCAO, autor(ana), QUARTA_AS_DEZ.plusMinutes(1));
+        chamado.alterarStatus(StatusChamado.RESOLVIDO, null, QUARTA_AS_DEZ.plusMinutes(2));
+        chamado.alterarStatus(StatusChamado.FECHADO, null, QUARTA_AS_DEZ.plusMinutes(3));
+
+        ErroDeChamado erro = erroAo(() -> servico.enviar("VF-0001", foto("pneu.png"), null, ana));
+
+        assertThat(erro.getStatusCode()).isEqualTo(org.springframework.http.HttpStatus.CONFLICT);
+        assertThat(armazenamento.arquivos).isEmpty();
+    }
+
+    @Test
+    void solicitanteNaoConsegueEnviarAnexoInterno() {
+        AnexoService.Resultado resultado = servico.enviar("VF-0001", foto("pneu.png"), null, VisibilidadeDoConteudo.INTERNO, ana);
+
+        assertThat(resultado.anexo().visibilidade()).isEqualTo(VisibilidadeDoConteudo.SOLICITANTE);
+    }
+
+    @Test
     void reenvioComAMesmaChaveDevolveOAnexoJaGuardado() {
         String chaveDaAna = ANA + ":chave-1";
         ChamadoAnexo existente = new ChamadoAnexo(chamado, "pneu.png", "image/png", FOTO.length, autor(ana), chaveDaAna, QUARTA_AS_DEZ);
