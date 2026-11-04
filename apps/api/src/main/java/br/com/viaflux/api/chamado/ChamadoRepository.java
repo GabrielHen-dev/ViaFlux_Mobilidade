@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,6 +18,9 @@ interface ChamadoRepository extends JpaRepository<Chamado, UUID> {
     List<Chamado> findByExcluidoEmIsNotNullOrderByExcluidoEmDesc();
 
     List<Chamado> findByStatusAndExcluidoEmIsNull(StatusChamado status);
+
+    @Query("SELECT chamado.id FROM Chamado chamado WHERE chamado.excluidoEm IS NULL AND chamado.status IN :status")
+    List<UUID> idsComStatus(@Param("status") Collection<StatusChamado> status);
 
     @Query("""
             SELECT chamado
