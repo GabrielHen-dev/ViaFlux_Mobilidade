@@ -25,4 +25,8 @@ class HistoricoDoChamado {
         eventos.save(new ChamadoEvento(chamado, tipo, acao, detalhe, autor, visivelCliente, instante));
         chamado.tocar(instante);
     }
+
+    void registrarAlerta(Chamado chamado, TipoEvento tipo, String acao, String detalhe, OffsetDateTime instante) {
+        eventos.save(new ChamadoEvento(chamado, tipo, acao, detalhe, Autor.SISTEMA, false, instante));
+    }
 }

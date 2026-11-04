@@ -65,6 +65,19 @@ class AvisoPorEmail {
         }
     }
 
+    @Transactional(readOnly = true)
+    boolean entregar(NotificacaoRegistrada notificacao) {
+        try {
+            return usuarios.findById(notificacao.destinatarioId())
+                    .filter(Usuario::isAtivo)
+                    .map(destinatario -> caixaDeSaida.tentarEnviar(mensagemPara(destinatario, notificacao)))
+                    .orElse(true);
+        } catch (RuntimeException falha) {
+            log.warn("Não foi possível enviar o e-mail do chamado {}: {}", notificacao.codigoDoChamado(), falha.getMessage());
+            return false;
+        }
+    }
+
     private CaixaDeSaida.Mensagem mensagemPara(Usuario destinatario, NotificacaoRegistrada notificacao) {
         Aparencia aparencia = APARENCIA_DO_STATUS.getOrDefault(
                 notificacao.novoStatus().trim().toLowerCase(Locale.ROOT), APARENCIA_PADRAO);

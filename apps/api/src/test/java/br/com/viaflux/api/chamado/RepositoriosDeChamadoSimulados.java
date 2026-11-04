@@ -47,4 +47,19 @@ public class RepositoriosDeChamadoSimulados {
     ContextoRepository contextoRepository() {
         return mock(ContextoRepository.class);
     }
+
+    @Bean
+    AlertaDeSlaRepository alertaDeSlaRepository() {
+        return mock(AlertaDeSlaRepository.class);
+    }
+
+    @Bean
+    EntregaDeAlertaDeSlaRepository entregaDeAlertaDeSlaRepository() {
+        return mock(EntregaDeAlertaDeSlaRepository.class);
+    }
+
+    @Bean
+    EquipeDoDepartamentoRepository equipeDoDepartamentoRepository() {
+        return mock(EquipeDoDepartamentoRepository.class);
+    }
 }

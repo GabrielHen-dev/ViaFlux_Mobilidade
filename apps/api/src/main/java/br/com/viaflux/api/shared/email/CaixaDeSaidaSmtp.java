@@ -27,6 +27,11 @@ class CaixaDeSaidaSmtp implements CaixaDeSaida {
 
     @Override
     public void enviar(Mensagem mensagem) {
+        tentarEnviar(mensagem);
+    }
+
+    @Override
+    public boolean tentarEnviar(Mensagem mensagem) {
         try {
             MimeMessage email = carteiro.createMimeMessage();
             MimeMessageHelper montagem = new MimeMessageHelper(email, true, StandardCharsets.UTF_8.name());
@@ -39,8 +44,10 @@ class CaixaDeSaidaSmtp implements CaixaDeSaida {
                 montagem.setText(mensagem.texto(), mensagem.html());
             }
             carteiro.send(email);
+            return true;
         } catch (MailException | MessagingException falhaNoEnvio) {
             log.warn("Não foi possível enviar o e-mail \"{}\": {}", mensagem.assunto(), falhaNoEnvio.getMessage());
+            return false;
         }
     }
 }

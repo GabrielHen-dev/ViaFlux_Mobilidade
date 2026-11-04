@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +20,8 @@ class PoliticaDeSla {
 
     record Prazos(int primeiraRespostaMinutos, int resolucaoMinutos, Relogio relogio) {
     }
+
+    private static final int MINUTOS_PARA_ACIONAR_P1 = 15;
 
     private final Map<Prioridade, Prazos> prazos = new EnumMap<>(Prioridade.class);
     private final RelogioCorrido relogioCorrido;
@@ -52,6 +56,38 @@ class PoliticaDeSla {
         boolean pausado = pausas.stream().anyMatch(Pausa::emAndamento);
         long tempoPausado = Math.round(AvaliacaoDePrazo.minutosPausados(relogioCorrido, pausas, agora));
         return new SlaResponse(PrazoResponse.de(primeiraResposta), PrazoResponse.de(resolucao), pausado, tempoPausado);
+    }
+
+    List<GatilhoDeSla> gatilhosAlcancados(Chamado chamado, Instant agora) {
+        Prioridade prioridade = chamado.prioridadeEfetiva();
+        if (prioridade == null) {
+            return List.of();
+        }
+        Prazos prazosDaPrioridade = prazos.get(prioridade);
+        Relogio relogio = prazosDaPrioridade.relogio();
+        Instant inicio = chamado.getAbertoEm().toInstant();
+        List<GatilhoDeSla> gatilhos = new ArrayList<>();
+        if (chamado.getPrimeiraRespostaEm() == null) {
+            gatilhos.addAll(limiaresAlcancados(PrazoDeSla.PRIMEIRA_RESPOSTA,
+                    AvaliacaoDePrazo.fracaoConsumida(relogio, inicio, prazosDaPrioridade.primeiraRespostaMinutos(), 0, agora)));
+            if (prioridade == Prioridade.P1 && relogioCorrido.minutosEntre(inicio, agora) >= MINUTOS_PARA_ACIONAR_P1) {
+                gatilhos.add(new GatilhoDeSla(PrazoDeSla.PRIMEIRA_RESPOSTA, LimiarDeSla.P1_SEM_PRIMEIRA_RESPOSTA));
+            }
+        }
+        if (chamado.getResolvidoEm() == null) {
+            List<Pausa> pausas = chamado.getPausas().stream().map(PausaDoChamado::paraPausa).toList();
+            double pausado = AvaliacaoDePrazo.minutosPausados(relogio, pausas, agora);
+            gatilhos.addAll(limiaresAlcancados(PrazoDeSla.RESOLUCAO,
+                    AvaliacaoDePrazo.fracaoConsumida(relogio, inicio, prazosDaPrioridade.resolucaoMinutos(), pausado, agora)));
+        }
+        return gatilhos;
+    }
+
+    private static List<GatilhoDeSla> limiaresAlcancados(PrazoDeSla prazo, double fracaoConsumida) {
+        return Arrays.stream(LimiarDeSla.values())
+                .filter(limiar -> limiar.alcancadoPor(fracaoConsumida))
+                .map(limiar -> new GatilhoDeSla(prazo, limiar))
+                .toList();
     }
 
     private static Instant instante(OffsetDateTime data) {
