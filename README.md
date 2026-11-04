@@ -87,11 +87,11 @@ A API aplica as regras abaixo em cada requisição; a interface só esconde o qu
 
 | Perfil | Abre chamado | O que vê | O que faz |
 |---|---|---|---|
-| `CLIENTE` | Sim, em nome próprio | Os próprios chamados, no portal | Acompanha, complementa, confirma ou contesta a solução e reabre em até 5 dias úteis após o fechamento |
+| `CLIENTE` | Sim, em nome próprio | Os próprios chamados, no portal | Acompanha, conversa com a equipe no chat do chamado, confirma ou contesta a solução e reabre em até 5 dias úteis após o fechamento |
 | `GESTOR_FROTA` | Sim, para si ou para um motorista da sua organização | Os chamados da sua organização | O mesmo que o cliente; não altera classificação nem prioridade |
-| `ATENDENTE` | Sim, pela Central, em nome de um cliente | Todos os chamados | Revisa as classificações automáticas, reclassifica e ajusta prioridade com justificativa, transfere, atende qualquer fila, escalona chamados com SLA vencido, aciona fornecedor e usa a lixeira |
-| `DEPARTAMENTO` | Não | A fila do próprio departamento | Assume, muda status, resolve com resumo da solução, transfere, escalona chamados com SLA vencido e aciona fornecedor |
-| `LIDER_OPERACIONAL` | Não | Todos os chamados, só leitura | Acompanha o painel, recebe os escalonamentos de SLA vencido e consulta e exporta métricas |
+| `ATENDENTE` | Sim, pela Central, em nome de um cliente | Todos os chamados | Revisa as classificações automáticas, reclassifica e ajusta prioridade com justificativa, transfere, atende qualquer fila, conversa com o solicitante e registra notas internas no chat, escalona chamados com SLA vencido, aciona fornecedor e usa a lixeira |
+| `DEPARTAMENTO` | Não | A fila do próprio departamento | Assume, muda status, resolve com resumo da solução, transfere, conversa com o solicitante e registra notas internas no chat, escalona chamados com SLA vencido e aciona fornecedor |
+| `LIDER_OPERACIONAL` | Não | Todos os chamados, só leitura | Acompanha o painel e o chat dos chamados, recebe os escalonamentos de SLA vencido e consulta e exporta métricas |
 | `FORNECEDOR` | Não | Só os serviços atribuídos à sua empresa | Atualiza o status do serviço e registra observações |
 | `ADMIN` | Sim, pela Central | Todos os chamados (visão global no MVP) | Tudo o que o atendente faz, mais gestão de usuários e ferramentas de desenvolvimento |
 
@@ -238,7 +238,7 @@ ViaFlux_Mobilidade/
 
 ## Como rodar localmente
 
-> **Estado desta etapa.** A API Spring Boot e o frontend Next.js cobrem o ciclo completo do chamado: abertura com classificação e roteamento automáticos (inclusive pelo relato, com revisão do atendente), escalonamento de SLA vencido à liderança, atendimento pelos departamentos, fornecedores, anexos, notificações, confirmação da solução pelo solicitante com fechamento automático em 3 dias úteis, reabertura, métricas e lixeira.
+> **Estado desta etapa.** A API Spring Boot e o frontend Next.js cobrem o ciclo completo do chamado: abertura com classificação e roteamento automáticos (inclusive pelo relato, com revisão do atendente), escalonamento de SLA vencido à liderança, atendimento pelos departamentos, chat em cada chamado, fornecedores, anexos, notificações, confirmação da solução pelo solicitante com fechamento automático em 3 dias úteis, reabertura, métricas e lixeira.
 
 ### Pré-requisitos
 

@@ -1,5 +1,5 @@
 import type {
-  Anexo, Autor, Chamado, ChamadoResumo, Classificacao, CodigoPrioridade, EventoTimeline, Localizacao, MotivoAguardando, Notificacao,
+  Anexo, Autor, Chamado, ChamadoResumo, Classificacao, CodigoPrioridade, EventoTimeline, Mensagem, Localizacao, MotivoAguardando, Notificacao,
   OverridePrioridade, Peso, PrazoSla, ServicoTerceiro, SituacaoSla, Status, StatusServico, TipoChamado, TipoEvento, Triagem,
 } from "@/types/chamado";
 import { CONTEXTOS, MOTIVOS, contextoPorId, motivoPorId } from "./matriz";
@@ -189,6 +189,9 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
     if (!token) return null;
     return Object.values(USUARIOS).find((usuario) => tokenDeAcesso(usuario, geracaoDosTokens) === token) ?? null;
   }
+
+  const anexosDasMensagens = new Map<string, Anexo>();
+  const leituras = new Map<string, string>();
 
   function registrar(chamado: ChamadoArmazenado, tipo: TipoEvento, acao: string, detalhe: string, autor: Autor | null, visivelCliente: boolean) {
     const instante = agora();
@@ -749,13 +752,54 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
       registrar(chamado, "ROTEAMENTO", `Encaminhado para ${NOME_DO_DEPARTAMENTO[destino]}`, `O chamado entrou na fila de ${NOME_DO_DEPARTAMENTO[destino]}.`, SISTEMA, true);
       return devolver(chamado);
     }
+    const publicarMensagem = (chamado: ChamadoArmazenado, conteudo: string, solicitouPublica: boolean, anexo: Anexo | null) => {
+      if (chamado.status === "Fechado") recusar(409, "Este chamado está fechado. A conversa volta a funcionar na reabertura.");
+      const visivelCliente = apenasCliente || solicitouPublica;
+      const acao = apenasCliente ? "Complemento do solicitante" : visivelCliente ? "Mensagem ao solicitante" : "Registro interno";
+      registrar(chamado, "ATUALIZACAO", acao, conteudo, autorDe(usuario), visivelCliente);
+      if (anexo) anexosDasMensagens.set(chamado.timeline[chamado.timeline.length - 1].id, anexo);
+      if (!apenasCliente && visivelCliente) avisar(chamado, "Nova mensagem", `${usuario.nome}: ${conteudo}`);
+      if (apenasCliente && chamado.status === "Aguardando" && chamado.motivoAguardando === "CLIENTE") {
+        const destino: Status = chamado.atendimento ? "Em atendimento" : "Na fila";
+        chamado.status = destino;
+        chamado.motivoAguardando = null;
+        registrar(chamado, "STATUS", `Status alterado para ${destino}`, `Aguardando → ${destino} · resposta do solicitante · relógio de resolução retomado`, SISTEMA, true);
+      }
+    };
     if (sufixo === "atualizacoes" && metodo === "POST") {
       const chamado = buscar(codigo);
       exigirQueConduzaOuSejaOCliente(chamado);
-      const visivelCliente = apenasCliente || dados.visivelCliente === true;
-      const acao = apenasCliente ? "Complemento do solicitante" : visivelCliente ? "Mensagem ao solicitante" : "Registro interno";
-      registrar(chamado, "ATUALIZACAO", acao, texto("texto").trim(), autorDe(usuario), visivelCliente);
+      publicarMensagem(chamado, texto("texto").trim(), dados.visivelCliente === true, null);
       return devolver(chamado, 201);
+    }
+    if (sufixo === "mensagens/arquivo" && metodo === "POST") {
+      const chamado = buscar(codigo);
+      exigirQueConduzaOuSejaOCliente(chamado);
+      if (chamado.status === "Fechado") recusar(409, "Este chamado está fechado. A conversa volta a funcionar na reabertura.");
+      const nome = /filename="([^"]+)"/.exec(corpo ?? "")?.[1] ?? "arquivo";
+      const anexo: Anexo = { id: novoId("anexo"), nome, tipoConteudo: "image/png", tamanho: corpo?.length ?? 0, enviadoEm: horarioDeSaoPaulo(agora()), autor: autorDe(usuario) };
+      chamado.anexos.push(anexo);
+      const campo = (nomeDoCampo: string) => new RegExp(`name="${nomeDoCampo}"\\r?\\n\\r?\\n([\\s\\S]*?)\\r?\\n--`).exec(corpo ?? "")?.[1] ?? "";
+      publicarMensagem(chamado, campo("texto").trim() || `Arquivo enviado: ${nome}`, campo("visivelCliente") === "true", anexo);
+      return devolver(chamado, 201);
+    }
+    if (sufixo === "mensagens" && metodo === "GET") {
+      const chamado = buscar(codigo);
+      const mensagens: Mensagem[] = chamado.timeline
+        .filter((evento) => evento.tipo === "ATUALIZACAO" && (!apenasCliente || evento.visivelCliente))
+        .map((evento) => ({
+          id: evento.id, texto: evento.detalhe, autor: evento.autor, enviadaEm: evento.ocorridoEm, visivelCliente: evento.visivelCliente,
+          origem: evento.acao === "Complemento do solicitante" ? "SOLICITANTE" : "EQUIPE", anexo: anexosDasMensagens.get(evento.id) ?? null,
+        }));
+      return json({ mensagens, lidoAte: leituras.get(`${chamado.id}:${usuario.id}`) ?? null });
+    }
+    if (sufixo === "mensagens/leitura" && metodo === "POST") {
+      const chamado = buscar(codigo);
+      leituras.set(`${chamado.id}:${usuario.id}`, texto("ate"));
+      notificacoes
+        .filter((notificacao) => notificacao.destinatarioId === usuario.id && notificacao.chamadoId === chamado.id && notificacao.novoStatus === "Nova mensagem")
+        .forEach((notificacao) => { notificacao.lida = true; });
+      return semConteudo();
     }
     if (sufixo === "localizacao" && metodo === "PUT") {
       const chamado = buscar(codigo);
@@ -767,6 +811,7 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
     if (sufixo === "anexos" && metodo === "POST") {
       const chamado = buscar(codigo);
       exigirQueConduzaOuSejaOCliente(chamado);
+      if (chamado.status === "Fechado") recusar(409, "Este chamado está fechado e não recebe novos arquivos.");
       const nome = /filename="([^"]+)"/.exec(corpo ?? "")?.[1] ?? "arquivo";
       const anexo: Anexo = { id: novoId("anexo"), nome, tipoConteudo: "image/png", tamanho: corpo?.length ?? 0, enviadoEm: horarioDeSaoPaulo(agora()), autor: autorDe(usuario) };
       chamado.anexos.push(anexo);

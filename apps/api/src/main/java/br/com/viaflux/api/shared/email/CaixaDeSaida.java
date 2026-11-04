@@ -6,4 +6,9 @@ public interface CaixaDeSaida {
     }
 
     void enviar(Mensagem mensagem);
+
+    default boolean tentarEnviar(Mensagem mensagem) {
+        enviar(mensagem);
+        return true;
+    }
 }

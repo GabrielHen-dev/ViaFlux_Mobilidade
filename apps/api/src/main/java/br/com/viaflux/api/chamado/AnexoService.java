@@ -48,6 +48,11 @@ class AnexoService {
 
     @Transactional
     Resultado enviar(String codigo, MultipartFile arquivo, String chaveIdempotencia, UsuarioAtual usuario) {
+        return enviar(codigo, arquivo, chaveIdempotencia, null, usuario);
+    }
+
+    @Transactional
+    Resultado enviar(String codigo, MultipartFile arquivo, String chaveIdempotencia, VisibilidadeDoConteudo visibilidadeSolicitada, UsuarioAtual usuario) {
         Chamado chamado = acesso.visivel(codigo, usuario);
         if (!usuario.apenasCliente() && !acesso.podeConduzir(chamado, usuario)) {
             throw ErroDeChamado.proibido("Seu perfil só acompanha este chamado.");
@@ -57,10 +62,11 @@ class AnexoService {
         if (existente.isPresent()) {
             return new Resultado(AnexoResponse.de(existente.get()), false);
         }
+        chamado.exigirAnexosAbertos();
         String nome = validar(arquivo);
         OffsetDateTime agora = OffsetDateTime.now(relogio).withOffsetSameInstant(ZoneOffset.UTC);
         Autor autor = new Autor(usuario.id(), usuario.nome());
-        VisibilidadeDoConteudo visibilidade = usuario.temAlgum(UsuarioAtual.PERFIS_DE_CLIENTE)
+        VisibilidadeDoConteudo visibilidade = usuario.apenasCliente() || visibilidadeSolicitada == VisibilidadeDoConteudo.SOLICITANTE
                 ? VisibilidadeDoConteudo.SOLICITANTE : VisibilidadeDoConteudo.INTERNO;
         ChamadoAnexo anexo = anexos.save(new ChamadoAnexo(chamado, nome, arquivo.getContentType(), arquivo.getSize(), autor, chave, agora, visibilidade));
         try (InputStream conteudo = arquivo.getInputStream()) {
@@ -68,7 +74,7 @@ class AnexoService {
         } catch (IOException erro) {
             throw new UncheckedIOException("Não foi possível ler o arquivo enviado.", erro);
         }
-        historico.registrarParaTodos(chamado, TipoEvento.ANEXO, "Anexo adicionado", nome, autor, agora);
+        historico.registrar(chamado, TipoEvento.ANEXO, "Anexo adicionado", nome, autor, visibilidade == VisibilidadeDoConteudo.SOLICITANTE, agora);
         return new Resultado(AnexoResponse.de(anexo), true);
     }
 

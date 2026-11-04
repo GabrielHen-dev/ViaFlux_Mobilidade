@@ -557,6 +557,22 @@ class Chamado {
         this.atendimentoAssumidoEm = null;
     }
 
+    void exigirConversaAberta() {
+        if (status == StatusChamado.FECHADO) {
+            throw ErroDeChamado.conflito("Este chamado está fechado. A conversa volta a funcionar na reabertura.");
+        }
+    }
+
+    void exigirAnexosAbertos() {
+        if (status == StatusChamado.FECHADO) {
+            throw ErroDeChamado.conflito("Este chamado está fechado e não recebe novos arquivos.");
+        }
+    }
+
+    boolean aguardaCliente() {
+        return status == StatusChamado.AGUARDANDO && motivoAguardando == MotivoAguardando.CLIENTE;
+    }
+
     void registrarPrimeiraResposta(OffsetDateTime agora) {
         if (primeiraRespostaEm == null && triado()) {
             this.primeiraRespostaEm = agora;

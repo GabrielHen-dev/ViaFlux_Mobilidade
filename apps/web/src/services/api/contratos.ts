@@ -64,6 +64,12 @@ export interface DadosAtualizacao {
   visivelCliente: boolean;
 }
 
+export interface DadosArquivoNaConversa {
+  arquivo: File;
+  texto: string;
+  visivelCliente: boolean;
+}
+
 export interface DadosVinculoServico {
   fornecedorId: string;
   tipoServico: string;

@@ -10,5 +10,7 @@ interface ChamadoEventoRepository extends JpaRepository<ChamadoEvento, UUID> {
 
     List<ChamadoEvento> findByChamadoIdOrderByOcorridoEmAscSequenciaAsc(UUID chamadoId);
 
+    List<ChamadoEvento> findByChamadoIdAndTipoOrderByOcorridoEmAscSequenciaAsc(UUID chamadoId, TipoEvento tipo);
+
     List<ChamadoEvento> findByChamadoIdInAndTipoIn(Collection<UUID> chamadoIds, Collection<TipoEvento> tipos);
 }

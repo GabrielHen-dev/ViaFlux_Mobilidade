@@ -2,41 +2,20 @@
 
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import { toast } from "sonner";
 import type { Chamado } from "@/types/chamado";
-import { registrarAtualizacao } from "@/services/api/chamados";
-import { useAcaoNoChamado } from "@/hooks/consultas";
-import { useRascunho } from "@/hooks/useRascunho";
 import IconeDoEvento from "@/components/ui/IconeDoEvento";
-import { mensagemDeErro } from "@/components/feedback/EstadoDaConsulta";
 import { formatarDataHora } from "@/utils/date";
 import { cn } from "@/utils/cn";
-import { useUsuarioAutenticado } from "@/store/AuthContext";
 
 interface Props {
   chamado: Chamado;
   visaoDeCliente?: boolean;
-  somenteLeitura?: boolean;
 }
 
-export default function TimelineChamado({ chamado, visaoDeCliente = false, somenteLeitura = false }: Props) {
-  const usuario = useUsuarioAutenticado();
-  const { valor: texto, setValor: setTexto, descartar } = useRascunho(`atualizacao:${usuario.id}:${chamado.id}`, "");
-  const [visivelCliente, setVisivelCliente] = useState(false);
+export default function TimelineChamado({ chamado, visaoDeCliente = false }: Props) {
   const [somentePublicos, setSomentePublicos] = useState(false);
-  const atualizacao = useAcaoNoChamado(chamado.id, (api, dados: { texto: string; visivelCliente: boolean }) => registrarAtualizacao(api, chamado.id, dados));
-  const eventos = somentePublicos ? chamado.timeline.filter((evento) => evento.visivelCliente) : chamado.timeline;
-
-  function enviar() {
-    if (!texto.trim()) return;
-    atualizacao.mutate({ texto: texto.trim(), visivelCliente: visaoDeCliente || visivelCliente }, {
-      onSuccess: () => {
-        descartar("");
-        toast.success(visaoDeCliente ? "Informação enviada" : "Atualização registrada");
-      },
-      onError: (erro) => toast.error("Não foi possível registrar a atualização", { description: mensagemDeErro(erro) }),
-    });
-  }
+  const eventosSemConversa = chamado.timeline.filter((evento) => evento.tipo !== "ATUALIZACAO");
+  const eventos = somentePublicos ? eventosSemConversa.filter((evento) => evento.visivelCliente) : eventosSemConversa;
 
   return (
     <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5 md:p-6" aria-labelledby={`timeline-${chamado.id}`}>
@@ -74,36 +53,6 @@ export default function TimelineChamado({ chamado, visaoDeCliente = false, somen
           </li>
         ))}
       </ol>
-
-      {!somenteLeitura && <div className="mt-5 border-t border-[#F1F5F9] pt-5">
-        <label htmlFor={`nova-atualizacao-${chamado.id}`} className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#475569]">
-          {visaoDeCliente ? "Adicionar informação" : "Adicionar atualização ao histórico"}
-        </label>
-        <textarea
-          id={`nova-atualizacao-${chamado.id}`}
-          className="w-full resize-none rounded-lg border border-[#E2E8F0] px-3.5 py-2.5 text-sm text-brand-dark outline-none transition-all focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10"
-          rows={2}
-          placeholder={visaoDeCliente ? "Descreva a informação adicional" : "Descreva a atualização"}
-          value={texto}
-          onChange={(evento) => setTexto(evento.target.value)}
-        />
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-          {visaoDeCliente ? <span /> : (
-            <label className="flex items-center gap-2 text-xs text-slate-600">
-              <input type="checkbox" checked={visivelCliente} onChange={(evento) => setVisivelCliente(evento.target.checked)} />
-              Visível ao solicitante (conta como início do atendimento)
-            </label>
-          )}
-          <button
-            type="button"
-            onClick={enviar}
-            disabled={!texto.trim() || atualizacao.isPending}
-            className="alvo-toque rounded-xl bg-brand-green px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
-          >
-            {atualizacao.isPending ? "Registrando…" : "Registrar"}
-          </button>
-        </div>
-      </div>}
     </section>
   );
 }

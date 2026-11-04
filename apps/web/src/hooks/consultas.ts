@@ -5,19 +5,21 @@ import { useApi } from "@/store/AuthContext";
 import type { Chamado, TipoChamado } from "@/types/chamado";
 import type { FiltrosChamados, FiltrosMetricas } from "@/services/api/contratos";
 import {
-  type ClienteApi, consultarChamado, listarChamados, listarContextos, listarDepartamentos, listarLixeira, listarMotivos, resumirChamados,
+  type ClienteApi, consultarChamado, consultarConversa, listarChamados, listarContextos, listarDepartamentos, listarLixeira, listarMotivos, resumirChamados,
 } from "@/services/api/chamados";
 import { consultarMetricas, listarFornecedores, listarNotificacoes, listarServicosDoFornecedor } from "@/services/api/operacao";
 
 export const INTERVALO_DO_PAINEL_MS = 15_000;
 const INTERVALO_DO_DETALHE_MS = 30_000;
 const INTERVALO_DAS_NOTIFICACOES_MS = 30_000;
+const INTERVALO_DA_CONVERSA_MS = 5_000;
 
 export const chaves = {
   chamados: ["chamados"] as const,
   lista: (filtros: FiltrosChamados) => ["chamados", "lista", filtros] as const,
   resumo: (filtros: object) => ["chamados", "resumo", filtros] as const,
   detalhe: (codigo: string) => ["chamados", "detalhe", codigo] as const,
+  conversa: (codigo: string) => ["chamados", "conversa", codigo] as const,
   lixeira: ["chamados", "lixeira"] as const,
   motivos: ["classificacao", "motivos"] as const,
   contextos: (tipo: TipoChamado | null) => ["classificacao", "contextos", tipo] as const,
@@ -63,6 +65,16 @@ export function useChamado(codigo: string) {
     queryKey: chaves.detalhe(codigo),
     queryFn: () => consultarChamado(api, codigo),
     refetchInterval: INTERVALO_DO_DETALHE_MS,
+  });
+}
+
+export function useConversa(codigo: string) {
+  const api = useApi();
+  return useQuery({
+    queryKey: chaves.conversa(codigo),
+    queryFn: () => consultarConversa(api, codigo),
+    refetchInterval: INTERVALO_DA_CONVERSA_MS,
+    staleTime: 0,
   });
 }
 

@@ -20,11 +20,15 @@ public record AvaliacaoDePrazo(Instant limite, Instant cumpridoEm, SituacaoPrazo
             SituacaoPrazo situacao = cumpridoEm.isAfter(limite) ? SituacaoPrazo.CUMPRIDO_COM_ATRASO : SituacaoPrazo.CUMPRIDO;
             return new AvaliacaoDePrazo(limite, cumpridoEm, situacao);
         }
-        double consumido = (relogio.minutosEntre(inicio, agora) - minutosPausados) / duracaoMinutos;
+        double consumido = fracaoConsumida(relogio, inicio, duracaoMinutos, minutosPausados, agora);
         SituacaoPrazo situacao = consumido >= 1
                 ? SituacaoPrazo.VIOLADO
                 : consumido >= PERCENTUAL_EM_RISCO ? SituacaoPrazo.EM_RISCO : SituacaoPrazo.NO_PRAZO;
         return new AvaliacaoDePrazo(limite, null, situacao);
+    }
+
+    public static double fracaoConsumida(Relogio relogio, Instant inicio, double duracaoMinutos, double minutosPausados, Instant agora) {
+        return (relogio.minutosEntre(inicio, agora) - minutosPausados) / duracaoMinutos;
     }
 
     public static double minutosPausados(Relogio relogio, Collection<Pausa> pausas, Instant ate) {

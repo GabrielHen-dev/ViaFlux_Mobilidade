@@ -230,9 +230,11 @@ public class ChamadoController {
 
     @PostMapping("/{codigo}/atualizacoes")
     @Operation(
-            summary = "Registrar mensagem ou anotação no chamado",
-            description = "visivelCliente=true registra uma mensagem ao solicitante, que conta como 1ª resposta; false registra uma "
-                    + "anotação interna. Cliente e gestor de frota registram complementos, sempre visíveis. Perfis: ADMIN, "
+            summary = "Enviar mensagem ou nota interna no chat do chamado",
+            description = "visivelCliente=true envia uma mensagem ao solicitante, que conta como 1ª resposta e gera notificação; false "
+                    + "registra uma nota interna, sem aviso. Cliente e gestor de frota enviam mensagens sempre visíveis, que avisam a equipe "
+                    + "e tiram o chamado de Aguardando quando ele aguardava o cliente. Arquivos vão por POST /api/chamados/{codigo}/mensagens/arquivo. "
+                    + "Chamado fechado não aceita mensagens (409). Limite de 30 mensagens por minuto por usuário (429). Perfis: ADMIN, "
                     + "ATENDENTE, DEPARTAMENTO (só a própria fila), CLIENTE e GESTOR_FROTA (só o próprio chamado). LIDER_OPERACIONAL "
                     + "só acompanha.",
             security = @SecurityRequirement(name = "bearerAuth")

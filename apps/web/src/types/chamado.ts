@@ -98,6 +98,21 @@ export interface Anexo {
   visibilidade?: "INTERNO" | "SOLICITANTE" | "FORNECEDOR";
 }
 
+export interface Mensagem {
+  id: string;
+  texto: string;
+  autor: Autor | null;
+  enviadaEm: string;
+  visivelCliente: boolean;
+  origem: "SOLICITANTE" | "EQUIPE";
+  anexo: Anexo | null;
+}
+
+export interface Conversa {
+  mensagens: Mensagem[];
+  lidoAte: string | null;
+}
+
 export interface Localizacao {
   endereco: string;
   latitude: number | null;

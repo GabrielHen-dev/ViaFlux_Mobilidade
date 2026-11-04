@@ -1,8 +1,8 @@
 import type {
-  Anexo, Chamado, ChamadoResumo, Contexto, Departamento, Localizacao, Motivo, PaginaChamados, ResumoChamados, TipoChamado,
+  Anexo, Chamado, ChamadoResumo, Contexto, Conversa, Departamento, Localizacao, Motivo, PaginaChamados, ResumoChamados, TipoChamado,
 } from "@/types/chamado";
 import type {
-  DadosAberturaChamado, DadosAtualizacao, DadosConclusaoTriagem, DadosOverride, DadosReclassificacao, DadosStatus, DadosTransferencia, FiltrosChamados,
+  DadosAberturaChamado, DadosArquivoNaConversa, DadosAtualizacao, DadosConclusaoTriagem, DadosOverride, DadosReclassificacao, DadosStatus, DadosTransferencia, FiltrosChamados,
 } from "@/services/api/contratos";
 
 export interface ClienteApi {
@@ -109,6 +109,22 @@ export function removerOverride(api: ClienteApi, codigo: string) {
 
 export function registrarAtualizacao(api: ClienteApi, codigo: string, dados: DadosAtualizacao) {
   return api.requisitar<Chamado>(caminhoDo(codigo, "/atualizacoes"), json("POST", dados));
+}
+
+export function consultarConversa(api: ClienteApi, codigo: string) {
+  return api.requisitar<Conversa>(caminhoDo(codigo, "/mensagens"));
+}
+
+export function enviarArquivoNaConversa(api: ClienteApi, codigo: string, dados: DadosArquivoNaConversa, chaveIdempotencia: string) {
+  const formulario = new FormData();
+  formulario.append("arquivo", dados.arquivo);
+  formulario.append("texto", dados.texto);
+  formulario.append("visivelCliente", String(dados.visivelCliente));
+  return api.requisitar<Chamado>(caminhoDo(codigo, "/mensagens/arquivo"), { method: "POST", body: formulario, headers: { "Idempotency-Key": chaveIdempotencia } });
+}
+
+export function marcarConversaComoLida(api: ClienteApi, codigo: string, ate: string) {
+  return api.requisitar<void>(caminhoDo(codigo, "/mensagens/leitura"), json("POST", { ate }));
 }
 
 export function registrarLocalizacao(api: ClienteApi, codigo: string, localizacao: Localizacao) {

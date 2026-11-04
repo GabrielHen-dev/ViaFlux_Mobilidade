@@ -229,7 +229,7 @@ describe("o que cada perfil faz no chamado", () => {
     expect(await screen.findByText("Este chamado está fechado.")).toBeInTheDocument();
   });
 
-  it("o líder só acompanha: sem ações, sem registrar atualização e sem enviar anexos", async () => {
+  it("o líder só acompanha: sem ações, sem escrever na conversa e sem enviar anexos", async () => {
     await chamadoTriado();
     await renderizarComo(USUARIOS.lider, <DetalhesChamado id="VF-0000" />);
     expect(await screen.findByRole("heading", { name: "#VF-0000" })).toBeInTheDocument();
@@ -237,7 +237,8 @@ describe("o que cada perfil faz no chamado", () => {
     expect(screen.queryByRole("link", { name: /Transferir/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Excluir/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Incluir serviço terceirizado" })).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Adicionar atualização ao histórico")).not.toBeInTheDocument();
+    expect(await screen.findByText("Seu perfil só acompanha esta conversa.")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Escrever mensagem")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Selecionar anexos")).not.toBeInTheDocument();
   });
 });

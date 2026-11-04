@@ -50,7 +50,7 @@ function MiniaturaDaImagem({ codigo, anexo }: { codigo: string; anexo: Anexo }) 
   );
 }
 
-function BotaoDeDownload({ codigo, anexo }: { codigo: string; anexo: Anexo }) {
+export function BotaoDeDownload({ codigo, anexo }: { codigo: string; anexo: Anexo }) {
   const api = useApi();
   const [baixando, setBaixando] = useState(false);
 
@@ -151,7 +151,7 @@ export default function AnexosDoChamado({ chamado, somenteLeitura = false }: { c
           <RotateCcw size={12} aria-hidden /> Reenviar anexos
         </button>
       )}
-      {!somenteLeitura && <SeletorDeArquivos compacto aoAceitar={aoAceitar} desabilitado={enviando} />}
+      {!somenteLeitura && chamado.status !== "Fechado" && <SeletorDeArquivos compacto aoAceitar={aoAceitar} desabilitado={enviando} />}
     </section>
   );
 }

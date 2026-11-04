@@ -37,7 +37,8 @@ class AvisoPorEmail {
             "em atendimento", new Aparencia("Chamado em atendimento", "#EFF6FF", "#1D4ED8"),
             "aguardando", new Aparencia("Chamado aguardando retorno", "#F5F3FF", "#6D28D9"),
             "resolvido", new Aparencia("Chamado resolvido", "#F0FDF4", "#15803D"),
-            "fechado", new Aparencia("Chamado encerrado", "#F1F5F9", "#475569")
+            "fechado", new Aparencia("Chamado encerrado", "#F1F5F9", "#475569"),
+            "nova mensagem", new Aparencia("Nova mensagem no chamado", "#EFF6FF", "#1D4ED8")
     );
 
     private final UsuarioRepository usuarios;
@@ -62,6 +63,19 @@ class AvisoPorEmail {
                     .ifPresent(destinatario -> caixaDeSaida.enviar(mensagemPara(destinatario, notificacao)));
         } catch (RuntimeException falha) {
             log.warn("Não foi possível enviar o e-mail do chamado {}: {}", notificacao.codigoDoChamado(), falha.getMessage());
+        }
+    }
+
+    @Transactional(readOnly = true)
+    boolean entregar(NotificacaoRegistrada notificacao) {
+        try {
+            return usuarios.findById(notificacao.destinatarioId())
+                    .filter(Usuario::isAtivo)
+                    .map(destinatario -> caixaDeSaida.tentarEnviar(mensagemPara(destinatario, notificacao)))
+                    .orElse(true);
+        } catch (RuntimeException falha) {
+            log.warn("Não foi possível enviar o e-mail do chamado {}: {}", notificacao.codigoDoChamado(), falha.getMessage());
+            return false;
         }
     }
 

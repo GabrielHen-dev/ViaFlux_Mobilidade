@@ -25,4 +25,8 @@ class RoteamentoComPlantao implements RegraDeRoteamento {
                 && urgencia == 5 && tipo.isOperacional() && !expediente.emExpediente(instante);
         return plantao ? TipoChamado.ASSISTENCIA_24H : tipo;
     }
+
+    String acionamentoDeP1(Instant instante) {
+        return expediente.emExpediente(instante) ? "Central de Assistência" : "Plantão";
+    }
 }

@@ -90,7 +90,7 @@ class AvisoPorEmailTests {
     void centralSalvaANotificacaoEPublicaOEventoComAMensagemCompleta() {
         NotificacaoRepository notificacoes = mock(NotificacaoRepository.class);
         ApplicationEventPublisher eventos = mock(ApplicationEventPublisher.class);
-        CentralDeNotificacoes central = new CentralDeNotificacoes(notificacoes, eventos);
+        CentralDeNotificacoes central = new CentralDeNotificacoes(notificacoes, eventos, (usuario, chamado) -> true);
         UUID destinatario = UUID.randomUUID();
         String mensagemLonga = "x".repeat(300);
 
