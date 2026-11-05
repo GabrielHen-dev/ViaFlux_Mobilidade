@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Browser, type Page } from "@playwright/test";
 import { type BackendFalso, SENHA_DE_TESTE, USUARIOS, type UsuarioDeTeste, criarBackendFalso } from "../support/backendFalso";
 
 const CABECALHOS_CORS = {
@@ -22,6 +22,14 @@ async function conectar(page: Page, backend: BackendFalso, rede: Rede = { online
     return rota.fulfill({ status: resposta.status, contentType: resposta.tipoConteudo, body: resposta.corpo, headers: CABECALHOS_CORS });
   });
   return erros;
+}
+
+async function criarParticipante(browser: Browser, backend: BackendFalso, usuario: UsuarioDeTeste) {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await conectar(page, backend);
+  await entrarComo(page, usuario);
+  return { context, page };
 }
 
 async function entrarComo(page: Page, usuario: UsuarioDeTeste) {
@@ -142,6 +150,49 @@ test("ciclo completo: cliente abre, atendente tria, central atende, fornecedor a
   expect(erros).toEqual([]);
 });
 
+test("cliente, atendente e administrador interagem na mesma conversa após o atendente assumir", async ({ browser }) => {
+  const backend = criarBackendFalso();
+  const cliente = await criarParticipante(browser, backend, USUARIOS.cliente);
+  const admin = await criarParticipante(browser, backend, USUARIOS.admin);
+  const atendente = await criarParticipante(browser, backend, USUARIOS.atendente);
+
+  await abrirChamadoDePane(cliente.page);
+  await cliente.page.getByRole("button", { name: "Abrir Chamado" }).click();
+  await expect(cliente.page.getByTestId("protocolo")).toHaveText("VF-0000");
+  await cliente.page.getByRole("link", { name: "Acompanhar chamado" }).click();
+  await expect(cliente.page.getByRole("heading", { name: "Chamado VF-0000" })).toBeVisible();
+
+  await admin.page.getByRole("navigation", { name: "Menu principal" }).getByRole("link", { name: "Classificação" }).click();
+  await admin.page.getByRole("button", { name: "Analisar chamado VF-0000" }).click();
+  await admin.page.getByRole("button", { name: "Classificar e encaminhar" }).click();
+  await expect(admin.page.getByText("Chamado classificado · P1 · Assistência 24h")).toBeVisible();
+
+  await atendente.page.goto("/chamados/VF-0000");
+  await expect(atendente.page.getByRole("heading", { name: "#VF-0000" })).toBeVisible();
+  await atendente.page.getByRole("button", { name: "Assumir chamado" }).click();
+  await expect(atendente.page.getByText("Status alterado para Em atendimento")).toBeVisible();
+
+  await admin.page.getByRole("link", { name: "Voltar ao chamado" }).click();
+  await admin.page.getByLabel("Escrever mensagem").fill("A equipe está acompanhando seu chamado.");
+  await admin.page.getByRole("button", { name: "Enviar ao solicitante" }).click();
+  await expect(cliente.page.getByText("A equipe está acompanhando seu chamado.")).toBeVisible({ timeout: 12_000 });
+  await expect(atendente.page.getByText("A equipe está acompanhando seu chamado.")).toBeVisible({ timeout: 12_000 });
+
+  await atendente.page.getByRole("radio", { name: "Nota interna" }).click();
+  await atendente.page.getByLabel("Escrever nota interna").fill("Conferir disponibilidade do guincho.");
+  await atendente.page.getByRole("button", { name: "Salvar nota" }).click();
+  await expect(admin.page.getByText("Conferir disponibilidade do guincho.")).toBeVisible();
+  await expect(cliente.page.getByText("Conferir disponibilidade do guincho.")).toHaveCount(0);
+
+  await cliente.page.getByLabel("Escrever mensagem").fill("Estou aguardando no acostamento.");
+  await cliente.page.getByRole("button", { name: "Enviar", exact: true }).click();
+  await expect(admin.page.getByText("Estou aguardando no acostamento.")).toBeVisible({ timeout: 12_000 });
+  await expect(atendente.page.getByText("Estou aguardando no acostamento.")).toBeVisible({ timeout: 12_000 });
+  expect(backend.contagem.aberturas).toBe(1);
+
+  await Promise.all([cliente.context.close(), admin.context.close(), atendente.context.close()]);
+});
+
 test("perfis só enxergam as próprias telas e menus", async ({ page }) => {
   const backend = criarBackendFalso();
   await conectar(page, backend);
@@ -222,4 +273,17 @@ test("rotas diretas, recarregamento e protocolo inexistente", async ({ page }) =
   await expect(page.getByRole("heading", { name: "Lixeira", exact: true })).toBeVisible();
   await page.goto("/chamados/VF-9999");
   await expect(page.getByRole("heading", { name: "Chamado não encontrado" })).toBeVisible();
+});
+
+test("rota inexistente mostra a tela 404 e oferece retorno à área inicial", async ({ page }) => {
+  const backend = criarBackendFalso();
+  await conectar(page, backend);
+  await entrarComo(page, USUARIOS.admin);
+
+  await page.goto("/esta-pagina-nao-existe");
+
+  await expect(page.getByRole("heading", { name: "Este caminho não leva a uma página." })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Ir para o início" })).toHaveAttribute("href", "/");
+  await page.getByRole("link", { name: "Ir para o início" }).click();
+  await expect(page).toHaveURL(/\/$/);
 });

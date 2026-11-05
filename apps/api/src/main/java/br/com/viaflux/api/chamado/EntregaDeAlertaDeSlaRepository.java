@@ -7,9 +7,9 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
-interface EntregaDeAlertaDeSlaRepository extends JpaRepository<EntregaDeAlertaDeSla, UUID> {
+public interface EntregaDeAlertaDeSlaRepository extends JpaRepository<EntregaDeAlertaDeSla, UUID> {
 
     @EntityGraph(attributePaths = {"alerta", "alerta.chamado"})
-    List<EntregaDeAlertaDeSla> findTop100ByEstadoAndProximaTentativaEmLessThanEqualOrderByProximaTentativaEmAsc(
+    public List<EntregaDeAlertaDeSla> findTop100ByEstadoAndProximaTentativaEmLessThanEqualOrderByProximaTentativaEmAsc(
             EstadoDaEntregaDeAlerta estado, OffsetDateTime instante);
 }

@@ -9,18 +9,18 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-interface ChamadoRepository extends JpaRepository<Chamado, UUID> {
+public interface ChamadoRepository extends JpaRepository<Chamado, UUID> {
 
-    Optional<Chamado> findByCodigo(String codigo);
+    public Optional<Chamado> findByCodigo(String codigo);
 
-    Optional<Chamado> findByChaveIdempotencia(String chaveIdempotencia);
+    public Optional<Chamado> findByChaveIdempotencia(String chaveIdempotencia);
 
-    List<Chamado> findByExcluidoEmIsNotNullOrderByExcluidoEmDesc();
+    public List<Chamado> findByExcluidoEmIsNotNullOrderByExcluidoEmDesc();
 
-    List<Chamado> findByStatusAndExcluidoEmIsNull(StatusChamado status);
+    public List<Chamado> findByStatusAndExcluidoEmIsNull(StatusChamado status);
 
     @Query("SELECT chamado.id FROM Chamado chamado WHERE chamado.excluidoEm IS NULL AND chamado.status IN :status")
-    List<UUID> idsComStatus(@Param("status") Collection<StatusChamado> status);
+    public List<UUID> idsComStatus(@Param("status") Collection<StatusChamado> status);
 
     @Query("""
             SELECT chamado
@@ -32,8 +32,8 @@ interface ChamadoRepository extends JpaRepository<Chamado, UUID> {
                 OR LOWER(chamado.modelo) LIKE :busca
                 OR LOWER(chamado.placa) LIKE :busca)
             """)
-    List<Chamado> buscarAtivos(@Param("busca") String busca);
+    public List<Chamado> buscarAtivos(@Param("busca") String busca);
 
     @Query(value = "SELECT nextval('viaflux.chamados_numero_seq')", nativeQuery = true)
-    long proximoNumero();
+    public long proximoNumero();
 }

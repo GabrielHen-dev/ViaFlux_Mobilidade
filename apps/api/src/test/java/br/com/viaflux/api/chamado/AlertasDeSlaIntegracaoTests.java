@@ -1,5 +1,9 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.abertura.DadosDeAbertura;
+import br.com.viaflux.api.chamado.classificacao.ContextoRepository;
+import br.com.viaflux.api.chamado.classificacao.MotivoRepository;
 import br.com.viaflux.api.shared.email.CaixaDeSaida;
 import br.com.viaflux.api.usuario.DepartamentoRepository;
 import br.com.viaflux.api.usuario.PerfilRepository;

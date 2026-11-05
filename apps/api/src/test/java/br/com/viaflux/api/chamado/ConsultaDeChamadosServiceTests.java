@@ -1,5 +1,10 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.consulta.ChamadosPageResponse;
+import br.com.viaflux.api.chamado.consulta.ConsultaDeChamadosService;
+import br.com.viaflux.api.chamado.consulta.FiltrosDeChamados;
+import br.com.viaflux.api.chamado.consulta.ResumoDeChamadosResponse;
 import br.com.viaflux.api.chamado.sla.SituacaoPrazo;
 import br.com.viaflux.api.usuario.UsuarioAtual;
 import org.junit.jupiter.api.BeforeEach;

@@ -7,22 +7,22 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 @Component
-class AvisoAoSolicitante {
+public class AvisoAoSolicitante {
 
     private final CanalDeNotificacao canal;
     private final HistoricoDoChamado historico;
 
-    AvisoAoSolicitante(CanalDeNotificacao canal, HistoricoDoChamado historico) {
+    public AvisoAoSolicitante(CanalDeNotificacao canal, HistoricoDoChamado historico) {
         this.canal = canal;
         this.historico = historico;
     }
 
-    void avisar(Chamado chamado, String novoStatus, String mensagem, OffsetDateTime instante) {
+    public void avisar(Chamado chamado, String novoStatus, String mensagem, OffsetDateTime instante) {
         entregar(chamado, novoStatus,
                 destinatario -> canal.enviar(destinatario, chamado.getId(), chamado.getCodigo(), novoStatus, mensagem, instante), instante);
     }
 
-    void entregar(Chamado chamado, String assunto, Consumer<UUID> entrega, OffsetDateTime instante) {
+    public void entregar(Chamado chamado, String assunto, Consumer<UUID> entrega, OffsetDateTime instante) {
         if (chamado.getSolicitante() == null) {
             historico.registrarInterno(chamado, TipoEvento.NOTIFICACAO, "Notificação não enviada",
                     assunto + ": chamado sem solicitante vinculado no portal.", Autor.SISTEMA, instante);

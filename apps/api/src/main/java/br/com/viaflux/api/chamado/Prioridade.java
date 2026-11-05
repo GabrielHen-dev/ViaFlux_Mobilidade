@@ -2,7 +2,7 @@ package br.com.viaflux.api.chamado;
 
 import java.util.Set;
 
-enum Prioridade {
+public enum Prioridade {
     P1("Crítica"),
     P2("Alta"),
     P3("Média"),
@@ -16,11 +16,11 @@ enum Prioridade {
         this.rotulo = rotulo;
     }
 
-    String getRotulo() {
+    public String getRotulo() {
         return rotulo;
     }
 
-    static Prioridade porScore(int score) {
+    public static Prioridade porScore(int score) {
         if (score >= 10) {
             return P1;
         }
@@ -33,15 +33,15 @@ enum Prioridade {
         return P4;
     }
 
-    static int score(int severidade, int urgencia) {
+    public static int score(int severidade, int urgencia) {
         return severidade + urgencia;
     }
 
-    static boolean ehPeso(Integer valor) {
+    public static boolean ehPeso(Integer valor) {
         return valor != null && PESOS.contains(valor);
     }
 
-    static String rotuloDoPeso(int peso) {
+    public static String rotuloDoPeso(int peso) {
         return switch (peso) {
             case 5 -> "Alta";
             case 3 -> "Média";
@@ -49,7 +49,7 @@ enum Prioridade {
         };
     }
 
-    static Prioridade deCodigo(String codigo) {
+    public static Prioridade deCodigo(String codigo) {
         if (codigo != null) {
             for (Prioridade prioridade : values()) {
                 if (prioridade.name().equalsIgnoreCase(codigo.trim())) {

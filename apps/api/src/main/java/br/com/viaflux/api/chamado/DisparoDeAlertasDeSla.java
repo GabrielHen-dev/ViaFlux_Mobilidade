@@ -1,5 +1,8 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.sla.PoliticaDeSla;
+import br.com.viaflux.api.chamado.triagem.RoteamentoComPlantao;
 import br.com.viaflux.api.chamado.DestinatariosDeAlertaDeSla.Destinatario;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,7 +18,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Component
-class DisparoDeAlertasDeSla {
+public class DisparoDeAlertasDeSla {
 
     private final ChamadoRepository chamados;
     private final AlertaDeSlaRepository alertas;
@@ -26,7 +29,7 @@ class DisparoDeAlertasDeSla {
     private final CanalDeAlertaDeSla canal;
     private final HistoricoDoChamado historico;
 
-    DisparoDeAlertasDeSla(ChamadoRepository chamados, AlertaDeSlaRepository alertas, EntregaDeAlertaDeSlaRepository entregas,
+    public DisparoDeAlertasDeSla(ChamadoRepository chamados, AlertaDeSlaRepository alertas, EntregaDeAlertaDeSlaRepository entregas,
                           PoliticaDeSla politicaDeSla, DestinatariosDeAlertaDeSla destinatarios, RoteamentoComPlantao roteamento,
                           CanalDeAlertaDeSla canal, HistoricoDoChamado historico) {
         this.chamados = chamados;
@@ -40,7 +43,7 @@ class DisparoDeAlertasDeSla {
     }
 
     @Transactional
-    void disparar(UUID chamadoId, OffsetDateTime agora) {
+    public void disparar(UUID chamadoId, OffsetDateTime agora) {
         Chamado chamado = chamados.findById(chamadoId).filter(encontrado -> !encontrado.naLixeira()).orElse(null);
         if (chamado == null) {
             return;

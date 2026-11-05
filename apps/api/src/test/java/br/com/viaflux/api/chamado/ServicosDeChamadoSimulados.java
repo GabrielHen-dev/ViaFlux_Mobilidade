@@ -1,5 +1,10 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.abertura.AberturaDeChamadoService;
+import br.com.viaflux.api.chamado.atendimento.AtendimentoService;
+import br.com.viaflux.api.chamado.consulta.ConsultaDeChamadosService;
+import br.com.viaflux.api.chamado.operacao.LixeiraService;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 

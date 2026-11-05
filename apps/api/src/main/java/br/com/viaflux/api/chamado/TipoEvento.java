@@ -1,6 +1,6 @@
 package br.com.viaflux.api.chamado;
 
-enum TipoEvento {
+public enum TipoEvento {
     ABERTURA,
     TRIAGEM,
     CLASSIFICACAO,

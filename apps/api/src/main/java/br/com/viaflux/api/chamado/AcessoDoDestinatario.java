@@ -4,5 +4,5 @@ import java.util.UUID;
 
 public interface AcessoDoDestinatario {
 
-    boolean podeVerChamado(UUID usuarioId, UUID chamadoId);
+    public boolean podeVerChamado(UUID usuarioId, UUID chamadoId);
 }

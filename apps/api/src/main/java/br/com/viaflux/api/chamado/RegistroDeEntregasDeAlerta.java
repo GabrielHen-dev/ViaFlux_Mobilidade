@@ -8,21 +8,21 @@ import java.util.List;
 import java.util.UUID;
 
 @Component
-class RegistroDeEntregasDeAlerta {
+public class RegistroDeEntregasDeAlerta {
 
-    record EntregaPendente(UUID id, UUID destinatarioId, String codigoDoChamado, String assunto, String mensagem) {
+    public record EntregaPendente(UUID id, UUID destinatarioId, String codigoDoChamado, String assunto, String mensagem) {
     }
 
     private final EntregaDeAlertaDeSlaRepository entregas;
     private final HistoricoDoChamado historico;
 
-    RegistroDeEntregasDeAlerta(EntregaDeAlertaDeSlaRepository entregas, HistoricoDoChamado historico) {
+    public RegistroDeEntregasDeAlerta(EntregaDeAlertaDeSlaRepository entregas, HistoricoDoChamado historico) {
         this.entregas = entregas;
         this.historico = historico;
     }
 
     @Transactional(readOnly = true)
-    List<EntregaPendente> pendentes(OffsetDateTime agora) {
+    public List<EntregaPendente> pendentes(OffsetDateTime agora) {
         return entregas.findTop100ByEstadoAndProximaTentativaEmLessThanEqualOrderByProximaTentativaEmAsc(EstadoDaEntregaDeAlerta.PENDENTE, agora)
                 .stream()
                 .map(entrega -> new EntregaPendente(entrega.getId(), entrega.getDestinatarioId(),
@@ -31,7 +31,7 @@ class RegistroDeEntregasDeAlerta {
     }
 
     @Transactional
-    void confirmar(UUID entregaId, OffsetDateTime agora) {
+    public void confirmar(UUID entregaId, OffsetDateTime agora) {
         entregas.findById(entregaId).ifPresent(entrega -> {
             boolean recuperada = entrega.jaFalhou();
             entrega.confirmar(agora);
@@ -44,7 +44,7 @@ class RegistroDeEntregasDeAlerta {
     }
 
     @Transactional
-    void registrarFalha(UUID entregaId, OffsetDateTime agora) {
+    public void registrarFalha(UUID entregaId, OffsetDateTime agora) {
         entregas.findById(entregaId).ifPresent(entrega -> {
             boolean primeiraFalha = !entrega.jaFalhou();
             entrega.registrarFalha(agora);

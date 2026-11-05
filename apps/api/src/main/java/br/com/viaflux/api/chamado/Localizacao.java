@@ -10,7 +10,7 @@ import java.util.stream.Stream;
 import static br.com.viaflux.api.chamado.DadosDeLocalizacao.texto;
 
 @Embeddable
-class Localizacao {
+public class Localizacao {
 
     @Column(name = "localizacao", nullable = false, length = 255)
     private String endereco = "";
@@ -45,7 +45,7 @@ class Localizacao {
     protected Localizacao() {
     }
 
-    static Localizacao de(DadosDeLocalizacao dados) {
+    public static Localizacao de(DadosDeLocalizacao dados) {
         Localizacao localizacao = new Localizacao();
         if (dados == null) {
             return localizacao;
@@ -78,19 +78,19 @@ class Localizacao {
         return Stream.of(partes).filter(parte -> !parte.isBlank()).collect(Collectors.joining(separador));
     }
 
-    boolean informada() {
+    public boolean informada() {
         return !endereco.isBlank() || latitude != null;
     }
 
-    String origem() {
+    public String origem() {
         return latitude != null ? "GPS do aparelho" : "endereço informado";
     }
 
-    DadosDeLocalizacao paraDados() {
+    public DadosDeLocalizacao paraDados() {
         return new DadosDeLocalizacao(endereco, latitude, longitude, cep, logradouro, numero, complemento, bairro, cidade, uf);
     }
 
-    String getEndereco() {
+    public String getEndereco() {
         return endereco;
     }
 }

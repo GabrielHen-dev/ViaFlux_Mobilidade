@@ -1,5 +1,11 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.anexo.AnexosProperties;
+import br.com.viaflux.api.chamado.anexo.ArmazenamentoDeArquivos;
+import br.com.viaflux.api.chamado.anexo.ArmazenamentoEmDisco;
+import br.com.viaflux.api.chamado.anexo.ArmazenamentoEmS3;
+import br.com.viaflux.api.chamado.triagem.PrazosDeTriagemProperties;
 import br.com.viaflux.api.chamado.sla.RelogioCorrido;
 import br.com.viaflux.api.chamado.sla.RelogioDeHorasUteis;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -14,29 +20,29 @@ import java.time.ZoneId;
 @Configuration
 @EnableScheduling
 @EnableConfigurationProperties({PrazosDeTriagemProperties.class, AnexosProperties.class})
-class ChamadoConfig {
+public class ChamadoConfig {
 
     static final ZoneId FUSO_DA_OPERACAO = ZoneId.of("America/Fortaleza");
     private static final LocalTime ABERTURA_DO_EXPEDIENTE = LocalTime.of(8, 0);
     private static final LocalTime FECHAMENTO_DO_EXPEDIENTE = LocalTime.of(18, 0);
 
     @Bean
-    Clock relogioDoSistema() {
+    public Clock relogioDoSistema() {
         return Clock.systemUTC();
     }
 
     @Bean
-    RelogioDeHorasUteis relogioDoExpediente() {
+    public RelogioDeHorasUteis relogioDoExpediente() {
         return new RelogioDeHorasUteis(FUSO_DA_OPERACAO, ABERTURA_DO_EXPEDIENTE, FECHAMENTO_DO_EXPEDIENTE);
     }
 
     @Bean
-    RelogioCorrido relogioCorrido() {
+    public RelogioCorrido relogioCorrido() {
         return new RelogioCorrido();
     }
 
     @Bean
-    ArmazenamentoDeArquivos armazenamentoDeArquivos(AnexosProperties propriedades) {
+    public ArmazenamentoDeArquivos armazenamentoDeArquivos(AnexosProperties propriedades) {
         return switch (propriedades.armazenamento()) {
             case DISCO -> new ArmazenamentoEmDisco(propriedades);
             case S3 -> ArmazenamentoEmS3.conectar(propriedades.s3());

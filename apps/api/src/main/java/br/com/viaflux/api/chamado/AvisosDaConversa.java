@@ -1,5 +1,7 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.operacao.EscalonamentoService;
 import br.com.viaflux.api.usuario.Usuario;
 import org.springframework.stereotype.Component;
 
@@ -9,7 +11,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Component
-class AvisosDaConversa {
+public class AvisosDaConversa {
 
     private static final int TAMANHO_DA_PREVIA = 120;
     private static final Set<String> PERFIS_DA_CENTRAL_DE_ATENDIMENTO = Set.of("ATENDENTE");
@@ -19,19 +21,19 @@ class AvisosDaConversa {
     private final AvisoAoSolicitante avisoAoSolicitante;
     private final HistoricoDoChamado historico;
 
-    AvisosDaConversa(CanalDeMensagensDoChat canal, LiderancaRepository usuarios, AvisoAoSolicitante avisoAoSolicitante, HistoricoDoChamado historico) {
+    public AvisosDaConversa(CanalDeMensagensDoChat canal, LiderancaRepository usuarios, AvisoAoSolicitante avisoAoSolicitante, HistoricoDoChamado historico) {
         this.canal = canal;
         this.usuarios = usuarios;
         this.avisoAoSolicitante = avisoAoSolicitante;
         this.historico = historico;
     }
 
-    void mensagemDaEquipe(Chamado chamado, String texto, Autor autor, OffsetDateTime instante) {
+    public void mensagemDaEquipe(Chamado chamado, String texto, Autor autor, OffsetDateTime instante) {
         avisarSolicitante(chamado, texto, autor, instante);
         equipeTratouAConversa(chamado);
     }
 
-    void mensagemDoSolicitante(Chamado chamado, String texto, Autor autor, OffsetDateTime instante) {
+    public void mensagemDoSolicitante(Chamado chamado, String texto, Autor autor, OffsetDateTime instante) {
         if (!chamado.pertenceAo(autor.id())) {
             avisarSolicitante(chamado, texto, autor, instante);
         }
@@ -47,7 +49,7 @@ class AvisosDaConversa {
                         + (equipe.size() == 1 ? " destinatário" : " destinatários"), Autor.SISTEMA, instante);
     }
 
-    void equipeTratouAConversa(Chamado chamado) {
+    public void equipeTratouAConversa(Chamado chamado) {
         if (chamado.getAtendimentoResponsavel() == null) {
             canal.dispensarEmailsDaEquipe(chamado.getId(), chamado.getSolicitante() == null ? null : chamado.getSolicitante().getId());
         }

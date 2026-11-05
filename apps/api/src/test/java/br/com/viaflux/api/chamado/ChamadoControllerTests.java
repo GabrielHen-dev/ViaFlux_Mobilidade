@@ -1,5 +1,25 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.abertura.AberturaDeChamadoService;
+import br.com.viaflux.api.chamado.abertura.AbrirChamadoRequest;
+import br.com.viaflux.api.chamado.abertura.SolicitanteInvalidoException;
+import br.com.viaflux.api.chamado.atendimento.AlterarStatusRequest;
+import br.com.viaflux.api.chamado.atendimento.AtendimentoService;
+import br.com.viaflux.api.chamado.atendimento.AtualizacaoRequest;
+import br.com.viaflux.api.chamado.classificacao.ContextoResponse;
+import br.com.viaflux.api.chamado.classificacao.DepartamentoResponse;
+import br.com.viaflux.api.chamado.classificacao.Motivo;
+import br.com.viaflux.api.chamado.classificacao.MotivoResponse;
+import br.com.viaflux.api.chamado.consulta.ChamadosPageResponse;
+import br.com.viaflux.api.chamado.consulta.ConsultaDeChamadosService;
+import br.com.viaflux.api.chamado.consulta.FiltrosDeChamados;
+import br.com.viaflux.api.chamado.consulta.ResumoDeChamadosResponse;
+import br.com.viaflux.api.chamado.operacao.LixeiraService;
+import br.com.viaflux.api.chamado.triagem.ConcluirTriagemRequest;
+import br.com.viaflux.api.chamado.triagem.TriagemController;
+import br.com.viaflux.api.chamado.triagem.TriagemResponse;
+import br.com.viaflux.api.chamado.triagem.TriagemService;
 import br.com.viaflux.api.chamado.sla.SituacaoPrazo;
 import br.com.viaflux.api.shared.config.SecurityConfig;
 import br.com.viaflux.api.shared.error.ApiExceptionHandler;

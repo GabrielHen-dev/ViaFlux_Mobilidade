@@ -1,5 +1,9 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.triagem.PoliticaDeTriagem;
+import br.com.viaflux.api.chamado.triagem.PrazosDeTriagemProperties;
+import br.com.viaflux.api.chamado.triagem.TriagemResponse;
 import br.com.viaflux.api.chamado.sla.SituacaoPrazo;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

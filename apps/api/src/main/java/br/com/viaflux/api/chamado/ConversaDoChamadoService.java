@@ -1,5 +1,10 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.anexo.AnexoResponse;
+import br.com.viaflux.api.chamado.anexo.ChamadoAnexo;
+import br.com.viaflux.api.chamado.anexo.ChamadoAnexoRepository;
+import br.com.viaflux.api.chamado.anexo.VisibilidadeDoConteudo;
 import br.com.viaflux.api.usuario.UsuarioAtual;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,7 +19,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-class ConversaDoChamadoService {
+public class ConversaDoChamadoService {
 
     private final AcessoAosChamados acesso;
     private final ChamadoEventoRepository eventos;
@@ -24,7 +29,7 @@ class ConversaDoChamadoService {
     private final AvisosDaConversa avisos;
     private final Clock relogio;
 
-    ConversaDoChamadoService(AcessoAosChamados acesso, ChamadoEventoRepository eventos, ChamadoAnexoRepository anexos,
+    public ConversaDoChamadoService(AcessoAosChamados acesso, ChamadoEventoRepository eventos, ChamadoAnexoRepository anexos,
                              LeituraDaConversaRepository leituras, CanalDeMensagensDoChat canal, AvisosDaConversa avisos, Clock relogio) {
         this.acesso = acesso;
         this.eventos = eventos;
@@ -36,7 +41,7 @@ class ConversaDoChamadoService {
     }
 
     @Transactional(readOnly = true)
-    ConversaResponse consultar(String codigo, UsuarioAtual usuario) {
+    public ConversaResponse consultar(String codigo, UsuarioAtual usuario) {
         Chamado chamado = acesso.visivel(codigo, usuario);
         boolean visaoDeCliente = usuario.apenasCliente();
         List<ChamadoEvento> mensagens = eventos.findByChamadoIdAndTipoOrderByOcorridoEmAscSequenciaAsc(chamado.getId(), TipoEvento.ATUALIZACAO).stream()
@@ -54,7 +59,7 @@ class ConversaDoChamadoService {
     }
 
     @Transactional
-    void marcarComoLida(String codigo, OffsetDateTime ate, UsuarioAtual usuario) {
+    public void marcarComoLida(String codigo, OffsetDateTime ate, UsuarioAtual usuario) {
         Chamado chamado = acesso.visivel(codigo, usuario);
         OffsetDateTime agora = OffsetDateTime.now(relogio).withOffsetSameInstant(ZoneOffset.UTC);
         OffsetDateTime lidoAte = ate.isAfter(agora) ? agora : ate;

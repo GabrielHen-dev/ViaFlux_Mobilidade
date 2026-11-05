@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import java.util.UUID;
 
-interface AlertaDeSlaRepository extends JpaRepository<AlertaDeSla, UUID> {
+public interface AlertaDeSlaRepository extends JpaRepository<AlertaDeSla, UUID> {
 
-    List<AlertaDeSla> findByChamadoId(UUID chamadoId);
+    public List<AlertaDeSla> findByChamadoId(UUID chamadoId);
 }

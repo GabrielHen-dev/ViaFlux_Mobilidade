@@ -1,5 +1,7 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.anexo.VisibilidadeDoConteudo;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -15,7 +17,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "chamado_evento")
-class ChamadoEvento {
+public class ChamadoEvento {
 
     @Id
     private UUID id;
@@ -63,7 +65,7 @@ class ChamadoEvento {
     protected ChamadoEvento() {
     }
 
-    ChamadoEvento(Chamado chamado, TipoEvento tipo, String acao, String detalhe, Autor autor, boolean visivelCliente, OffsetDateTime ocorridoEm) {
+    public ChamadoEvento(Chamado chamado, TipoEvento tipo, String acao, String detalhe, Autor autor, boolean visivelCliente, OffsetDateTime ocorridoEm) {
         this.id = UUID.randomUUID();
         this.chamado = chamado;
         this.tipo = tipo;
@@ -76,50 +78,50 @@ class ChamadoEvento {
         this.ocorridoEm = ocorridoEm;
     }
 
-    void marcarComoMensagem(OrigemDaMensagem origem, UUID anexoId) {
+    public void marcarComoMensagem(OrigemDaMensagem origem, UUID anexoId) {
         this.origemDaMensagem = origem;
         this.anexoId = anexoId;
     }
 
-    OrigemDaMensagem getOrigemDaMensagem() {
+    public OrigemDaMensagem getOrigemDaMensagem() {
         return origemDaMensagem;
     }
 
-    UUID getAnexoId() {
+    public UUID getAnexoId() {
         return anexoId;
     }
 
-    UUID getId() {
+    public UUID getId() {
         return id;
     }
 
-    Chamado getChamado() {
+    public Chamado getChamado() {
         return chamado;
     }
 
-    TipoEvento getTipo() {
+    public TipoEvento getTipo() {
         return tipo;
     }
 
-    String getAcao() {
+    public String getAcao() {
         return acao;
     }
 
-    String getDetalhe() {
+    public String getDetalhe() {
         return detalhe;
     }
 
-    Autor getAutor() {
+    public Autor getAutor() {
         return Autor.de(autorId, autorNome);
     }
 
-    boolean isVisivelCliente() {
+    public boolean isVisivelCliente() {
         return visivelCliente;
     }
 
-    VisibilidadeDoConteudo getVisibilidade() { return visibilidade; }
+    public VisibilidadeDoConteudo getVisibilidade() { return visibilidade; }
 
-    OffsetDateTime getOcorridoEm() {
+    public OffsetDateTime getOcorridoEm() {
         return ocorridoEm;
     }
 }

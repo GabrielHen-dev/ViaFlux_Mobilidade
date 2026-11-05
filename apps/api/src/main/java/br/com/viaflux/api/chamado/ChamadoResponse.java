@@ -1,5 +1,17 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.anexo.AnexoResponse;
+import br.com.viaflux.api.chamado.atendimento.AtendimentoResponse;
+import br.com.viaflux.api.chamado.classificacao.ClassificacaoResponse;
+import br.com.viaflux.api.chamado.classificacao.ContextoResponse;
+import br.com.viaflux.api.chamado.classificacao.DepartamentoResponse;
+import br.com.viaflux.api.chamado.classificacao.MotivoResponse;
+import br.com.viaflux.api.chamado.operacao.EscalonamentoResponse;
+import br.com.viaflux.api.chamado.servico.ServicoTerceiroResponse;
+import br.com.viaflux.api.chamado.sla.SlaResponse;
+import br.com.viaflux.api.chamado.triagem.OverrideResponse;
+import br.com.viaflux.api.chamado.triagem.TriagemResponse;
 import java.time.OffsetDateTime;
 import java.util.List;
 

@@ -1,5 +1,7 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.anexo.ArmazenamentoEmS3;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.http.HttpStatus;

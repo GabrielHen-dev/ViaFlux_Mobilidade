@@ -1,5 +1,14 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.servico.AtualizacaoDeServicoRequest;
+import br.com.viaflux.api.chamado.servico.AtualizacaoServicoResponse;
+import br.com.viaflux.api.chamado.servico.FornecedorResponse;
+import br.com.viaflux.api.chamado.servico.ServicoDoFornecedorResponse;
+import br.com.viaflux.api.chamado.servico.ServicoTerceiro;
+import br.com.viaflux.api.chamado.servico.ServicoTerceiroService;
+import br.com.viaflux.api.chamado.servico.StatusServico;
+import br.com.viaflux.api.chamado.servico.VinculoDeServicoRequest;
 import br.com.viaflux.api.usuario.Organizacao;
 import br.com.viaflux.api.usuario.OrganizacaoRepository;
 import br.com.viaflux.api.usuario.TipoOrganizacao;

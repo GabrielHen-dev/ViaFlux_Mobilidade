@@ -7,13 +7,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 @Component
-class AcessoDoDestinatarioAoChamado implements AcessoDoDestinatario {
+public class AcessoDoDestinatarioAoChamado implements AcessoDoDestinatario {
 
     private final ChamadoRepository chamados;
     private final AcessoAosChamados acesso;
     private final IdentificacaoDoUsuario identificacao;
 
-    AcessoDoDestinatarioAoChamado(ChamadoRepository chamados, AcessoAosChamados acesso, IdentificacaoDoUsuario identificacao) {
+    public AcessoDoDestinatarioAoChamado(ChamadoRepository chamados, AcessoAosChamados acesso, IdentificacaoDoUsuario identificacao) {
         this.chamados = chamados;
         this.acesso = acesso;
         this.identificacao = identificacao;

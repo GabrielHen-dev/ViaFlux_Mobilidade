@@ -22,11 +22,11 @@ public enum TipoChamado {
         return nome;
     }
 
-    boolean isOperacional() {
+    public boolean isOperacional() {
         return OPERACIONAIS.contains(this);
     }
 
-    static TipoChamado deCodigo(String codigo, String campo) {
+    public static TipoChamado deCodigo(String codigo, String campo) {
         if (codigo != null) {
             for (TipoChamado tipo : values()) {
                 if (tipo.name().equals(codigo.trim())) {

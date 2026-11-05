@@ -2,7 +2,7 @@ package br.com.viaflux.api.chamado;
 
 import br.com.viaflux.api.chamado.sla.AvaliacaoDePrazo;
 
-enum LimiarDeSla {
+public enum LimiarDeSla {
     CINQUENTA_POR_CENTO(AvaliacaoDePrazo.PERCENTUAL_EM_RISCO, TipoEvento.SLA, "SLA em risco (50%)", "Prazo de SLA em risco", "Em risco", "50% do prazo consumido"),
     OITENTA_POR_CENTO(0.8, TipoEvento.ESCALONAMENTO, "SLA em risco (80%)", "Alerta de SLA à liderança", "Em risco", "80% do prazo consumido"),
     CEM_POR_CENTO(1.0, TipoEvento.SLA, "SLA violado", "Violação de SLA registrada", "Violado", "100% do prazo consumido"),
@@ -24,27 +24,27 @@ enum LimiarDeSla {
         this.consumo = consumo;
     }
 
-    boolean alcancadoPor(double fracaoConsumida) {
+    public boolean alcancadoPor(double fracaoConsumida) {
         return fracaoConsumida >= fracaoDoPrazo;
     }
 
-    TipoEvento tipoDoEvento() {
+    public TipoEvento tipoDoEvento() {
         return tipoDoEvento;
     }
 
-    String assunto() {
+    public String assunto() {
         return assunto;
     }
 
-    String acao() {
+    public String acao() {
         return acao;
     }
 
-    String situacao() {
+    public String situacao() {
         return situacao;
     }
 
-    String consumo() {
+    public String consumo() {
         return consumo;
     }
 }

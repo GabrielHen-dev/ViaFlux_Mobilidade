@@ -1,5 +1,8 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.classificacao.ClassificacaoPorTexto;
+import br.com.viaflux.api.chamado.classificacao.Motivo;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 

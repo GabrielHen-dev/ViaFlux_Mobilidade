@@ -14,7 +14,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "chamado_leitura")
 @IdClass(LeituraDaConversa.Chave.class)
-class LeituraDaConversa {
+public class LeituraDaConversa {
 
     @Id
     @Column(name = "chamado_id")
@@ -30,11 +30,11 @@ class LeituraDaConversa {
     protected LeituraDaConversa() {
     }
 
-    OffsetDateTime getLidoAte() {
+    public OffsetDateTime getLidoAte() {
         return lidoAte;
     }
 
-    static class Chave implements Serializable {
+    public static class Chave implements Serializable {
 
         private UUID chamadoId;
         private UUID usuarioId;

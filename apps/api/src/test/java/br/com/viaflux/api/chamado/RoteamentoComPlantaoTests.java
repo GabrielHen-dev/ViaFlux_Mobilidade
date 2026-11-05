@@ -1,5 +1,8 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.triagem.RegraDeRoteamento;
+import br.com.viaflux.api.chamado.triagem.RoteamentoComPlantao;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;

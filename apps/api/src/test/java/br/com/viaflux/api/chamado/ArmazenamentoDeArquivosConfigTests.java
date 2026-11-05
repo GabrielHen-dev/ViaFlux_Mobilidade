@@ -1,5 +1,10 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.anexo.AnexosProperties;
+import br.com.viaflux.api.chamado.anexo.ArmazenamentoDeArquivos;
+import br.com.viaflux.api.chamado.anexo.ArmazenamentoEmDisco;
+import br.com.viaflux.api.chamado.anexo.ArmazenamentoEmS3;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 

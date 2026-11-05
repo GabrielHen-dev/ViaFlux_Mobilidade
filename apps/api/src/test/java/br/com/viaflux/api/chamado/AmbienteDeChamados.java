@@ -1,5 +1,9 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.anexo.ChamadoAnexoRepository;
+import br.com.viaflux.api.chamado.operacao.JanelaDeEncerramento;
+import br.com.viaflux.api.chamado.servico.ServicoTerceiroRepository;
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;

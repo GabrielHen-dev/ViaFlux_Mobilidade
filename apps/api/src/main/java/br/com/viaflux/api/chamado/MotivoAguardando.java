@@ -1,6 +1,6 @@
 package br.com.viaflux.api.chamado;
 
-enum MotivoAguardando {
+public enum MotivoAguardando {
     CLIENTE("cliente"),
     FORNECEDOR("fornecedor"),
     OUTRO_DEPARTAMENTO("outro departamento");
@@ -11,7 +11,7 @@ enum MotivoAguardando {
         this.rotulo = rotulo;
     }
 
-    String getRotulo() {
+    public String getRotulo() {
         return rotulo;
     }
 }

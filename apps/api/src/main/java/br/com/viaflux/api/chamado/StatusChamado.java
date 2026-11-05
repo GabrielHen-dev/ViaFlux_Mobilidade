@@ -19,11 +19,11 @@ public enum StatusChamado {
         return rotulo;
     }
 
-    boolean aguardaTriagem() {
+    public boolean aguardaTriagem() {
         return this == ABERTO || this == EM_TRIAGEM;
     }
 
-    static StatusChamado fromRotulo(String rotulo) {
+    public static StatusChamado fromRotulo(String rotulo) {
         for (StatusChamado status : values()) {
             if (status.rotulo.equalsIgnoreCase(rotulo.trim())) {
                 return status;

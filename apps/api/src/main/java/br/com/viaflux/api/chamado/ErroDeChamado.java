@@ -6,7 +6,7 @@ import org.springframework.web.ErrorResponseException;
 
 import java.util.Map;
 
-class ErroDeChamado extends ErrorResponseException {
+public class ErroDeChamado extends ErrorResponseException {
 
     private ErroDeChamado(HttpStatus status, String detalhe, Map<String, String> erros) {
         super(status, problema(status, detalhe, erros), null);
@@ -20,35 +20,35 @@ class ErroDeChamado extends ErrorResponseException {
         return problema;
     }
 
-    static ErroDeChamado conflito(String detalhe) {
+    public static ErroDeChamado conflito(String detalhe) {
         return new ErroDeChamado(HttpStatus.CONFLICT, detalhe, null);
     }
 
-    static ErroDeChamado invalido(String detalhe) {
+    public static ErroDeChamado invalido(String detalhe) {
         return new ErroDeChamado(HttpStatus.BAD_REQUEST, detalhe, null);
     }
 
-    static ErroDeChamado camposInvalidos(Map<String, String> erros) {
+    public static ErroDeChamado camposInvalidos(Map<String, String> erros) {
         return new ErroDeChamado(HttpStatus.BAD_REQUEST, "Um ou mais campos são inválidos.", erros);
     }
 
-    static ErroDeChamado campoInvalido(String campo, String mensagem) {
+    public static ErroDeChamado campoInvalido(String campo, String mensagem) {
         return camposInvalidos(Map.of(campo, mensagem));
     }
 
-    static ErroDeChamado naoEncontrado(String detalhe) {
+    public static ErroDeChamado naoEncontrado(String detalhe) {
         return new ErroDeChamado(HttpStatus.NOT_FOUND, detalhe, null);
     }
 
-    static ErroDeChamado proibido(String detalhe) {
+    public static ErroDeChamado proibido(String detalhe) {
         return new ErroDeChamado(HttpStatus.FORBIDDEN, detalhe, null);
     }
 
-    static ErroDeChamado arquivoGrandeDemais(String detalhe) {
+    public static ErroDeChamado arquivoGrandeDemais(String detalhe) {
         return new ErroDeChamado(HttpStatus.PAYLOAD_TOO_LARGE, detalhe, null);
     }
 
-    static ErroDeChamado formatoNaoSuportado(String detalhe) {
+    public static ErroDeChamado formatoNaoSuportado(String detalhe) {
         return new ErroDeChamado(HttpStatus.UNSUPPORTED_MEDIA_TYPE, detalhe, null);
     }
 }

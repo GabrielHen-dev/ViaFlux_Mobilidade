@@ -1,5 +1,21 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.anexo.AnexoResponse;
+import br.com.viaflux.api.chamado.anexo.ChamadoAnexoRepository;
+import br.com.viaflux.api.chamado.anexo.VisibilidadeDoConteudo;
+import br.com.viaflux.api.chamado.atendimento.AtendimentoResponse;
+import br.com.viaflux.api.chamado.classificacao.ClassificacaoResponse;
+import br.com.viaflux.api.chamado.classificacao.ContextoResponse;
+import br.com.viaflux.api.chamado.classificacao.DepartamentoResponse;
+import br.com.viaflux.api.chamado.classificacao.MotivoResponse;
+import br.com.viaflux.api.chamado.operacao.EscalonamentoResponse;
+import br.com.viaflux.api.chamado.operacao.JanelaDeEncerramento;
+import br.com.viaflux.api.chamado.servico.ServicoTerceiroRepository;
+import br.com.viaflux.api.chamado.servico.ServicoTerceiroResponse;
+import br.com.viaflux.api.chamado.sla.PoliticaDeSla;
+import br.com.viaflux.api.chamado.triagem.OverrideResponse;
+import br.com.viaflux.api.chamado.triagem.PoliticaDeTriagem;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -7,7 +23,7 @@ import java.time.Instant;
 import java.util.List;
 
 @Component
-class MontagemDeChamado {
+public class MontagemDeChamado {
 
     private final ChamadoEventoRepository eventos;
     private final ChamadoAnexoRepository anexos;
@@ -17,7 +33,7 @@ class MontagemDeChamado {
     private final JanelaDeEncerramento janelaDeEncerramento;
     private final Clock relogio;
 
-    MontagemDeChamado(
+    public MontagemDeChamado(
             ChamadoEventoRepository eventos,
             ChamadoAnexoRepository anexos,
             ServicoTerceiroRepository servicos,
@@ -35,7 +51,7 @@ class MontagemDeChamado {
         this.relogio = relogio;
     }
 
-    ChamadoResumoResponse resumo(Chamado chamado) {
+    public ChamadoResumoResponse resumo(Chamado chamado) {
         Instant agora = relogio.instant();
         return new ChamadoResumoResponse(
                 chamado.getCodigo(),
@@ -57,7 +73,7 @@ class MontagemDeChamado {
         );
     }
 
-    ChamadoResponse completo(Chamado chamado, boolean visaoDeCliente) {
+    public ChamadoResponse completo(Chamado chamado, boolean visaoDeCliente) {
         ChamadoResumoResponse resumo = resumo(chamado);
         List<EventoResponse> timeline = eventos.findByChamadoIdOrderByOcorridoEmAscSequenciaAsc(chamado.getId()).stream()
                 .filter(evento -> !visaoDeCliente || evento.isVisivelCliente())

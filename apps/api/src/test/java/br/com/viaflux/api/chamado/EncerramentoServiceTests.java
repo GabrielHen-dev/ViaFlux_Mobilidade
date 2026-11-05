@@ -1,5 +1,8 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.operacao.EncerramentoService;
+import br.com.viaflux.api.chamado.operacao.JanelaDeEncerramento;
 import br.com.viaflux.api.usuario.UsuarioAtual;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;

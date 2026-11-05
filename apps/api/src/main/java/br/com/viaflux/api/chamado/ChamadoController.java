@@ -1,5 +1,17 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.abertura.AberturaDeChamadoService;
+import br.com.viaflux.api.chamado.abertura.AbrirChamadoRequest;
+import br.com.viaflux.api.chamado.atendimento.AlterarStatusRequest;
+import br.com.viaflux.api.chamado.atendimento.AtendimentoService;
+import br.com.viaflux.api.chamado.atendimento.AtualizacaoRequest;
+import br.com.viaflux.api.chamado.atendimento.TransferenciaRequest;
+import br.com.viaflux.api.chamado.consulta.ChamadosPageResponse;
+import br.com.viaflux.api.chamado.consulta.ConsultaDeChamadosService;
+import br.com.viaflux.api.chamado.consulta.FiltrosDeChamados;
+import br.com.viaflux.api.chamado.consulta.ResumoDeChamadosResponse;
+import br.com.viaflux.api.chamado.operacao.LixeiraService;
 import br.com.viaflux.api.usuario.IdentificacaoDoUsuario;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -40,7 +52,7 @@ public class ChamadoController {
     private final AtendimentoService atendimento;
     private final LixeiraService lixeira;
 
-    ChamadoController(
+    public ChamadoController(
             IdentificacaoDoUsuario identificacao,
             AberturaDeChamadoService abertura,
             ConsultaDeChamadosService consulta,
@@ -61,7 +73,7 @@ public class ChamadoController {
                     + "Motivos catalogados recebem classificação e roteamento V1; Outro entra na fila de exceções sem score.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    ResponseEntity<ChamadoResponse> abrir(
+    public ResponseEntity<ChamadoResponse> abrir(
             @Valid @RequestBody AbrirChamadoRequest request,
             @RequestHeader(name = "Idempotency-Key", required = false) String chaveIdempotencia,
             @AuthenticationPrincipal Jwt token
@@ -86,7 +98,7 @@ public class ChamadoController {
                     + "ordenacao=ativos_recentes inclui todo o histórico, com chamados ativos primeiro e depois os mais recentemente atualizados.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    ChamadosPageResponse listar(
+    public ChamadosPageResponse listar(
             @Parameter(description = "Busca por protocolo, cliente, modelo ou placa") @RequestParam(required = false) String busca,
             @Parameter(description = "Rótulo do status, por exemplo: Na fila") @RequestParam(required = false) String status,
             @Parameter(description = "P1, P2, P3 ou P4") @RequestParam(required = false) String prioridade,
@@ -111,7 +123,7 @@ public class ChamadoController {
                     + "listagem, menos status. Perfis: ADMIN, ATENDENTE, LIDER_OPERACIONAL e DEPARTAMENTO (só a própria fila).",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    ResumoDeChamadosResponse resumir(
+    public ResumoDeChamadosResponse resumir(
             @RequestParam(required = false) String busca,
             @RequestParam(required = false) String prioridade,
             @RequestParam(required = false) String departamento,
@@ -130,7 +142,7 @@ public class ChamadoController {
             description = "Perfis: ADMIN e ATENDENTE.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    List<ChamadoResumoResponse> listarLixeira() {
+    public List<ChamadoResumoResponse> listarLixeira() {
         return lixeira.listar();
     }
 
@@ -141,7 +153,7 @@ public class ChamadoController {
                     + "ADMIN e ATENDENTE.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    ResponseEntity<Void> esvaziarLixeira() {
+    public ResponseEntity<Void> esvaziarLixeira() {
         lixeira.esvaziar();
         return ResponseEntity.noContent().build();
     }
@@ -152,7 +164,7 @@ public class ChamadoController {
             description = "Só para chamados que já estão na lixeira. Não pode ser desfeito. Perfis: ADMIN e ATENDENTE.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    ResponseEntity<Void> excluirDefinitivamente(@PathVariable String codigo) {
+    public ResponseEntity<Void> excluirDefinitivamente(@PathVariable String codigo) {
         lixeira.excluirDefinitivamente(codigo);
         return ResponseEntity.noContent().build();
     }
@@ -166,7 +178,7 @@ public class ChamadoController {
                     + "não pode ver recebe 404.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    ChamadoResponse consultar(@PathVariable String codigo, @AuthenticationPrincipal Jwt token) {
+    public ChamadoResponse consultar(@PathVariable String codigo, @AuthenticationPrincipal Jwt token) {
         return consulta.consultar(codigo, identificacao.de(token));
     }
 
@@ -176,7 +188,7 @@ public class ChamadoController {
             description = "Exclusão reversível: o chamado sai das listas e pode ser restaurado. Perfis: ADMIN e ATENDENTE.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    ResponseEntity<Void> moverParaLixeira(@PathVariable String codigo, @AuthenticationPrincipal Jwt token) {
+    public ResponseEntity<Void> moverParaLixeira(@PathVariable String codigo, @AuthenticationPrincipal Jwt token) {
         lixeira.moverParaLixeira(codigo, identificacao.de(token));
         return ResponseEntity.noContent().build();
     }
@@ -187,7 +199,7 @@ public class ChamadoController {
             description = "Perfis: ADMIN e ATENDENTE.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    ChamadoResponse restaurar(@PathVariable String codigo) {
+    public ChamadoResponse restaurar(@PathVariable String codigo) {
         return lixeira.restaurar(codigo);
     }
 
@@ -200,7 +212,7 @@ public class ChamadoController {
                     + "pelo atendimento. O cliente é notificado. Perfis: ADMIN, ATENDENTE e DEPARTAMENTO (só a própria fila).",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    ChamadoResponse alterarStatus(@PathVariable String codigo, @Valid @RequestBody AlterarStatusRequest request, @AuthenticationPrincipal Jwt token) {
+    public ChamadoResponse alterarStatus(@PathVariable String codigo, @Valid @RequestBody AlterarStatusRequest request, @AuthenticationPrincipal Jwt token) {
         return atendimento.alterarStatus(codigo, request, identificacao.de(token));
     }
 
@@ -212,7 +224,7 @@ public class ChamadoController {
                     + "Perfis: ADMIN, ATENDENTE e DEPARTAMENTO (só a própria fila).",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    ChamadoResponse assumir(@PathVariable String codigo, @AuthenticationPrincipal Jwt token) {
+    public ChamadoResponse assumir(@PathVariable String codigo, @AuthenticationPrincipal Jwt token) {
         return atendimento.assumir(codigo, identificacao.de(token));
     }
 
@@ -224,7 +236,7 @@ public class ChamadoController {
                     + "ATENDENTE e DEPARTAMENTO (só a própria fila).",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    ChamadoResponse transferir(@PathVariable String codigo, @Valid @RequestBody TransferenciaRequest request, @AuthenticationPrincipal Jwt token) {
+    public ChamadoResponse transferir(@PathVariable String codigo, @Valid @RequestBody TransferenciaRequest request, @AuthenticationPrincipal Jwt token) {
         return atendimento.transferir(codigo, request, identificacao.de(token));
     }
 
@@ -239,7 +251,7 @@ public class ChamadoController {
                     + "só acompanha.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    ResponseEntity<ChamadoResponse> registrarAtualizacao(
+    public ResponseEntity<ChamadoResponse> registrarAtualizacao(
             @PathVariable String codigo,
             @Valid @RequestBody AtualizacaoRequest request,
             @AuthenticationPrincipal Jwt token
@@ -255,7 +267,7 @@ public class ChamadoController {
                     + "só acompanha.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    ChamadoResponse registrarLocalizacao(
+    public ChamadoResponse registrarLocalizacao(
             @PathVariable String codigo,
             @Valid @RequestBody DadosDeLocalizacao request,
             @AuthenticationPrincipal Jwt token
