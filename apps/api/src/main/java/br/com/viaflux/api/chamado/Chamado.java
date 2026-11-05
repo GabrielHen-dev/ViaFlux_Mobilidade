@@ -1,5 +1,9 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.abertura.DadosDeAbertura;
+import br.com.viaflux.api.chamado.classificacao.Contexto;
+import br.com.viaflux.api.chamado.classificacao.Motivo;
 import br.com.viaflux.api.usuario.Usuario;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.CollectionTable;
@@ -24,10 +28,10 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "chamados")
-class Chamado {
+public class Chamado {
 
-    static final String ESTADO_CLASSIFICADA = "CLASSIFICADA";
-    static final String ESTADO_REVISAO_PENDENTE = "REVISAO_PENDENTE";
+    public static final String ESTADO_CLASSIFICADA = "CLASSIFICADA";
+    public static final String ESTADO_REVISAO_PENDENTE = "REVISAO_PENDENTE";
 
     @Id
     private UUID id;
@@ -215,7 +219,7 @@ class Chamado {
     protected Chamado() {
     }
 
-    Chamado(String codigo, DadosDeAbertura dados, OffsetDateTime abertoEm) {
+    public Chamado(String codigo, DadosDeAbertura dados, OffsetDateTime abertoEm) {
         this.id = UUID.randomUUID();
         this.codigo = codigo;
         this.cliente = dados.cliente().trim();
@@ -245,25 +249,25 @@ class Chamado {
         return valor == null ? "" : valor.trim();
     }
 
-    boolean triado() {
+    public boolean triado() {
         return triadoEm != null;
     }
 
-    void exigirTriagemConcluida() {
+    public void exigirTriagemConcluida() {
         if (!triado()) {
             throw ErroDeChamado.conflito("Conclua a triagem do chamado antes desta ação.");
         }
     }
 
-    boolean revisaoPendente() {
+    public boolean revisaoPendente() {
         return ESTADO_REVISAO_PENDENTE.equals(classificacaoEstado);
     }
 
-    boolean aguardaAnalise() {
+    public boolean aguardaAnalise() {
         return !triado() || revisaoPendente();
     }
 
-    void iniciarTriagem(Autor responsavel, OffsetDateTime agora) {
+    public void iniciarTriagem(Autor responsavel, OffsetDateTime agora) {
         if (!aguardaAnalise()) {
             throw ErroDeChamado.conflito("A classificação deste chamado já foi analisada.");
         }
@@ -278,7 +282,7 @@ class Chamado {
         tocar(agora);
     }
 
-    void concluirTriagem(TipoChamado tipo, int severidade, int urgencia, TipoChamado destino, Autor autor, OffsetDateTime agora) {
+    public void concluirTriagem(TipoChamado tipo, int severidade, int urgencia, TipoChamado destino, Autor autor, OffsetDateTime agora) {
         if (triado()) {
             throw ErroDeChamado.conflito("A triagem deste chamado já foi concluída.");
         }
@@ -299,7 +303,7 @@ class Chamado {
         tocar(agora);
     }
 
-    void confirmarClassificacao(Autor revisor, OffsetDateTime agora) {
+    public void confirmarClassificacao(Autor revisor, OffsetDateTime agora) {
         if (!revisaoPendente()) {
             throw ErroDeChamado.conflito("A classificação deste chamado não está pendente de revisão.");
         }
@@ -309,7 +313,7 @@ class Chamado {
         tocar(agora);
     }
 
-    void reclassificar(TipoChamado tipo, int severidade, int urgencia, OffsetDateTime agora) {
+    public void reclassificar(TipoChamado tipo, int severidade, int urgencia, OffsetDateTime agora) {
         exigirTriagemConcluida();
         if (tipo == classificacaoTipo && severidade == this.severidade && urgencia == this.urgencia) {
             throw ErroDeChamado.conflito("A classificação informada é igual à vigente.");
@@ -326,7 +330,7 @@ class Chamado {
         this.classificacaoVersao = "classificacao-v1";
     }
 
-    void classificarAutomaticamente(TipoChamado tipo, int severidade, int urgencia, TipoChamado destino, OffsetDateTime agora) {
+    public void classificarAutomaticamente(TipoChamado tipo, int severidade, int urgencia, TipoChamado destino, OffsetDateTime agora) {
         if (triado()) return;
         classificar(tipo, severidade, urgencia);
         this.departamento = destino;
@@ -339,13 +343,13 @@ class Chamado {
         tocar(agora);
     }
 
-    void classificarPorTexto(TipoChamado tipo, int severidade, int urgencia, TipoChamado destino, OffsetDateTime agora) {
+    public void classificarPorTexto(TipoChamado tipo, int severidade, int urgencia, TipoChamado destino, OffsetDateTime agora) {
         classificarAutomaticamente(tipo, severidade, urgencia, destino, agora);
         this.classificacaoEstado = ESTADO_REVISAO_PENDENTE;
         this.triadoPorNome = "Classificação automática por texto";
     }
 
-    void escalonar(Autor autor, String motivo, OffsetDateTime agora) {
+    public void escalonar(Autor autor, String motivo, OffsetDateTime agora) {
         if (status == StatusChamado.RESOLVIDO || status == StatusChamado.FECHADO) {
             throw ErroDeChamado.conflito("Chamados resolvidos ou fechados não podem ser escalonados.");
         }
@@ -359,7 +363,7 @@ class Chamado {
         tocar(agora);
     }
 
-    void marcarPendenteRoteamento(OffsetDateTime agora) {
+    public void marcarPendenteRoteamento(OffsetDateTime agora) {
         this.departamento = null;
         this.classificacaoEstado = "PENDENTE_ROTEAMENTO";
         this.classificacaoVersao = "classificacao-v1";
@@ -369,7 +373,7 @@ class Chamado {
         tocar(agora);
     }
 
-    void resolverComResumo(String resumo, Autor autor, OffsetDateTime agora) {
+    public void resolverComResumo(String resumo, Autor autor, OffsetDateTime agora) {
         exigirTriagemConcluida();
         if (resumo == null || resumo.isBlank()) throw ErroDeChamado.campoInvalido("resumoResolucao", "Informe o resumo da solução.");
         if (status == StatusChamado.FECHADO) throw ErroDeChamado.conflito("Chamados fechados não podem ser resolvidos.");
@@ -382,21 +386,21 @@ class Chamado {
         tocar(agora);
     }
 
-    void fecharAutomaticamente(OffsetDateTime agora) {
+    public void fecharAutomaticamente(OffsetDateTime agora) {
         if (status != StatusChamado.RESOLVIDO) return;
         status = StatusChamado.FECHADO;
         fechadoEm = agora;
         tocar(agora);
     }
 
-    void confirmarResolucao(OffsetDateTime agora) {
+    public void confirmarResolucao(OffsetDateTime agora) {
         exigirStatus(StatusChamado.RESOLVIDO, "Só é possível confirmar a solução de um chamado resolvido.");
         status = StatusChamado.FECHADO;
         fechadoEm = agora;
         tocar(agora);
     }
 
-    void contestarResolucao(OffsetDateTime agora) {
+    public void contestarResolucao(OffsetDateTime agora) {
         exigirStatus(StatusChamado.RESOLVIDO, "Só é possível contestar a solução de um chamado resolvido.");
         status = atendimentoResponsavelNome == null ? StatusChamado.NA_FILA : StatusChamado.EM_ATENDIMENTO;
         resolvidoEm = null;
@@ -404,7 +408,7 @@ class Chamado {
         tocar(agora);
     }
 
-    void reabrir(OffsetDateTime agora) {
+    public void reabrir(OffsetDateTime agora) {
         exigirStatus(StatusChamado.FECHADO, "Só é possível reabrir um chamado fechado.");
         status = StatusChamado.NA_FILA;
         episodio += 1;
@@ -417,7 +421,7 @@ class Chamado {
         tocar(agora);
     }
 
-    void registrarLembreteDeConfirmacao(OffsetDateTime agora) {
+    public void registrarLembreteDeConfirmacao(OffsetDateTime agora) {
         lembreteConfirmacaoEm = agora;
     }
 
@@ -427,7 +431,7 @@ class Chamado {
         }
     }
 
-    void definirOverride(Prioridade prioridade, String justificativa, Autor autor, OffsetDateTime agora) {
+    public void definirOverride(Prioridade prioridade, String justificativa, Autor autor, OffsetDateTime agora) {
         exigirTriagemConcluida();
         if (prioridade == prioridadeEfetiva()) {
             throw ErroDeChamado.conflito("A prioridade efetiva já é essa.");
@@ -440,7 +444,7 @@ class Chamado {
         tocar(agora);
     }
 
-    Prioridade removerOverride(OffsetDateTime agora) {
+    public Prioridade removerOverride(OffsetDateTime agora) {
         if (overridePrioridade == null) {
             throw ErroDeChamado.conflito("O chamado não tem override de prioridade.");
         }
@@ -454,7 +458,7 @@ class Chamado {
         return anterior;
     }
 
-    StatusChamado alterarStatus(StatusChamado novo, MotivoAguardando motivo, OffsetDateTime agora) {
+    public StatusChamado alterarStatus(StatusChamado novo, MotivoAguardando motivo, OffsetDateTime agora) {
         exigirTriagemConcluida();
         if (novo.aguardaTriagem()) {
             throw ErroDeChamado.campoInvalido("status", "Abertura e triagem não podem ser definidas manualmente.");
@@ -495,7 +499,7 @@ class Chamado {
         return anterior;
     }
 
-    TipoChamado transferir(TipoChamado destino, OffsetDateTime agora) {
+    public TipoChamado transferir(TipoChamado destino, OffsetDateTime agora) {
         exigirTriagemConcluida();
         if (destino == departamento) {
             throw ErroDeChamado.conflito("O chamado já está neste departamento.");
@@ -516,7 +520,7 @@ class Chamado {
         return origem;
     }
 
-    void assumirAtendimento(Autor responsavel, OffsetDateTime agora) {
+    public void assumirAtendimento(Autor responsavel, OffsetDateTime agora) {
         exigirTriagemConcluida();
         if (status == StatusChamado.RESOLVIDO || status == StatusChamado.FECHADO) {
             throw ErroDeChamado.conflito("Chamados resolvidos ou fechados não podem ser assumidos.");
@@ -532,7 +536,7 @@ class Chamado {
         tocar(agora);
     }
 
-    void registrarResponsavelSeAusente(Autor responsavel, OffsetDateTime agora) {
+    public void registrarResponsavelSeAusente(Autor responsavel, OffsetDateTime agora) {
         if (atendimentoResponsavelNome == null) {
             definirResponsavel(responsavel, agora);
         }
@@ -557,42 +561,42 @@ class Chamado {
         this.atendimentoAssumidoEm = null;
     }
 
-    void exigirConversaAberta() {
+    public void exigirConversaAberta() {
         if (status == StatusChamado.FECHADO) {
             throw ErroDeChamado.conflito("Este chamado está fechado. A conversa volta a funcionar na reabertura.");
         }
     }
 
-    void exigirAnexosAbertos() {
+    public void exigirAnexosAbertos() {
         if (status == StatusChamado.FECHADO) {
             throw ErroDeChamado.conflito("Este chamado está fechado e não recebe novos arquivos.");
         }
     }
 
-    boolean aguardaCliente() {
+    public boolean aguardaCliente() {
         return status == StatusChamado.AGUARDANDO && motivoAguardando == MotivoAguardando.CLIENTE;
     }
 
-    void registrarPrimeiraResposta(OffsetDateTime agora) {
+    public void registrarPrimeiraResposta(OffsetDateTime agora) {
         if (primeiraRespostaEm == null && triado()) {
             this.primeiraRespostaEm = agora;
         }
     }
 
-    void atualizarLocalizacao(DadosDeLocalizacao dados, OffsetDateTime agora) {
+    public void atualizarLocalizacao(DadosDeLocalizacao dados, OffsetDateTime agora) {
         this.localizacao = Localizacao.de(dados);
         tocar(agora);
     }
 
-    void moverParaLixeira(OffsetDateTime agora) {
+    public void moverParaLixeira(OffsetDateTime agora) {
         this.excluidoEm = agora;
     }
 
-    void restaurar() {
+    public void restaurar() {
         this.excluidoEm = null;
     }
 
-    void tocar(OffsetDateTime agora) {
+    public void tocar(OffsetDateTime agora) {
         if (agora.isAfter(atualizadoEm)) {
             this.atualizadoEm = agora;
         }
@@ -602,195 +606,195 @@ class Chamado {
         pausas.stream().filter(PausaDoChamado::emAndamento).forEach(pausa -> pausa.encerrar(agora));
     }
 
-    Prioridade prioridadeCalculada() {
+    public Prioridade prioridadeCalculada() {
         return triado() ? Prioridade.porScore(score()) : null;
     }
 
-    Prioridade prioridadeEfetiva() {
+    public Prioridade prioridadeEfetiva() {
         return overridePrioridade != null ? overridePrioridade : prioridadeCalculada();
     }
 
-    Integer score() {
+    public Integer score() {
         return triado() ? Prioridade.score(severidade, urgencia) : null;
     }
 
-    TipoChamado tipoVigente() {
+    public TipoChamado tipoVigente() {
         return classificacaoTipo != null ? classificacaoTipo : tipoDeclarado;
     }
 
-    boolean pertenceAo(UUID usuarioId) {
+    public boolean pertenceAo(UUID usuarioId) {
         return solicitante != null && solicitante.getId().equals(usuarioId);
     }
 
-    boolean naLixeira() {
+    public boolean naLixeira() {
         return excluidoEm != null;
     }
 
-    UUID getId() {
+    public UUID getId() {
         return id;
     }
 
-    String getCodigo() {
+    public String getCodigo() {
         return codigo;
     }
 
-    String getCliente() {
+    public String getCliente() {
         return cliente;
     }
 
-    String getTelefone() {
+    public String getTelefone() {
         return telefone;
     }
 
-    String getModelo() {
+    public String getModelo() {
         return modelo;
     }
 
-    String getPlaca() {
+    public String getPlaca() {
         return placa;
     }
 
-    String getDescricao() {
+    public String getDescricao() {
         return descricao;
     }
 
-    Localizacao getLocalizacao() {
+    public Localizacao getLocalizacao() {
         return localizacao;
     }
 
-    StatusChamado getStatus() {
+    public StatusChamado getStatus() {
         return status;
     }
 
-    OffsetDateTime getAbertoEm() {
+    public OffsetDateTime getAbertoEm() {
         return abertoEm;
     }
 
-    OffsetDateTime getAtualizadoEm() {
+    public OffsetDateTime getAtualizadoEm() {
         return atualizadoEm;
     }
 
-    Usuario getSolicitante() {
+    public Usuario getSolicitante() {
         return solicitante;
     }
 
-    Motivo getMotivo() {
+    public Motivo getMotivo() {
         return motivo;
     }
 
-    Contexto getContexto() {
+    public Contexto getContexto() {
         return contexto;
     }
 
-    Integer getUrgenciaDeclarada() {
+    public Integer getUrgenciaDeclarada() {
         return urgenciaDeclarada;
     }
 
-    TipoChamado getClassificacaoTipo() {
+    public TipoChamado getClassificacaoTipo() {
         return classificacaoTipo;
     }
 
-    Integer getSeveridade() {
+    public Integer getSeveridade() {
         return severidade;
     }
 
-    Integer getUrgencia() {
+    public Integer getUrgencia() {
         return urgencia;
     }
 
-    Prioridade getOverridePrioridade() {
+    public Prioridade getOverridePrioridade() {
         return overridePrioridade;
     }
 
-    String getOverrideJustificativa() {
+    public String getOverrideJustificativa() {
         return overrideJustificativa;
     }
 
-    Autor getOverrideAutor() {
+    public Autor getOverrideAutor() {
         return Autor.de(overrideAutorId, overrideAutorNome);
     }
 
-    OffsetDateTime getOverrideDefinidoEm() {
+    public OffsetDateTime getOverrideDefinidoEm() {
         return overrideDefinidoEm;
     }
 
-    TipoChamado getDepartamento() {
+    public TipoChamado getDepartamento() {
         return departamento;
     }
 
-    MotivoAguardando getMotivoAguardando() {
+    public MotivoAguardando getMotivoAguardando() {
         return motivoAguardando;
     }
 
-    int getTriagemPrazoMinutos() {
+    public int getTriagemPrazoMinutos() {
         return triagemPrazoMinutos;
     }
 
-    OffsetDateTime getTriagemLimite() {
+    public OffsetDateTime getTriagemLimite() {
         return triagemLimite;
     }
 
-    OffsetDateTime getTriagemIniciadaEm() {
+    public OffsetDateTime getTriagemIniciadaEm() {
         return triagemIniciadaEm;
     }
 
-    Autor getTriagemResponsavel() {
+    public Autor getTriagemResponsavel() {
         return Autor.de(triagemResponsavelId, triagemResponsavelNome);
     }
 
-    OffsetDateTime getTriadoEm() {
+    public OffsetDateTime getTriadoEm() {
         return triadoEm;
     }
 
-    Autor getTriadoPor() {
+    public Autor getTriadoPor() {
         return Autor.de(triadoPorId, triadoPorNome);
     }
 
-    Autor getAtendimentoResponsavel() {
+    public Autor getAtendimentoResponsavel() {
         return Autor.de(atendimentoResponsavelId, atendimentoResponsavelNome);
     }
 
-    OffsetDateTime getAtendimentoAssumidoEm() {
+    public OffsetDateTime getAtendimentoAssumidoEm() {
         return atendimentoAssumidoEm;
     }
 
-    OffsetDateTime getPrimeiraRespostaEm() {
+    public OffsetDateTime getPrimeiraRespostaEm() {
         return primeiraRespostaEm;
     }
 
-    OffsetDateTime getResolvidoEm() {
+    public OffsetDateTime getResolvidoEm() {
         return resolvidoEm;
     }
 
-    OffsetDateTime getExcluidoEm() {
+    public OffsetDateTime getExcluidoEm() {
         return excluidoEm;
     }
 
-    OffsetDateTime getEscalonadoEm() {
+    public OffsetDateTime getEscalonadoEm() {
         return escalonadoEm;
     }
 
-    Autor getEscalonadoPor() {
+    public Autor getEscalonadoPor() {
         return Autor.de(escalonadoPorId, escalonadoPorNome);
     }
 
-    String getEscalonamentoMotivo() {
+    public String getEscalonamentoMotivo() {
         return escalonamentoMotivo;
     }
 
-    String getMotivoOutro() { return motivoOutro; }
-    String getClassificacaoEstado() { return classificacaoEstado; }
-    UUID getAbertoPorId() { return abertoPorId; }
-    String getAbertoPorNome() { return abertoPorNome; }
-    String getResolucaoResumo() { return resolucaoResumo; }
-    OffsetDateTime getFechadoEm() { return fechadoEm; }
-    int getEpisodio() { return episodio; }
-    OffsetDateTime getLembreteConfirmacaoEm() { return lembreteConfirmacaoEm; }
-    String getClassificacaoVersao() { return classificacaoVersao; }
-    String getRoteamentoVersao() { return roteamentoVersao; }
-    String getSlaVersao() { return slaVersao; }
+    public String getMotivoOutro() { return motivoOutro; }
+    public String getClassificacaoEstado() { return classificacaoEstado; }
+    public UUID getAbertoPorId() { return abertoPorId; }
+    public String getAbertoPorNome() { return abertoPorNome; }
+    public String getResolucaoResumo() { return resolucaoResumo; }
+    public OffsetDateTime getFechadoEm() { return fechadoEm; }
+    public int getEpisodio() { return episodio; }
+    public OffsetDateTime getLembreteConfirmacaoEm() { return lembreteConfirmacaoEm; }
+    public String getClassificacaoVersao() { return classificacaoVersao; }
+    public String getRoteamentoVersao() { return roteamentoVersao; }
+    public String getSlaVersao() { return slaVersao; }
 
-    List<PausaDoChamado> getPausas() {
+    public List<PausaDoChamado> getPausas() {
         return List.copyOf(pausas);
     }
 }

@@ -1,5 +1,7 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.atendimento.AtendimentoService;
 import br.com.viaflux.api.usuario.IdentificacaoDoUsuario;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -23,13 +25,13 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/chamados/{codigo}/mensagens")
 @Tag(name = "Conversa", description = "Chat do chamado entre o solicitante e a equipe")
-class ConversaController {
+public class ConversaController {
 
     private final IdentificacaoDoUsuario identificacao;
     private final ConversaDoChamadoService conversa;
     private final AtendimentoService atendimento;
 
-    ConversaController(IdentificacaoDoUsuario identificacao, ConversaDoChamadoService conversa, AtendimentoService atendimento) {
+    public ConversaController(IdentificacaoDoUsuario identificacao, ConversaDoChamadoService conversa, AtendimentoService atendimento) {
         this.identificacao = identificacao;
         this.conversa = conversa;
         this.atendimento = atendimento;
@@ -42,7 +44,7 @@ class ConversaController {
                     + "internas. Quem pode ver o chamado pode consultar; o envio usa POST /api/chamados/{codigo}/atualizacoes.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    ConversaResponse consultar(@PathVariable String codigo, @AuthenticationPrincipal Jwt token) {
+    public ConversaResponse consultar(@PathVariable String codigo, @AuthenticationPrincipal Jwt token) {
         return conversa.consultar(codigo, identificacao.de(token));
     }
 
@@ -54,7 +56,7 @@ class ConversaController {
                     + "Mesmas permissões, limites e bloqueio de chamado fechado do envio de mensagem.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    ResponseEntity<ChamadoResponse> enviarArquivo(
+    public ResponseEntity<ChamadoResponse> enviarArquivo(
             @PathVariable String codigo,
             @RequestParam(name = "arquivo", required = false) MultipartFile arquivo,
             @RequestParam(name = "texto", required = false) String texto,
@@ -73,7 +75,7 @@ class ConversaController {
                     + "e-mail ainda não enviado. Quem pode ver o chamado pode marcar.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    ResponseEntity<Void> marcarComoLida(@PathVariable String codigo, @Valid @RequestBody LeituraDaConversaRequest request,
+    public ResponseEntity<Void> marcarComoLida(@PathVariable String codigo, @Valid @RequestBody LeituraDaConversaRequest request,
                                         @AuthenticationPrincipal Jwt token) {
         conversa.marcarComoLida(codigo, request.ate(), identificacao.de(token));
         return ResponseEntity.noContent().build();

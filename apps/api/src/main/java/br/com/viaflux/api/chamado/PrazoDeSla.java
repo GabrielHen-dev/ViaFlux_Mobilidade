@@ -1,6 +1,6 @@
 package br.com.viaflux.api.chamado;
 
-enum PrazoDeSla {
+public enum PrazoDeSla {
     PRIMEIRA_RESPOSTA("Primeira resposta"),
     RESOLUCAO("Resolução");
 
@@ -10,7 +10,7 @@ enum PrazoDeSla {
         this.rotulo = rotulo;
     }
 
-    String rotulo() {
+    public String rotulo() {
         return rotulo;
     }
 }

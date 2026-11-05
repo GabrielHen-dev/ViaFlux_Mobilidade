@@ -1,5 +1,7 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.anexo.VisibilidadeDoConteudo;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -14,7 +16,7 @@ public record EventoResponse(
         VisibilidadeDoConteudo visibilidade
 ) {
 
-    static EventoResponse de(ChamadoEvento evento) {
+    public static EventoResponse de(ChamadoEvento evento) {
         return new EventoResponse(
                 evento.getId(),
                 evento.getTipo(),

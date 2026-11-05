@@ -1,6 +1,6 @@
 package br.com.viaflux.api.chamado;
 
-enum EstadoDaEntregaDeAlerta {
+public enum EstadoDaEntregaDeAlerta {
     PENDENTE,
     ENTREGUE,
     ESGOTADA

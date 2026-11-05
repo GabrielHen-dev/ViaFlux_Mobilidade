@@ -28,6 +28,15 @@ async function chamadoNaFila() {
 }
 
 describe("conversa do chamado", () => {
+  it("mantém o histórico em uma área com rolagem vertical e altura limitada", async () => {
+    await chamadoNaFila();
+    await registrarAtualizacao(apiComo(USUARIOS.atendente), CODIGO, { texto: "Atualização de teste", visivelCliente: true });
+    await renderizarComo(USUARIOS.cliente, <ChamadoDoCliente id={CODIGO} />);
+
+    const conversa = await screen.findByRole("log", { name: "Mensagens do chamado" });
+    expect(conversa).toHaveClass("overflow-y-auto", "max-h-96");
+  });
+
   it("a equipe envia ao solicitante, e a mensagem aparece no chat e não no histórico", async () => {
     const usuario = userEvent.setup();
     await chamadoNaFila();

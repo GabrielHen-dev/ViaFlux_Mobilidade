@@ -1,5 +1,12 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.metricas.CalculoDeMetricas;
+import br.com.viaflux.api.chamado.metricas.FiltrosDeMetricas;
+import br.com.viaflux.api.chamado.metricas.LinhaDeMetrica;
+import br.com.viaflux.api.chamado.metricas.MetricasResponse;
+import br.com.viaflux.api.chamado.servico.ServicoTerceiro;
+import br.com.viaflux.api.chamado.servico.StatusServico;
 import br.com.viaflux.api.usuario.Organizacao;
 import br.com.viaflux.api.usuario.TipoOrganizacao;
 import org.junit.jupiter.api.Test;

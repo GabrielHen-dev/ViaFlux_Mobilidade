@@ -16,9 +16,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "alerta_sla_entrega")
-class EntregaDeAlertaDeSla {
+public class EntregaDeAlertaDeSla {
 
-    static final int MAXIMO_DE_TENTATIVAS = 5;
+    public static final int MAXIMO_DE_TENTATIVAS = 5;
     static final Duration ESPERA_ENTRE_TENTATIVAS = Duration.ofMinutes(5);
 
     @Id
@@ -59,7 +59,7 @@ class EntregaDeAlertaDeSla {
     protected EntregaDeAlertaDeSla() {
     }
 
-    EntregaDeAlertaDeSla(AlertaDeSla alerta, UUID destinatarioId, String destinatarioNome, String assunto, String mensagem, OffsetDateTime criadaEm) {
+    public EntregaDeAlertaDeSla(AlertaDeSla alerta, UUID destinatarioId, String destinatarioNome, String assunto, String mensagem, OffsetDateTime criadaEm) {
         this.id = UUID.randomUUID();
         this.alerta = alerta;
         this.destinatarioId = destinatarioId;
@@ -69,14 +69,14 @@ class EntregaDeAlertaDeSla {
         this.proximaTentativaEm = criadaEm;
     }
 
-    void confirmar(OffsetDateTime instante) {
+    public void confirmar(OffsetDateTime instante) {
         tentativas += 1;
         estado = EstadoDaEntregaDeAlerta.ENTREGUE;
         entregueEm = instante;
         proximaTentativaEm = null;
     }
 
-    void registrarFalha(OffsetDateTime instante) {
+    public void registrarFalha(OffsetDateTime instante) {
         tentativas += 1;
         ultimaFalhaEm = instante;
         if (tentativas >= MAXIMO_DE_TENTATIVAS) {
@@ -87,43 +87,43 @@ class EntregaDeAlertaDeSla {
         }
     }
 
-    boolean jaFalhou() {
+    public boolean jaFalhou() {
         return ultimaFalhaEm != null;
     }
 
-    UUID getId() {
+    public UUID getId() {
         return id;
     }
 
-    AlertaDeSla getAlerta() {
+    public AlertaDeSla getAlerta() {
         return alerta;
     }
 
-    UUID getDestinatarioId() {
+    public UUID getDestinatarioId() {
         return destinatarioId;
     }
 
-    String getDestinatarioNome() {
+    public String getDestinatarioNome() {
         return destinatarioNome;
     }
 
-    String getAssunto() {
+    public String getAssunto() {
         return assunto;
     }
 
-    String getMensagem() {
+    public String getMensagem() {
         return mensagem;
     }
 
-    EstadoDaEntregaDeAlerta getEstado() {
+    public EstadoDaEntregaDeAlerta getEstado() {
         return estado;
     }
 
-    int getTentativas() {
+    public int getTentativas() {
         return tentativas;
     }
 
-    OffsetDateTime getProximaTentativaEm() {
+    public OffsetDateTime getProximaTentativaEm() {
         return proximaTentativaEm;
     }
 }

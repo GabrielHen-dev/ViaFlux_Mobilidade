@@ -1,5 +1,8 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.operacao.EscalonamentoRequest;
+import br.com.viaflux.api.chamado.operacao.EscalonamentoService;
 import br.com.viaflux.api.usuario.Usuario;
 import br.com.viaflux.api.usuario.UsuarioAtual;
 import org.junit.jupiter.api.Test;

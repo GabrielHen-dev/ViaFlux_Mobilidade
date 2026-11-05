@@ -15,7 +15,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "alerta_sla")
-class AlertaDeSla {
+public class AlertaDeSla {
 
     @Id
     private UUID id;
@@ -42,7 +42,7 @@ class AlertaDeSla {
     protected AlertaDeSla() {
     }
 
-    AlertaDeSla(Chamado chamado, GatilhoDeSla gatilho, Prioridade prioridade, OffsetDateTime disparadoEm) {
+    public AlertaDeSla(Chamado chamado, GatilhoDeSla gatilho, Prioridade prioridade, OffsetDateTime disparadoEm) {
         this.id = UUID.randomUUID();
         this.chamado = chamado;
         this.prazo = gatilho.prazo();
@@ -51,11 +51,11 @@ class AlertaDeSla {
         this.disparadoEm = disparadoEm;
     }
 
-    GatilhoDeSla gatilho() {
+    public GatilhoDeSla gatilho() {
         return new GatilhoDeSla(prazo, limiar);
     }
 
-    Chamado getChamado() {
+    public Chamado getChamado() {
         return chamado;
     }
 }

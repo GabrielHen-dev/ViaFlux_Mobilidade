@@ -6,11 +6,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
-interface ChamadoEventoRepository extends JpaRepository<ChamadoEvento, UUID> {
+public interface ChamadoEventoRepository extends JpaRepository<ChamadoEvento, UUID> {
 
-    List<ChamadoEvento> findByChamadoIdOrderByOcorridoEmAscSequenciaAsc(UUID chamadoId);
+    public List<ChamadoEvento> findByChamadoIdOrderByOcorridoEmAscSequenciaAsc(UUID chamadoId);
 
-    List<ChamadoEvento> findByChamadoIdAndTipoOrderByOcorridoEmAscSequenciaAsc(UUID chamadoId, TipoEvento tipo);
+    public List<ChamadoEvento> findByChamadoIdAndTipoOrderByOcorridoEmAscSequenciaAsc(UUID chamadoId, TipoEvento tipo);
 
-    List<ChamadoEvento> findByChamadoIdInAndTipoIn(Collection<UUID> chamadoIds, Collection<TipoEvento> tipos);
+    public List<ChamadoEvento> findByChamadoIdInAndTipoIn(Collection<UUID> chamadoIds, Collection<TipoEvento> tipos);
 }

@@ -1,5 +1,13 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.abertura.AberturaDeChamadoService;
+import br.com.viaflux.api.chamado.abertura.AbrirChamadoRequest;
+import br.com.viaflux.api.chamado.abertura.SolicitanteInvalidoException;
+import br.com.viaflux.api.chamado.classificacao.ClassificacaoResponse;
+import br.com.viaflux.api.chamado.classificacao.ContextoRepository;
+import br.com.viaflux.api.chamado.classificacao.Motivo;
+import br.com.viaflux.api.chamado.classificacao.MotivoRepository;
 import br.com.viaflux.api.usuario.Usuario;
 import br.com.viaflux.api.usuario.UsuarioAtual;
 import br.com.viaflux.api.usuario.UsuarioRepository;

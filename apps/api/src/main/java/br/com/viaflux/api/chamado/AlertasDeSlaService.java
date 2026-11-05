@@ -12,7 +12,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Service
-class AlertasDeSlaService {
+public class AlertasDeSlaService {
 
     private static final Logger log = LoggerFactory.getLogger(AlertasDeSlaService.class);
     private static final Set<StatusChamado> STATUS_COM_PRAZO_CORRENDO = Set.of(
@@ -24,7 +24,7 @@ class AlertasDeSlaService {
     private final CanalDeAlertaDeSla canal;
     private final Clock relogio;
 
-    AlertasDeSlaService(ChamadoRepository chamados, DisparoDeAlertasDeSla disparo, RegistroDeEntregasDeAlerta registro,
+    public AlertasDeSlaService(ChamadoRepository chamados, DisparoDeAlertasDeSla disparo, RegistroDeEntregasDeAlerta registro,
                         CanalDeAlertaDeSla canal, Clock relogio) {
         this.chamados = chamados;
         this.disparo = disparo;
@@ -33,7 +33,7 @@ class AlertasDeSlaService {
         this.relogio = relogio;
     }
 
-    void verificarPrazos() {
+    public void verificarPrazos() {
         OffsetDateTime agora = OffsetDateTime.now(relogio).withOffsetSameInstant(ZoneOffset.UTC);
         chamados.idsComStatus(STATUS_COM_PRAZO_CORRENDO).forEach(chamadoId -> dispararSemInterromper(chamadoId, agora));
         registro.pendentes(agora).forEach(entrega -> entregarSemInterromper(entrega, agora));

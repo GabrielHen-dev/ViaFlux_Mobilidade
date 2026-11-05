@@ -7,14 +7,14 @@ import java.util.List;
 import java.util.Locale;
 
 @Component
-class AcessoAosChamados {
+public class AcessoAosChamados {
 
     private final ChamadoRepository chamados;
-    AcessoAosChamados(ChamadoRepository chamados) {
+    public AcessoAosChamados(ChamadoRepository chamados) {
         this.chamados = chamados;
     }
 
-    boolean podeVer(Chamado chamado, UsuarioAtual usuario) {
+    public boolean podeVer(Chamado chamado, UsuarioAtual usuario) {
         if (usuario.visaoGlobal()) {
             return true;
         }
@@ -29,11 +29,11 @@ class AcessoAosChamados {
         return usuario.temAlgum(UsuarioAtual.PERFIS_DE_CLIENTE) && chamado.pertenceAo(usuario.id());
     }
 
-    boolean podeConduzir(Chamado chamado, UsuarioAtual usuario) {
+    public boolean podeConduzir(Chamado chamado, UsuarioAtual usuario) {
         return usuario.conduzQualquerFila() || naFilaDoUsuario(chamado, usuario);
     }
 
-    boolean podeAtender(Chamado chamado, UsuarioAtual usuario) {
+    public boolean podeAtender(Chamado chamado, UsuarioAtual usuario) {
         return usuario.atendeQualquerFila() || naFilaDoUsuario(chamado, usuario);
     }
 
@@ -41,14 +41,14 @@ class AcessoAosChamados {
         return chamado.getDepartamento() != null && usuario.atuaNoDepartamento(chamado.getDepartamento().name());
     }
 
-    Chamado visivel(String codigo, UsuarioAtual usuario) {
+    public Chamado visivel(String codigo, UsuarioAtual usuario) {
         return chamados.findByCodigo(codigo)
                 .filter(chamado -> !chamado.naLixeira())
                 .filter(chamado -> podeVer(chamado, usuario))
                 .orElseThrow(() -> new ChamadoNaoEncontradoException(codigo));
     }
 
-    Chamado paraConduzir(String codigo, UsuarioAtual usuario) {
+    public Chamado paraConduzir(String codigo, UsuarioAtual usuario) {
         Chamado chamado = visivel(codigo, usuario);
         if (!podeConduzir(chamado, usuario)) {
             throw ErroDeChamado.proibido("Seu perfil só acompanha este chamado.");
@@ -56,7 +56,7 @@ class AcessoAosChamados {
         return chamado;
     }
 
-    Chamado paraAtender(String codigo, UsuarioAtual usuario) {
+    public Chamado paraAtender(String codigo, UsuarioAtual usuario) {
         Chamado chamado = visivel(codigo, usuario);
         if (!podeAtender(chamado, usuario)) {
             throw ErroDeChamado.proibido("Só o departamento responsável pelo chamado assume e muda o status do atendimento.");
@@ -64,7 +64,7 @@ class AcessoAosChamados {
         return chamado;
     }
 
-    Chamado paraOSolicitante(String codigo, UsuarioAtual usuario) {
+    public Chamado paraOSolicitante(String codigo, UsuarioAtual usuario) {
         Chamado chamado = visivel(codigo, usuario);
         if (!usuario.temAlgum(UsuarioAtual.PERFIS_DE_CLIENTE)) {
             throw ErroDeChamado.proibido("Só o solicitante confirma, contesta ou reabre o chamado.");
@@ -72,13 +72,13 @@ class AcessoAosChamados {
         return chamado;
     }
 
-    Chamado naLixeira(String codigo) {
+    public Chamado naLixeira(String codigo) {
         return chamados.findByCodigo(codigo)
                 .filter(Chamado::naLixeira)
                 .orElseThrow(() -> new ChamadoNaoEncontradoException(codigo));
     }
 
-    List<Chamado> visiveis(UsuarioAtual usuario, String busca) {
+    public List<Chamado> visiveis(UsuarioAtual usuario, String busca) {
         String termo = busca == null || busca.isBlank() ? null : "%" + busca.trim().toLowerCase(Locale.ROOT) + "%";
         return chamados.buscarAtivos(termo).stream()
                 .filter(chamado -> podeVer(chamado, usuario))

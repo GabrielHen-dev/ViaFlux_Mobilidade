@@ -1,5 +1,11 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.atendimento.AtendimentoResponse;
+import br.com.viaflux.api.chamado.classificacao.DepartamentoResponse;
+import br.com.viaflux.api.chamado.operacao.EscalonamentoResponse;
+import br.com.viaflux.api.chamado.sla.SlaResponse;
+import br.com.viaflux.api.chamado.triagem.TriagemResponse;
 import java.time.OffsetDateTime;
 
 public record ChamadoResumoResponse(

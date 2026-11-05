@@ -4,7 +4,7 @@ import java.time.Instant;
 
 public interface Relogio {
 
-    double minutosEntre(Instant inicio, Instant fim);
+    public double minutosEntre(Instant inicio, Instant fim);
 
-    Instant somarMinutos(Instant inicio, double minutos);
+    public Instant somarMinutos(Instant inicio, double minutos);
 }

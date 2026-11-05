@@ -1,5 +1,12 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.abertura.DadosDeAbertura;
+import br.com.viaflux.api.chamado.classificacao.Contexto;
+import br.com.viaflux.api.chamado.classificacao.Motivo;
+import br.com.viaflux.api.chamado.sla.PoliticaDeSla;
+import br.com.viaflux.api.chamado.triagem.PoliticaDeTriagem;
+import br.com.viaflux.api.chamado.triagem.PrazosDeTriagemProperties;
 import br.com.viaflux.api.chamado.sla.RelogioCorrido;
 import br.com.viaflux.api.chamado.sla.RelogioDeHorasUteis;
 import br.com.viaflux.api.usuario.Organizacao;

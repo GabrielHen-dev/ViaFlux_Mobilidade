@@ -9,13 +9,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
-interface LiderancaRepository extends Repository<Usuario, UUID> {
+public interface LiderancaRepository extends Repository<Usuario, UUID> {
 
     @Query("select distinct usuario from Usuario usuario join usuario.perfis perfil "
             + "where usuario.ativo = true and perfil.codigo in :perfis order by usuario.nome")
-    List<Usuario> ativosComPerfil(@Param("perfis") Collection<String> perfis);
+    public List<Usuario> ativosComPerfil(@Param("perfis") Collection<String> perfis);
 
     @Query("select distinct usuario from Usuario usuario join usuario.perfis perfil join usuario.departamentos departamento "
             + "where usuario.ativo = true and perfil.codigo = 'DEPARTAMENTO' and departamento.codigo = :departamento order by usuario.nome")
-    List<Usuario> ativosDoDepartamento(@Param("departamento") String departamento);
+    public List<Usuario> ativosDoDepartamento(@Param("departamento") String departamento);
 }

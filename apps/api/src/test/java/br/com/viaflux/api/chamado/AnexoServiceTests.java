@@ -1,5 +1,12 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.anexo.AnexoService;
+import br.com.viaflux.api.chamado.anexo.AnexosProperties;
+import br.com.viaflux.api.chamado.anexo.ArmazenamentoDeArquivos;
+import br.com.viaflux.api.chamado.anexo.ChamadoAnexo;
+import br.com.viaflux.api.chamado.anexo.ChamadoAnexoRepository;
+import br.com.viaflux.api.chamado.anexo.VisibilidadeDoConteudo;
 import br.com.viaflux.api.usuario.UsuarioAtual;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -27,16 +27,16 @@ public record DadosDeLocalizacao(
         return new DadosDeLocalizacao(endereco, null, null, "", "", "", "", "", "", "");
     }
 
-    boolean temCoordenadas() {
+    public boolean temCoordenadas() {
         return latitude != null && longitude != null;
     }
 
-    boolean vazia() {
+    public boolean vazia() {
         return texto(endereco).isEmpty() && texto(logradouro).isEmpty() && texto(cidade).isEmpty()
                 && texto(cep).isEmpty() && !temCoordenadas();
     }
 
-    static String texto(String valor) {
+    public static String texto(String valor) {
         return valor == null ? "" : valor.trim();
     }
 }

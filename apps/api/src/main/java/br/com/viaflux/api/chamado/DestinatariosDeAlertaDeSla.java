@@ -1,5 +1,7 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.operacao.EscalonamentoService;
 import br.com.viaflux.api.usuario.Usuario;
 import org.springframework.stereotype.Component;
 
@@ -11,28 +13,28 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 @Component
-class DestinatariosDeAlertaDeSla {
+public class DestinatariosDeAlertaDeSla {
 
-    record Destinatario(UUID id, String nome) {
+    public record Destinatario(UUID id, String nome) {
 
         private static Destinatario de(Usuario usuario) {
             return new Destinatario(usuario.getId(), usuario.getNome());
         }
     }
 
-    static final String PERFIL_LIDER_DO_DEPARTAMENTO = "LIDER_DEPARTAMENTO";
-    static final String PERFIL_EQUIPE_DO_DEPARTAMENTO = "DEPARTAMENTO";
+    public static final String PERFIL_LIDER_DO_DEPARTAMENTO = "LIDER_DEPARTAMENTO";
+    public static final String PERFIL_EQUIPE_DO_DEPARTAMENTO = "DEPARTAMENTO";
     static final Set<String> PERFIS_DA_CENTRAL_SEM_PLANTONISTA = Set.of("ATENDENTE");
 
     private final LiderancaRepository lideranca;
     private final EquipeDoDepartamentoRepository equipes;
 
-    DestinatariosDeAlertaDeSla(LiderancaRepository lideranca, EquipeDoDepartamentoRepository equipes) {
+    public DestinatariosDeAlertaDeSla(LiderancaRepository lideranca, EquipeDoDepartamentoRepository equipes) {
         this.lideranca = lideranca;
         this.equipes = equipes;
     }
 
-    List<Destinatario> doGatilho(Chamado chamado, LimiarDeSla limiar) {
+    public List<Destinatario> doGatilho(Chamado chamado, LimiarDeSla limiar) {
         return switch (limiar) {
             case CINQUENTA_POR_CENTO -> responsavelAtual(chamado);
             case OITENTA_POR_CENTO -> semRepetir(lideresDoDepartamento(chamado), lideresOperacionais());

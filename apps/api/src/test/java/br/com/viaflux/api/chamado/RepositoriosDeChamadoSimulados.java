@@ -1,5 +1,11 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.acesso.ConcessaoAcessoChamadoRepository;
+import br.com.viaflux.api.chamado.anexo.ChamadoAnexoRepository;
+import br.com.viaflux.api.chamado.classificacao.ContextoRepository;
+import br.com.viaflux.api.chamado.classificacao.MotivoRepository;
+import br.com.viaflux.api.chamado.servico.ServicoTerceiroRepository;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 

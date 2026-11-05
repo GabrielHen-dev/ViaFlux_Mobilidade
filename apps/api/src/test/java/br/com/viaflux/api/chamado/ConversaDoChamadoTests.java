@@ -1,5 +1,12 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.anexo.AnexoResponse;
+import br.com.viaflux.api.chamado.anexo.AnexoService;
+import br.com.viaflux.api.chamado.anexo.ChamadoAnexo;
+import br.com.viaflux.api.chamado.anexo.VisibilidadeDoConteudo;
+import br.com.viaflux.api.chamado.atendimento.AtendimentoService;
+import br.com.viaflux.api.chamado.atendimento.AtualizacaoRequest;
 import br.com.viaflux.api.usuario.Usuario;
 import br.com.viaflux.api.usuario.UsuarioAtual;
 import org.assertj.core.groups.Tuple;

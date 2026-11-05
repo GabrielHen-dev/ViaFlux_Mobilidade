@@ -1,5 +1,7 @@
 package br.com.viaflux.api.chamado;
 
+
+import br.com.viaflux.api.chamado.atendimento.AtendimentoService;
 import br.com.viaflux.api.shared.config.SecurityConfig;
 import br.com.viaflux.api.shared.error.ApiExceptionHandler;
 import br.com.viaflux.api.usuario.IdentificacaoDoUsuario;

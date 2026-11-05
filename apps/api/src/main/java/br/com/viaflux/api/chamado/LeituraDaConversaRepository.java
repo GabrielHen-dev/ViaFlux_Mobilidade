@@ -9,9 +9,9 @@ import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
-interface LeituraDaConversaRepository extends JpaRepository<LeituraDaConversa, LeituraDaConversa.Chave> {
+public interface LeituraDaConversaRepository extends JpaRepository<LeituraDaConversa, LeituraDaConversa.Chave> {
 
-    Optional<LeituraDaConversa> findByChamadoIdAndUsuarioId(UUID chamadoId, UUID usuarioId);
+    public Optional<LeituraDaConversa> findByChamadoIdAndUsuarioId(UUID chamadoId, UUID usuarioId);
 
     @Modifying
     @Query(value = """
@@ -20,5 +20,5 @@ interface LeituraDaConversaRepository extends JpaRepository<LeituraDaConversa, L
             ON CONFLICT (chamado_id, usuario_id)
             DO UPDATE SET lido_ate = GREATEST(leitura.lido_ate, EXCLUDED.lido_ate)
             """, nativeQuery = true)
-    void avancar(@Param("chamadoId") UUID chamadoId, @Param("usuarioId") UUID usuarioId, @Param("lidoAte") OffsetDateTime lidoAte);
+    public void avancar(@Param("chamadoId") UUID chamadoId, @Param("usuarioId") UUID usuarioId, @Param("lidoAte") OffsetDateTime lidoAte);
 }
