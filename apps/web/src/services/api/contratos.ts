@@ -59,6 +59,11 @@ export interface DadosTransferencia {
   motivo: string;
 }
 
+export interface DadosTransferenciaDeResponsavel {
+  usuarioId: string;
+  observacao?: string;
+}
+
 export interface DadosAtualizacao {
   texto: string;
   visivelCliente: boolean;

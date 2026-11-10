@@ -35,7 +35,7 @@ class HistoricoDoClienteTests {
         fechado.concluirTriagem(TipoChamado.MANUTENCAO, 3, 3, TipoChamado.MANUTENCAO, atendente, QUARTA_AS_DEZ.plusMinutes(9));
         fechado.alterarStatus(StatusChamado.RESOLVIDO, null, QUARTA_AS_DEZ.plusMinutes(21));
         fechado.alterarStatus(StatusChamado.FECHADO, null, QUARTA_AS_DEZ.plusMinutes(30));
-        given(ambiente.chamados.buscarAtivos(null)).willReturn(List.of(fechado, aberto, resolvido, naFila, aguardando));
+        given(ambiente.chamados.buscar(null)).willReturn(List.of(fechado, aberto, resolvido, naFila, aguardando));
 
         ConsultaDeChamadosService consulta = new ConsultaDeChamadosService(ambiente.acesso, ambiente.montagem);
         FiltrosDeChamados filtros = FiltrosDeChamados.de(null, null, null, null, null, null, "ativos_recentes");

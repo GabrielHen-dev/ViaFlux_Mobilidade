@@ -59,7 +59,12 @@ class ConsultaDeChamadosService {
 
     private static boolean filaAtiva(String status) {
         return !StatusChamado.RESOLVIDO.getRotulo().equals(status)
-                && !StatusChamado.FECHADO.getRotulo().equals(status);
+                && !StatusChamado.FECHADO.getRotulo().equals(status)
+                && !StatusChamado.CANCELADO.getRotulo().equals(status);
+    }
+
+    private static boolean aguardaLideranca(String status) {
+        return filaAtiva(status) || StatusChamado.CANCELADO.getRotulo().equals(status);
     }
 
     @Transactional(readOnly = true)
@@ -68,7 +73,9 @@ class ConsultaDeChamadosService {
         List<ChamadoResumoResponse> ativosTriados = chamados.stream()
                 .filter(chamado -> chamado.sla() != null && filaAtiva(chamado.status()))
                 .toList();
-        List<ChamadoResumoResponse> emTriagem = chamados.stream().filter(chamado -> chamado.prioridade() == null).toList();
+        List<ChamadoResumoResponse> emTriagem = chamados.stream()
+                .filter(chamado -> chamado.prioridade() == null && filaAtiva(chamado.status()))
+                .toList();
         return new ResumoDeChamadosResponse(
                 chamados.size(),
                 contarPorStatus(chamados),
@@ -84,7 +91,7 @@ class ConsultaDeChamadosService {
                         .map(ChamadoResumoResponse::id)
                         .toList(),
                 resumoDaTriagem(emTriagem, chamados.stream().filter(chamado -> chamado.triagem().revisaoPendente()).count()),
-                chamados.stream().filter(chamado -> chamado.escalonamento() != null && filaAtiva(chamado.status())).count()
+                chamados.stream().filter(chamado -> chamado.escalonamento() != null && aguardaLideranca(chamado.status())).count()
         );
     }
 

@@ -109,7 +109,8 @@ class MontagemDeChamado {
                 chamado.getEpisodio(),
                 Datas.local(janelaDeEncerramento.confirmacaoAte(chamado)),
                 Datas.local(janelaDeEncerramento.reaberturaAte(chamado)),
-                visaoDeCliente ? null : resumo.escalonamento()
+                visaoDeCliente ? null : resumo.escalonamento(),
+                CancelamentoResponse.de(chamado)
         );
     }
 }

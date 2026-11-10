@@ -5,7 +5,7 @@ import { useApi } from "@/store/AuthContext";
 import type { Chamado, TipoChamado } from "@/types/chamado";
 import type { FiltrosChamados, FiltrosMetricas } from "@/services/api/contratos";
 import {
-  type ClienteApi, consultarChamado, consultarConversa, listarChamados, listarContextos, listarDepartamentos, listarLixeira, listarMotivos, resumirChamados,
+  type ClienteApi, consultarChamado, consultarConversa, listarChamados, listarContextos, listarDepartamentos, listarMotivos, listarPessoasDoSetor, resumirChamados,
 } from "@/services/api/chamados";
 import { consultarMetricas, listarFornecedores, listarNotificacoes, listarServicosDoFornecedor } from "@/services/api/operacao";
 
@@ -20,7 +20,7 @@ export const chaves = {
   resumo: (filtros: object) => ["chamados", "resumo", filtros] as const,
   detalhe: (codigo: string) => ["chamados", "detalhe", codigo] as const,
   conversa: (codigo: string) => ["chamados", "conversa", codigo] as const,
-  lixeira: ["chamados", "lixeira"] as const,
+  pessoasDoSetor: (codigo: string) => ["chamados", "pessoas-do-setor", codigo] as const,
   motivos: ["classificacao", "motivos"] as const,
   contextos: (tipo: TipoChamado | null) => ["classificacao", "contextos", tipo] as const,
   departamentos: ["departamentos"] as const,
@@ -103,9 +103,9 @@ export function useFornecedores() {
   return useQuery({ queryKey: chaves.fornecedores, queryFn: () => listarFornecedores(api), staleTime: 5 * 60_000 });
 }
 
-export function useLixeira() {
+export function usePessoasDoSetor(codigo: string, habilitada = true) {
   const api = useApi();
-  return useQuery({ queryKey: chaves.lixeira, queryFn: () => listarLixeira(api) });
+  return useQuery({ queryKey: chaves.pessoasDoSetor(codigo), queryFn: () => listarPessoasDoSetor(api, codigo), enabled: habilitada });
 }
 
 export function useServicosDoFornecedor() {

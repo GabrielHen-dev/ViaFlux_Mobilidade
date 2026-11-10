@@ -20,7 +20,6 @@ Todas ficam no grupo `src/app/(central)/` e passam pela verificação de sessão
 | `/portal`, `/portal/chamados/[id]` | Portal do cliente, com as etapas do chamado | CLIENTE, GESTOR_FROTA |
 | `/fornecedor` | Serviços do fornecedor | FORNECEDOR |
 | `/metricas` | Indicadores e exportação CSV | ADMIN, LIDER_OPERACIONAL |
-| `/lixeira` | Lixeira | ADMIN, ATENDENTE |
 | `/usuarios`, `/dev-tools` | Gestão de usuários e dados de exemplo | ADMIN |
 
 ## Organização
@@ -29,7 +28,7 @@ Todas ficam no grupo `src/app/(central)/` e passam pela verificação de sessão
 src/
 ├── app/(central)/          Rotas (páginas finas que só montam o componente)
 ├── components/
-│   ├── chamados/           Dashboard, detalhes, timeline, anexos, localização, lixeira
+│   ├── chamados/           Dashboard, detalhes, timeline, anexos, localização, cancelamento
 │   │   └── painel/         Filtros, tabela e alertas do Dashboard
 │   ├── triagem/            Fila, prazo da triagem, conclusão, reclassificação, override e campos comuns
 │   ├── forms/              Triagem (casca), encaminhamento, serviço terceirizado, localização
@@ -58,7 +57,7 @@ As telas dependem dos hooks de `consultas.ts` e das funções de `services/api/`
   - O Dashboard troca o SLA pelo prazo da triagem.
   - Encaminhamento, status e fornecedor ficam bloqueados.
   - O cliente vê a etapa "Em análise" com a previsão.
-- **Departamento:** vê só os chamados triados da própria fila. Não tem lixeira nem exclusão.
+- **Departamento:** vê só os chamados triados da própria fila e pode cancelar e reabrir os chamados dela.
 
 ## Perfis na interface
 
@@ -66,7 +65,8 @@ Os grupos de perfis ficam em `utils/perfis.ts` e espelham as regras do backend:
 
 - `PERFIS_QUE_ATENDEM` (ADMIN e DEPARTAMENTO): botão **Assumir chamado** (ou "Assumir no lugar de…") e o bloco de status no encaminhamento. O responsável aparece nos detalhes e na tabela do painel.
 - `PERFIS_QUE_CONDUZEM` (ADMIN, ATENDENTE e DEPARTAMENTO): transferência, fornecedor, mensagens, anexos e localização. Para os outros perfis, a timeline, os anexos e a localização ficam **somente leitura**.
-- `PERFIS_DA_LIXEIRA` (ADMIN e ATENDENTE): exclusão e a tela de lixeira.
+- **Cancelamento** (quem conduz): o botão **Cancelar chamado** abre uma confirmação que pede o motivo. O chamado fica com o status Cancelado, continua no painel (aba Cancelados) e no histórico, e pode ser reaberto pela equipe ou pelo próprio cliente no portal. Também dá para escalonar à liderança para revisar o cancelamento. Não existe mais exclusão nem lixeira.
+- **Transferência para outra pessoa do setor** (quem atende): na tela de Transferência, escolha alguém ativo do departamento do chamado. A pessoa passa a ser a responsável e recebe uma notificação.
 - O Líder vê o painel, os detalhes e as métricas, sem nenhuma ação.
 
 ## Testes

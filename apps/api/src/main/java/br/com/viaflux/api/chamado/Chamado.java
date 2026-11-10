@@ -189,8 +189,17 @@ class Chamado {
     @Column(name = "resolvido_em")
     private OffsetDateTime resolvidoEm;
 
-    @Column(name = "excluido_em")
-    private OffsetDateTime excluidoEm;
+    @Column(name = "cancelado_em")
+    private OffsetDateTime canceladoEm;
+
+    @Column(name = "cancelado_por_id")
+    private UUID canceladoPorId;
+
+    @Column(name = "cancelado_por_nome", length = 150)
+    private String canceladoPorNome;
+
+    @Column(name = "cancelamento_motivo", columnDefinition = "text")
+    private String cancelamentoMotivo;
 
     @Column(name = "escalonado_em")
     private OffsetDateTime escalonadoEm;
@@ -250,6 +259,7 @@ class Chamado {
     }
 
     void exigirTriagemConcluida() {
+        exigirNaoCancelado();
         if (!triado()) {
             throw ErroDeChamado.conflito("Conclua a triagem do chamado antes desta ação.");
         }
@@ -260,10 +270,21 @@ class Chamado {
     }
 
     boolean aguardaAnalise() {
-        return !triado() || revisaoPendente();
+        return !cancelado() && (!triado() || revisaoPendente());
+    }
+
+    boolean cancelado() {
+        return status == StatusChamado.CANCELADO;
+    }
+
+    private void exigirNaoCancelado() {
+        if (cancelado()) {
+            throw ErroDeChamado.conflito("Este chamado está cancelado. Reabra o chamado antes desta ação.");
+        }
     }
 
     void iniciarTriagem(Autor responsavel, OffsetDateTime agora) {
+        exigirNaoCancelado();
         if (!aguardaAnalise()) {
             throw ErroDeChamado.conflito("A classificação deste chamado já foi analisada.");
         }
@@ -279,6 +300,7 @@ class Chamado {
     }
 
     void concluirTriagem(TipoChamado tipo, int severidade, int urgencia, TipoChamado destino, Autor autor, OffsetDateTime agora) {
+        exigirNaoCancelado();
         if (triado()) {
             throw ErroDeChamado.conflito("A triagem deste chamado já foi concluída.");
         }
@@ -300,6 +322,7 @@ class Chamado {
     }
 
     void confirmarClassificacao(Autor revisor, OffsetDateTime agora) {
+        exigirNaoCancelado();
         if (!revisaoPendente()) {
             throw ErroDeChamado.conflito("A classificação deste chamado não está pendente de revisão.");
         }
@@ -343,6 +366,41 @@ class Chamado {
         classificarAutomaticamente(tipo, severidade, urgencia, destino, agora);
         this.classificacaoEstado = ESTADO_REVISAO_PENDENTE;
         this.triadoPorNome = "Classificação automática por texto";
+    }
+
+    void cancelar(Autor autor, String motivo, OffsetDateTime agora) {
+        if (cancelado()) {
+            throw ErroDeChamado.conflito("Este chamado já está cancelado.");
+        }
+        if (status == StatusChamado.RESOLVIDO || status == StatusChamado.FECHADO) {
+            throw ErroDeChamado.conflito("Chamados resolvidos ou fechados não podem ser cancelados.");
+        }
+        encerrarPausa(agora);
+        this.status = StatusChamado.CANCELADO;
+        this.motivoAguardando = null;
+        this.canceladoEm = agora;
+        this.canceladoPorId = autor.id();
+        this.canceladoPorNome = autor.nome();
+        this.cancelamentoMotivo = motivo.trim();
+        tocar(agora);
+    }
+
+    StatusChamado reabrirCancelado(OffsetDateTime agora) {
+        if (!cancelado()) {
+            throw ErroDeChamado.conflito("Só é possível reabrir um chamado cancelado.");
+        }
+        PausaDoChamado periodoCancelado = new PausaDoChamado(canceladoEm);
+        periodoCancelado.encerrar(agora);
+        pausas.add(periodoCancelado);
+        this.status = !triado() ? StatusChamado.ABERTO
+                : atendimentoResponsavelNome == null ? StatusChamado.NA_FILA : StatusChamado.EM_ATENDIMENTO;
+        this.canceladoEm = null;
+        this.canceladoPorId = null;
+        this.canceladoPorNome = null;
+        this.cancelamentoMotivo = null;
+        limparEscalonamento();
+        tocar(agora);
+        return status;
     }
 
     void escalonar(Autor autor, String motivo, OffsetDateTime agora) {
@@ -441,6 +499,7 @@ class Chamado {
     }
 
     Prioridade removerOverride(OffsetDateTime agora) {
+        exigirNaoCancelado();
         if (overridePrioridade == null) {
             throw ErroDeChamado.conflito("O chamado não tem override de prioridade.");
         }
@@ -458,6 +517,9 @@ class Chamado {
         exigirTriagemConcluida();
         if (novo.aguardaTriagem()) {
             throw ErroDeChamado.campoInvalido("status", "Abertura e triagem não podem ser definidas manualmente.");
+        }
+        if (novo == StatusChamado.CANCELADO) {
+            throw ErroDeChamado.campoInvalido("status", "Use a ação de cancelar o chamado, que pede o motivo.");
         }
         if (novo == StatusChamado.AGUARDANDO && motivo == null) {
             throw ErroDeChamado.campoInvalido("motivoAguardando", "Informe quem está sendo aguardado: cliente, fornecedor ou outro departamento.");
@@ -516,6 +578,23 @@ class Chamado {
         return origem;
     }
 
+    Autor transferirResponsavel(Autor novo, OffsetDateTime agora) {
+        exigirTriagemConcluida();
+        if (status == StatusChamado.RESOLVIDO || status == StatusChamado.FECHADO) {
+            throw ErroDeChamado.conflito("Chamados resolvidos ou fechados não podem mudar de responsável.");
+        }
+        if (novo.id().equals(atendimentoResponsavelId)) {
+            throw ErroDeChamado.conflito(novo.nome() + " já é a pessoa responsável por este chamado.");
+        }
+        Autor anterior = getAtendimentoResponsavel();
+        if (status == StatusChamado.NA_FILA) {
+            this.status = StatusChamado.EM_ATENDIMENTO;
+        }
+        definirResponsavel(novo, agora);
+        tocar(agora);
+        return anterior;
+    }
+
     void assumirAtendimento(Autor responsavel, OffsetDateTime agora) {
         exigirTriagemConcluida();
         if (status == StatusChamado.RESOLVIDO || status == StatusChamado.FECHADO) {
@@ -558,12 +637,18 @@ class Chamado {
     }
 
     void exigirConversaAberta() {
+        if (cancelado()) {
+            throw ErroDeChamado.conflito("Este chamado está cancelado. A conversa volta a funcionar quando ele for reaberto.");
+        }
         if (status == StatusChamado.FECHADO) {
             throw ErroDeChamado.conflito("Este chamado está fechado. A conversa volta a funcionar na reabertura.");
         }
     }
 
     void exigirAnexosAbertos() {
+        if (cancelado()) {
+            throw ErroDeChamado.conflito("Este chamado está cancelado e não recebe novos arquivos.");
+        }
         if (status == StatusChamado.FECHADO) {
             throw ErroDeChamado.conflito("Este chamado está fechado e não recebe novos arquivos.");
         }
@@ -580,16 +665,9 @@ class Chamado {
     }
 
     void atualizarLocalizacao(DadosDeLocalizacao dados, OffsetDateTime agora) {
+        exigirNaoCancelado();
         this.localizacao = Localizacao.de(dados);
         tocar(agora);
-    }
-
-    void moverParaLixeira(OffsetDateTime agora) {
-        this.excluidoEm = agora;
-    }
-
-    void restaurar() {
-        this.excluidoEm = null;
     }
 
     void tocar(OffsetDateTime agora) {
@@ -620,10 +698,6 @@ class Chamado {
 
     boolean pertenceAo(UUID usuarioId) {
         return solicitante != null && solicitante.getId().equals(usuarioId);
-    }
-
-    boolean naLixeira() {
-        return excluidoEm != null;
     }
 
     UUID getId() {
@@ -762,8 +836,16 @@ class Chamado {
         return resolvidoEm;
     }
 
-    OffsetDateTime getExcluidoEm() {
-        return excluidoEm;
+    OffsetDateTime getCanceladoEm() {
+        return canceladoEm;
+    }
+
+    Autor getCanceladoPor() {
+        return Autor.de(canceladoPorId, canceladoPorNome);
+    }
+
+    String getCancelamentoMotivo() {
+        return cancelamentoMotivo;
     }
 
     OffsetDateTime getEscalonadoEm() {

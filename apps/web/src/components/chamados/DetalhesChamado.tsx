@@ -3,12 +3,11 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ClipboardCheck, ClipboardList, Hand, ScanSearch, Trash, UserCheck } from "lucide-react";
+import { ChevronLeft, ClipboardCheck, ClipboardList, Hand, ScanSearch, UserCheck } from "lucide-react";
 import type { Chamado } from "@/types/chamado";
-import { assumirAtendimento, moverParaLixeira } from "@/services/api/chamados";
-import { useApi, useUsuarioAutenticado } from "@/store/AuthContext";
-import { invalidarListas, useAcaoNoChamado } from "@/hooks/consultas";
+import { assumirAtendimento } from "@/services/api/chamados";
+import { useUsuarioAutenticado } from "@/store/AuthContext";
+import { useAcaoNoChamado } from "@/hooks/consultas";
 import ComChamado from "@/components/chamados/ComChamado";
 import AlteracaoDeStatus from "@/components/chamados/AlteracaoDeStatus";
 import TimelineChamado from "@/components/chamados/TimelineChamado";
@@ -20,11 +19,12 @@ import { PrioridadeIndicador, StatusBadge } from "@/components/ui/StatusBadge";
 import { SlaDoChamado } from "@/components/ui/SlaIndicador";
 import { PrazoDaTriagem } from "@/components/triagem/PrazoDaTriagem";
 import { BotaoDeEscalonamento, SeloDeEscalonamento } from "@/components/chamados/EscalonamentoDoChamado";
+import { AvisoDeCancelamento, BotaoDeCancelamento } from "@/components/chamados/CancelamentoDoChamado";
 import { AvisoDeErro } from "@/components/feedback/EstadoDaConsulta";
 import { NOME_TIPO, ROTULO_PESO } from "@/utils/prioridade";
 import { formatarDataHora } from "@/utils/date";
 import {
-  PERFIS_DA_CENTRAL, PERFIS_DA_LIXEIRA, PERFIS_DE_CLIENTE, PERFIS_DE_TRIAGEM, PERFIS_QUE_ATENDEM, PERFIS_QUE_CONDUZEM, usuarioTemPerfil,
+  PERFIS_DA_CENTRAL, PERFIS_DE_CLIENTE, PERFIS_DE_TRIAGEM, PERFIS_QUE_ATENDEM, PERFIS_QUE_CONDUZEM, usuarioTemPerfil,
 } from "@/utils/perfis";
 import PerfilRequerido from "@/components/auth/PerfilRequerido";
 
@@ -43,24 +43,18 @@ function Informacao({ rotulo, valor }: { rotulo: string; valor: string }) {
 
 function DetalhesConteudo({ chamado }: { chamado: Chamado }) {
   const usuario = useUsuarioAutenticado();
-  const api = useApi();
-  const router = useRouter();
-  const clienteDeConsultas = useQueryClient();
   const fazTriagem = usuarioTemPerfil(usuario, PERFIS_DE_TRIAGEM);
   const conduz = usuarioTemPerfil(usuario, PERFIS_QUE_CONDUZEM);
   const atende = usuarioTemPerfil(usuario, PERFIS_QUE_ATENDEM);
-  const podeExcluir = usuarioTemPerfil(usuario, PERFIS_DA_LIXEIRA);
   const { classificacao, triagem, atendimento } = chamado;
   const triado = classificacao !== null;
+  const cancelado = chamado.status === "Cancelado";
+  const editavel = conduz && !cancelado;
   const responsavel = atendimento?.responsavel ?? null;
   const ehMeu = responsavel?.id === usuario.id;
   const podeAssumir = atende && triado && STATUS_QUE_PODEM_SER_ASSUMIDOS.includes(chamado.status) && !(ehMeu && chamado.status === "Em atendimento");
   const assumeNoLugar = chamado.status === "Em atendimento" && responsavel !== null && !ehMeu;
   const assumir = useAcaoNoChamado<void>(chamado.id, (cliente) => assumirAtendimento(cliente, chamado.id));
-  const exclusao = useMutation({
-    mutationFn: () => moverParaLixeira(api, chamado.id),
-    onSuccess: () => { void invalidarListas(clienteDeConsultas); router.push("/"); },
-  });
 
   return (
     <main id="conteudo" className="min-w-0 p-4 md:p-8">
@@ -87,30 +81,30 @@ function DetalhesConteudo({ chamado }: { chamado: Chamado }) {
                 <Hand size={14} aria-hidden /> {assumir.isPending ? "Assumindo…" : assumeNoLugar ? `Assumir no lugar de ${responsavel?.nome}` : "Assumir chamado"}
               </button>
             )}
-            {atende && <BotaoDeEscalonamento chamado={chamado} />}
-            {fazTriagem && !triado && (
+            {atende && !cancelado && <BotaoDeEscalonamento chamado={chamado} />}
+            {fazTriagem && !triado && !cancelado && (
               <Link href={`/chamados/${chamado.id}/triagem`} className="alvo-toque inline-flex items-center gap-1.5 rounded-xl bg-brand-green px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90">
                 <ClipboardList size={14} aria-hidden /> Classificar
               </Link>
             )}
-            {fazTriagem && triado && (
+            {fazTriagem && triado && !cancelado && (
               <Link href={`/chamados/${chamado.id}/triagem`} className="alvo-toque rounded-xl border border-[#E2E8F0] px-4 py-2 text-sm font-semibold text-[#475569] transition-all hover:bg-white">Classificação</Link>
             )}
-            {triado && conduz && (
+            {triado && editavel && (
               <Link href={`/chamados/${chamado.id}/encaminhamento`} className="alvo-toque rounded-xl bg-brand-blue px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90">
                 {atende ? "Transferir / status" : "Transferir"}
               </Link>
             )}
-            {podeExcluir && (
-              <button type="button" disabled={exclusao.isPending} onClick={() => exclusao.mutate()} title="Mover para lixeira" className="alvo-toque inline-flex items-center gap-1.5 rounded-xl border border-[#FECACA] px-3 py-2 text-sm font-semibold text-[#EF4444] transition-all hover:bg-[#FEF2F2]">
-                <Trash size={14} aria-hidden /> Excluir
-              </button>
-            )}
+            {conduz && <BotaoDeCancelamento chamado={chamado} />}
           </div>
         )}
       </div>
-      {(assumir.isError || exclusao.isError) && <div className="mb-4"><AvisoDeErro erro={assumir.error ?? exclusao.error} /></div>}
-      {fazTriagem && triagem.revisaoPendente && (
+      {assumir.isError && <div className="mb-4"><AvisoDeErro erro={assumir.error} /></div>}
+      <AvisoDeCancelamento chamado={chamado} podeReabrir={conduz}>
+        {atende && <BotaoDeEscalonamento chamado={chamado} />}
+        <SeloDeEscalonamento chamado={chamado} detalhado />
+      </AvisoDeCancelamento>
+      {fazTriagem && triagem.revisaoPendente && !cancelado && (
         <div role="status" className="mb-5 flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:flex-row sm:items-center">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-amber-600"><ScanSearch size={18} aria-hidden /></span>
           <div className="min-w-0 flex-1 text-sm text-amber-900">
@@ -149,12 +143,12 @@ function DetalhesConteudo({ chamado }: { chamado: Chamado }) {
             )}
           </section>
           <ChatDoChamado chamado={chamado} somenteLeitura={!conduz} />
-          {conduz && triado && <ServicoTerceiroForm chamado={chamado} />}
+          {editavel && triado && <ServicoTerceiroForm chamado={chamado} />}
           <TimelineChamado chamado={chamado} />
         </div>
 
         <div className="min-w-0 space-y-5">
-          {atende && triado && <AlteracaoDeStatus key={`${chamado.id}:${chamado.status}:${chamado.motivoAguardando ?? ""}`} chamado={chamado} />}
+          {atende && triado && !cancelado && <AlteracaoDeStatus key={`${chamado.id}:${chamado.status}:${chamado.motivoAguardando ?? ""}`} chamado={chamado} />}
           <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5">
             <h3 className="mb-4 font-display text-xs font-semibold uppercase tracking-wide text-brand-navy">Situação</h3>
             <dl className="space-y-3 text-sm">
@@ -214,14 +208,14 @@ function DetalhesConteudo({ chamado }: { chamado: Chamado }) {
               )}
             </dl>
           </section>
-          {chamado.sla && chamado.status !== "Fechado" && (
+          {chamado.sla && chamado.status !== "Fechado" && !cancelado && (
             <section className="space-y-4 rounded-2xl border border-[#E2E8F0] bg-white p-5" aria-label="Prazos do chamado">
               <h3 className="font-display text-xs font-semibold uppercase tracking-wide text-brand-navy">Prazos (SLA)</h3>
               <SlaDoChamado sla={chamado.sla} abertura={chamado.abertura} />
               <SeloDeEscalonamento chamado={chamado} detalhado />
             </section>
           )}
-          <LocalizacaoDoChamado chamado={chamado} somenteLeitura={!conduz} />
+          <LocalizacaoDoChamado chamado={chamado} somenteLeitura={!editavel} />
           <AnexosDoChamado chamado={chamado} somenteLeitura={!conduz} />
         </div>
       </div>

@@ -5,7 +5,6 @@
   .viaflux-sidebar .sidebar-menu-label { display: none; }
   .viaflux-sidebar .sidebar-user { padding-block: 0.5rem; }
   .viaflux-sidebar .sidebar-links { display: flex; flex-wrap: wrap; gap: 0.25rem; }
-  .viaflux-sidebar .sidebar-trash { border-top: 0; padding-top: 0; }
   .viaflux-shell { flex-direction: column; }
   .viaflux-content { margin-left: 0; }
 }

@@ -1,4 +1,4 @@
-export const STATUS_CHAMADO = ["Aberto", "Em triagem", "Na fila", "Em atendimento", "Aguardando", "Resolvido", "Fechado"] as const;
+export const STATUS_CHAMADO = ["Aberto", "Em triagem", "Na fila", "Em atendimento", "Aguardando", "Resolvido", "Fechado", "Cancelado"] as const;
 export type Status = (typeof STATUS_CHAMADO)[number];
 
 export const STATUS_AGUARDANDO_TRIAGEM: readonly Status[] = ["Aberto", "Em triagem"];
@@ -201,6 +201,12 @@ export interface Escalonamento {
   observacao: string | null;
 }
 
+export interface Cancelamento {
+  em: string;
+  por: Autor | null;
+  motivo: string;
+}
+
 export interface Atendimento {
   responsavel: Autor;
   assumidoEm: string;
@@ -247,6 +253,7 @@ export interface Chamado extends ChamadoResumo {
   timeline: EventoTimeline[];
   anexos: Anexo[];
   servico: ServicoTerceiro | null;
+  cancelamento?: Cancelamento | null;
 }
 
 export interface PaginaChamados {

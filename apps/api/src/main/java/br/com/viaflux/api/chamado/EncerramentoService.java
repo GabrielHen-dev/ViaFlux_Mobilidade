@@ -75,7 +75,7 @@ class EncerramentoService {
     @Transactional
     void processarPrazosDeConfirmacao() {
         OffsetDateTime agora = agora();
-        for (Chamado chamado : chamados.findByStatusAndExcluidoEmIsNull(StatusChamado.RESOLVIDO)) {
+        for (Chamado chamado : chamados.findByStatus(StatusChamado.RESOLVIDO)) {
             Instant limite = janela.confirmacaoAte(chamado);
             Instant lembrete = janela.lembreteEm(chamado);
             if (limite != null && !agora.toInstant().isBefore(limite)) {

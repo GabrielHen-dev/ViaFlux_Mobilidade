@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/chamados/{codigo}/escalonamento")
-@Tag(name = "Escalonamento", description = "Acionamento da liderança para chamados com SLA vencido")
+@Tag(name = "Escalonamento", description = "Acionamento da liderança para chamados com SLA vencido ou cancelados")
 class EscalonamentoController {
 
     private final IdentificacaoDoUsuario identificacao;
@@ -29,7 +29,7 @@ class EscalonamentoController {
     @PostMapping
     @Operation(
             summary = "Escalonar chamado à liderança",
-            description = "Disponível quando a 1ª resposta ou a resolução está com o prazo vencido. Notifica os líderes operacionais "
+            description = "Disponível quando a 1ª resposta ou a resolução está com o prazo vencido, ou para pedir à liderança a revisão de um chamado cancelado. Notifica os líderes operacionais "
                     + "ativos (ou os administradores, se não houver líder) e registra o escalonamento no histórico interno. Cada "
                     + "episódio do chamado é escalonado uma única vez; reabrir o chamado libera um novo escalonamento. Perfis: quem "
                     + "atende o chamado (ADMIN, ATENDENTE e o DEPARTAMENTO responsável).",

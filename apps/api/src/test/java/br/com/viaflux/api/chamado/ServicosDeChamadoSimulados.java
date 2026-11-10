@@ -24,7 +24,12 @@ public class ServicosDeChamadoSimulados {
     }
 
     @Bean
-    LixeiraService lixeiraService() {
-        return mock(LixeiraService.class);
+    ResponsavelPeloAtendimentoService responsavelPeloAtendimentoService() {
+        return mock(ResponsavelPeloAtendimentoService.class);
+    }
+
+    @Bean
+    CancelamentoService cancelamentoService() {
+        return mock(CancelamentoService.class);
     }
 }

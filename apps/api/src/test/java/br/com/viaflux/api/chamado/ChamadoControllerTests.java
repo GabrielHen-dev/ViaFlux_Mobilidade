@@ -41,7 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest({ChamadoController.class, TriagemController.class})
+@WebMvcTest({ChamadoController.class, TriagemController.class, CancelamentoController.class})
 @Import({SecurityConfig.class, ApiExceptionHandler.class})
 class ChamadoControllerTests {
 
@@ -74,7 +74,10 @@ class ChamadoControllerTests {
     private AtendimentoService atendimento;
 
     @MockitoBean
-    private LixeiraService lixeira;
+    private ResponsavelPeloAtendimentoService responsavel;
+
+    @MockitoBean
+    private CancelamentoService cancelamento;
 
     @MockitoBean
     private TriagemService triagem;
@@ -338,26 +341,68 @@ class ChamadoControllerTests {
     }
 
     @Test
-    void lixeiraEhRestritaAAdminEAtendente() throws Exception {
-        given(lixeira.listar()).willReturn(List.of());
+    void exclusaoDeChamadoNaoExisteMais() throws Exception {
+        mockMvc.perform(delete("/api/chamados/VF-0001").with(autenticado(usuario("ADMIN"))))
+                .andExpect(status().isMethodNotAllowed());
+    }
 
-        mockMvc.perform(delete("/api/chamados/VF-0001").with(autenticado(usuario("DEPARTAMENTO"))))
+    @Test
+    void cancelamentoExigeMotivoEQuemConduzAFila() throws Exception {
+        String corpo = "{\"motivo\":\"Cliente desistiu do atendimento\"}";
+        given(cancelamento.cancelar(eq("VF-0001"), any(CancelamentoRequest.class), any())).willReturn(respostaDoChamado("VF-0001"));
+
+        mockMvc.perform(post("/api/chamados/VF-0001/cancelamento").with(autenticado(usuario("CLIENTE")))
+                        .contentType(MediaType.APPLICATION_JSON).content(corpo))
                 .andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/chamados/lixeira").with(autenticado(usuario("DEPARTAMENTO"))))
+        mockMvc.perform(post("/api/chamados/VF-0001/cancelamento").with(autenticado(usuario("LIDER_OPERACIONAL")))
+                        .contentType(MediaType.APPLICATION_JSON).content(corpo))
                 .andExpect(status().isForbidden());
-        mockMvc.perform(post("/api/chamados/VF-0001/restauracao").with(autenticado(usuario("CLIENTE"))))
+        mockMvc.perform(post("/api/chamados/VF-0001/cancelamento").with(autenticado(usuario("ATENDENTE")))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"motivo\":\"curto\"}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/api/chamados/VF-0001/cancelamento").with(autenticado(usuario("DEPARTAMENTO")))
+                        .contentType(MediaType.APPLICATION_JSON).content(corpo))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("VF-0001"));
+        then(cancelamento).should().cancelar(eq("VF-0001"), argThat(request -> request.motivo().equals("Cliente desistiu do atendimento")), any());
+    }
+
+    @Test
+    void solicitanteEEquipeReabremChamadoCancelado() throws Exception {
+        String corpo = "{\"motivo\":\"O cancelamento foi indevido\"}";
+        given(cancelamento.reabrir(eq("VF-0001"), any(ReaberturaDoCancelamentoRequest.class), any())).willReturn(respostaDoChamado("VF-0001"));
+
+        for (String perfil : List.of("CLIENTE", "GESTOR_FROTA", "ATENDENTE", "DEPARTAMENTO", "ADMIN")) {
+            mockMvc.perform(post("/api/chamados/VF-0001/cancelamento/reabertura").with(autenticado(usuario(perfil)))
+                            .contentType(MediaType.APPLICATION_JSON).content(corpo))
+                    .andExpect(status().isOk());
+        }
+        mockMvc.perform(post("/api/chamados/VF-0001/cancelamento/reabertura").with(autenticado(usuario("LIDER_OPERACIONAL")))
+                        .contentType(MediaType.APPLICATION_JSON).content(corpo))
                 .andExpect(status().isForbidden());
-        mockMvc.perform(delete("/api/chamados/VF-0001").with(autenticado(usuario("ATENDENTE"))))
-                .andExpect(status().isNoContent());
-        mockMvc.perform(get("/api/chamados/lixeira").with(autenticado(usuario("LIDER_OPERACIONAL"))))
+    }
+
+    @Test
+    void transferenciaParaOutraPessoaDoSetor() throws Exception {
+        UUID bruno = UUID.randomUUID();
+        given(responsavel.pessoasDoSetor(eq("VF-0001"), any())).willReturn(List.of(new Autor(bruno, "Bruno Manutenção")));
+        given(responsavel.transferir(eq("VF-0001"), any(TransferenciaDeResponsavelRequest.class), any())).willReturn(respostaDoChamado("VF-0001"));
+
+        mockMvc.perform(get("/api/chamados/VF-0001/responsaveis-possiveis").with(autenticado(usuario("DEPARTAMENTO"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(bruno.toString()))
+                .andExpect(jsonPath("$[0].nome").value("Bruno Manutenção"));
+        mockMvc.perform(post("/api/chamados/VF-0001/responsavel").with(autenticado(usuario("CLIENTE")))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"usuarioId\":\"" + bruno + "\"}"))
                 .andExpect(status().isForbidden());
-        mockMvc.perform(delete("/api/chamados/VF-0001").with(autenticado(usuario("LIDER_OPERACIONAL"))))
-                .andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/chamados/lixeira").with(autenticado(usuario("ATENDENTE"))))
+        mockMvc.perform(post("/api/chamados/VF-0001/responsavel").with(autenticado(usuario("DEPARTAMENTO")))
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/api/chamados/VF-0001/responsavel").with(autenticado(usuario("DEPARTAMENTO")))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"usuarioId\":\"" + bruno + "\",\"observacao\":\"Plantão da tarde\"}"))
                 .andExpect(status().isOk());
-        mockMvc.perform(delete("/api/chamados/lixeira").with(autenticado(usuario("ADMIN"))))
-                .andExpect(status().isNoContent());
-        then(lixeira).should().esvaziar();
+        then(responsavel).should().transferir(eq("VF-0001"),
+                argThat(request -> request.usuarioId().equals(bruno) && "Plantão da tarde".equals(request.observacao())), any());
     }
 
     @Test

@@ -151,7 +151,7 @@ export default function AnexosDoChamado({ chamado, somenteLeitura = false }: { c
           <RotateCcw size={12} aria-hidden /> Reenviar anexos
         </button>
       )}
-      {!somenteLeitura && chamado.status !== "Fechado" && <SeletorDeArquivos compacto aoAceitar={aoAceitar} desabilitado={enviando} />}
+      {!somenteLeitura && chamado.status !== "Fechado" && chamado.status !== "Cancelado" && <SeletorDeArquivos compacto aoAceitar={aoAceitar} desabilitado={enviando} />}
     </section>
   );
 }

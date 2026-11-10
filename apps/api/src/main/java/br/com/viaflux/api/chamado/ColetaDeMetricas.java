@@ -28,7 +28,8 @@ class ColetaDeMetricas {
     }
 
     List<LinhaDeMetrica> coletar(FiltrosDeMetricas filtros) {
-        List<Chamado> doPeriodo = chamados.buscarAtivos(null).stream()
+        List<Chamado> doPeriodo = chamados.buscar(null).stream()
+                .filter(chamado -> !chamado.cancelado())
                 .filter(chamado -> dentroDoPeriodo(chamado, filtros.de(), filtros.ate()))
                 .filter(chamado -> filtros.prioridade() == null || chamado.prioridadeEfetiva() == filtros.prioridade())
                 .filter(chamado -> filtros.tipo() == null || chamado.tipoVigente() == filtros.tipo())

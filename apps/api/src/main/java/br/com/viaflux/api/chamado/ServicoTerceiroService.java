@@ -87,7 +87,7 @@ class ServicoTerceiroService {
             return List.of();
         }
         return servicos.findByFornecedorIdAndCanceladoFalseOrderByAtualizadoEmDesc(usuario.organizacaoId()).stream()
-                .filter(servico -> !servico.getChamado().naLixeira())
+                .filter(servico -> !servico.getChamado().cancelado())
                 .map(ServicoDoFornecedorResponse::de)
                 .toList();
     }
@@ -97,7 +97,7 @@ class ServicoTerceiroService {
         StatusServico novo = statusValido(request.status());
         ServicoTerceiro servico = servicos.findById(servicoId)
                 .filter(candidato -> !candidato.isCancelado())
-                .filter(candidato -> !candidato.getChamado().naLixeira())
+                .filter(candidato -> !candidato.getChamado().cancelado())
                 .filter(candidato -> candidato.getFornecedor().getId().equals(usuario.organizacaoId()))
                 .orElseThrow(() -> ErroDeChamado.naoEncontrado("Serviço não encontrado para este fornecedor."));
         OffsetDateTime agora = agora();

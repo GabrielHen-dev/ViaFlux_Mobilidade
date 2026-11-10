@@ -4,7 +4,6 @@ export const PERFIS_DE_CLIENTE = ["CLIENTE", "GESTOR_FROTA"] as const;
 export const PERFIS_DA_CENTRAL = ["ADMIN", "ATENDENTE", "DEPARTAMENTO", "LIDER_OPERACIONAL"] as const;
 export const PERFIS_COM_VISAO_GLOBAL = ["ADMIN", "ATENDENTE", "LIDER_OPERACIONAL"] as const;
 export const PERFIS_DE_TRIAGEM = ["ADMIN", "ATENDENTE"] as const;
-export const PERFIS_DA_LIXEIRA = ["ADMIN", "ATENDENTE"] as const;
 export const PERFIS_QUE_CONDUZEM = ["ADMIN", "ATENDENTE", "DEPARTAMENTO"] as const;
 export const PERFIS_QUE_ATENDEM = ["ADMIN", "ATENDENTE", "DEPARTAMENTO"] as const;
 export const PERFIS_DE_METRICAS = ["ADMIN", "LIDER_OPERACIONAL"] as const;

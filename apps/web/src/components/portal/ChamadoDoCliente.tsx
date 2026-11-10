@@ -12,6 +12,7 @@ import LocalizacaoDoChamado from "@/components/chamados/LocalizacaoDoChamado";
 import { PrioridadeIndicador, StatusBadge } from "@/components/ui/StatusBadge";
 import EtapasDoChamado from "@/components/portal/EtapasDoChamado";
 import EncerramentoPeloSolicitante from "@/components/portal/EncerramentoPeloSolicitante";
+import { AvisoDeCancelamento } from "@/components/chamados/CancelamentoDoChamado";
 import { formatarDataHora } from "@/utils/date";
 import { PERFIS_DE_CLIENTE } from "@/utils/perfis";
 
@@ -47,12 +48,13 @@ function ConteudoDoChamado({ chamado }: { chamado: Chamado }) {
           )}
         </section>
 
+        <AvisoDeCancelamento chamado={chamado} podeReabrir visaoDeCliente />
         <EtapasDoChamado chamado={chamado} />
         <EncerramentoPeloSolicitante chamado={chamado} />
         <ChatDoChamado chamado={chamado} visaoDeCliente />
         <TimelineChamado chamado={chamado} visaoDeCliente />
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <LocalizacaoDoChamado chamado={chamado} />
+          <LocalizacaoDoChamado chamado={chamado} somenteLeitura={chamado.status === "Cancelado"} />
           <AnexosDoChamado chamado={chamado} />
         </div>
       </div>

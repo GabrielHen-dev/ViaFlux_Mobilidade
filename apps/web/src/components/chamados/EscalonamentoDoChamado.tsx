@@ -16,7 +16,8 @@ const STATUS_ENCERRADOS = ["Resolvido", "Fechado"];
 const LIMITE_DA_OBSERVACAO = 1000;
 
 export function podeEscalonar(chamado: ChamadoResumo) {
-  return chamado.escalonamento === null && !STATUS_ENCERRADOS.includes(chamado.status) && slaVencido(chamado.sla);
+  if (chamado.escalonamento !== null) return false;
+  return chamado.status === "Cancelado" || (!STATUS_ENCERRADOS.includes(chamado.status) && slaVencido(chamado.sla));
 }
 
 function DialogoDeEscalonamento({ chamado, aoFechar }: { chamado: ChamadoResumo; aoFechar: () => void }) {
@@ -52,7 +53,7 @@ function DialogoDeEscalonamento({ chamado, aoFechar }: { chamado: ChamadoResumo;
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600"><ShieldAlert size={20} aria-hidden /></span>
             <div>
               <h2 id={idDoTitulo} className="font-display text-base font-bold text-brand-navy">Escalonar à liderança</h2>
-              <p className="mt-0.5 text-sm text-slate-500">Chamado #{chamado.id} · SLA vencido</p>
+              <p className="mt-0.5 text-sm text-slate-500">Chamado #{chamado.id} · {chamado.status === "Cancelado" ? "revisão do cancelamento" : "SLA vencido"}</p>
             </div>
           </div>
           <button type="button" onClick={aoFechar} aria-label="Fechar" className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"><X size={16} /></button>

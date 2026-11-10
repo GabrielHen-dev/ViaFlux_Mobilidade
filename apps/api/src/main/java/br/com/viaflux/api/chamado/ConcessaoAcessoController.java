@@ -34,7 +34,7 @@ class ConcessaoAcessoController {
     ConcessaoResponse conceder(@PathVariable String codigo, @Valid @RequestBody Request request, @AuthenticationPrincipal Jwt token) {
         UsuarioAtual usuario = identificacao.de(token);
         if (!usuario.perfis().contains("ADMIN")) throw ErroDeChamado.proibido("Apenas ADMIN pode conceder acesso excepcional.");
-        Chamado chamado = chamados.findByCodigo(codigo).filter(item -> !item.naLixeira()).orElseThrow(() -> new ChamadoNaoEncontradoException(codigo));
+        Chamado chamado = chamados.findByCodigo(codigo).orElseThrow(() -> new ChamadoNaoEncontradoException(codigo));
         OffsetDateTime agora = OffsetDateTime.now(clock).withOffsetSameInstant(ZoneOffset.UTC);
         concessoes.save(new ConcessaoAcessoChamado(chamado, usuario.id(), request.justificativa().trim(), agora));
         return new ConcessaoResponse("Acesso temporário registrado por 15 minutos.", agora.plusMinutes(15));

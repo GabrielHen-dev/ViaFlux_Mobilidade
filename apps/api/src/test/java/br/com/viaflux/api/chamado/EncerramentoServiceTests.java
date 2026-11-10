@@ -91,7 +91,7 @@ class EncerramentoServiceTests {
     void lembraOSolicitanteUmDiaUtilAntesDoPrazoUmaUnicaVez() {
         AmbienteDeChamados ambiente = new AmbienteDeChamados(LEMBRETE_NA_SEXTA.plusMinutes(5));
         Chamado chamado = chamadoResolvido();
-        given(ambiente.chamados.findByStatusAndExcluidoEmIsNull(StatusChamado.RESOLVIDO)).willReturn(List.of(chamado));
+        given(ambiente.chamados.findByStatus(StatusChamado.RESOLVIDO)).willReturn(List.of(chamado));
         EncerramentoService servico = servico(ambiente);
 
         servico.processarPrazosDeConfirmacao();
@@ -106,7 +106,7 @@ class EncerramentoServiceTests {
     void antesDoLembreteNadaAcontece() {
         AmbienteDeChamados ambiente = new AmbienteDeChamados(LEMBRETE_NA_SEXTA.minusMinutes(1));
         Chamado chamado = chamadoResolvido();
-        given(ambiente.chamados.findByStatusAndExcluidoEmIsNull(StatusChamado.RESOLVIDO)).willReturn(List.of(chamado));
+        given(ambiente.chamados.findByStatus(StatusChamado.RESOLVIDO)).willReturn(List.of(chamado));
 
         servico(ambiente).processarPrazosDeConfirmacao();
 
@@ -118,7 +118,7 @@ class EncerramentoServiceTests {
     void fechaAutomaticamenteAoCompletarTresDiasUteis() {
         AmbienteDeChamados ambiente = new AmbienteDeChamados(PRAZO_NA_SEGUNDA);
         Chamado chamado = chamadoResolvido();
-        given(ambiente.chamados.findByStatusAndExcluidoEmIsNull(StatusChamado.RESOLVIDO)).willReturn(List.of(chamado));
+        given(ambiente.chamados.findByStatus(StatusChamado.RESOLVIDO)).willReturn(List.of(chamado));
 
         servico(ambiente).processarPrazosDeConfirmacao();
 

@@ -43,7 +43,6 @@ class AcessoAosChamados {
 
     Chamado visivel(String codigo, UsuarioAtual usuario) {
         return chamados.findByCodigo(codigo)
-                .filter(chamado -> !chamado.naLixeira())
                 .filter(chamado -> podeVer(chamado, usuario))
                 .orElseThrow(() -> new ChamadoNaoEncontradoException(codigo));
     }
@@ -72,15 +71,9 @@ class AcessoAosChamados {
         return chamado;
     }
 
-    Chamado naLixeira(String codigo) {
-        return chamados.findByCodigo(codigo)
-                .filter(Chamado::naLixeira)
-                .orElseThrow(() -> new ChamadoNaoEncontradoException(codigo));
-    }
-
     List<Chamado> visiveis(UsuarioAtual usuario, String busca) {
         String termo = busca == null || busca.isBlank() ? null : "%" + busca.trim().toLowerCase(Locale.ROOT) + "%";
-        return chamados.buscarAtivos(termo).stream()
+        return chamados.buscar(termo).stream()
                 .filter(chamado -> podeVer(chamado, usuario))
                 .toList();
     }

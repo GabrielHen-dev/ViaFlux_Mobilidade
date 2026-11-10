@@ -213,13 +213,12 @@ test("rotas diretas, recarregamento e protocolo inexistente", async ({ page }) =
     ["/chamados/VF-0000", "#VF-0000"],
     ["/chamados/VF-0000/triagem", "Classificação · #VF-0000"],
     ["/chamados/VF-0000/encaminhamento", "Transferência — #VF-0000"],
-    ["/lixeira", "Lixeira"],
   ]) {
     await page.goto(url);
     await expect(page.getByRole("heading", { name: titulo, exact: true })).toBeVisible();
   }
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Lixeira", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Transferência — #VF-0000", exact: true })).toBeVisible();
   await page.goto("/chamados/VF-9999");
   await expect(page.getByRole("heading", { name: "Chamado não encontrado" })).toBeVisible();
 });

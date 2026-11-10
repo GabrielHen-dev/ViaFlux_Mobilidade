@@ -38,11 +38,12 @@ class PoliticaDeSla {
         return prazos.get(prioridade);
     }
 
-    SlaResponse avaliar(Chamado chamado, Instant agora) {
+    SlaResponse avaliar(Chamado chamado, Instant instante) {
         Prioridade prioridade = chamado.prioridadeEfetiva();
         if (prioridade == null) {
             return null;
         }
+        Instant agora = chamado.cancelado() ? chamado.getCanceladoEm().toInstant() : instante;
         Prazos prazosDaPrioridade = prazos.get(prioridade);
         Relogio relogio = prazosDaPrioridade.relogio();
         Instant inicio = chamado.getAbertoEm().toInstant();

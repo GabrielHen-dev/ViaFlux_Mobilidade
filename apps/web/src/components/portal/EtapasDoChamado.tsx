@@ -13,9 +13,11 @@ const ETAPA_DO_STATUS: Record<Status, number> = {
   "Aguardando": 3,
   "Resolvido": 5,
   "Fechado": 5,
+  "Cancelado": -1,
 };
 
 export default function EtapasDoChamado({ chamado }: { chamado: Chamado }) {
+  if (chamado.status === "Cancelado") return null;
   const atual = ETAPA_DO_STATUS[chamado.status];
   const emAnalise = chamado.prioridade === null;
   return (

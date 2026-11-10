@@ -44,8 +44,9 @@ class EscalonamentoService {
         Chamado chamado = acesso.paraAtender(codigo, usuario);
         OffsetDateTime agora = OffsetDateTime.now(relogio).withOffsetSameInstant(ZoneOffset.UTC);
         SlaResponse sla = politicaDeSla.avaliar(chamado, agora.toInstant());
-        if (!slaViolado(sla)) {
-            throw ErroDeChamado.conflito("Só é possível escalonar chamados com prazo de SLA vencido.");
+        boolean revisaoDeCancelamento = chamado.cancelado();
+        if (!revisaoDeCancelamento && !slaViolado(sla)) {
+            throw ErroDeChamado.conflito("Só é possível escalonar chamados com prazo de SLA vencido ou cancelados.");
         }
         Autor autor = new Autor(usuario.id(), usuario.nome());
         String observacao = request == null ? null : request.observacao();
@@ -55,7 +56,8 @@ class EscalonamentoService {
         if (destinatarios.isEmpty()) {
             destinatarios = lideranca.ativosComPerfil(PERFIS_DE_CONTINGENCIA);
         }
-        String mensagem = "O chamado " + chamado.getCodigo() + " está com o SLA vencido e foi escalonado por " + autor.nome()
+        String situacao = revisaoDeCancelamento ? "foi cancelado e precisa de revisão" : "está com o SLA vencido";
+        String mensagem = "O chamado " + chamado.getCodigo() + " " + situacao + " e foi escalonado por " + autor.nome()
                 + (chamado.getEscalonamentoMotivo() == null ? "." : ": " + chamado.getEscalonamentoMotivo());
         destinatarios.stream()
                 .filter(destinatario -> !destinatario.getId().equals(usuario.id()))
@@ -65,8 +67,9 @@ class EscalonamentoService {
         String notificados = destinatarios.isEmpty()
                 ? "nenhum líder ativo cadastrado"
                 : destinatarios.size() + (destinatarios.size() == 1 ? " responsável notificado" : " responsáveis notificados");
+        String gatilho = revisaoDeCancelamento ? "Revisão do cancelamento" : "SLA vencido";
         historico.registrarInterno(chamado, TipoEvento.ESCALONAMENTO, "Chamado escalonado à liderança",
-                (chamado.getEscalonamentoMotivo() == null ? "SLA vencido" : "SLA vencido · " + chamado.getEscalonamentoMotivo())
+                (chamado.getEscalonamentoMotivo() == null ? gatilho : gatilho + " · " + chamado.getEscalonamentoMotivo())
                         + " · " + notificados,
                 autor, agora);
         return montagem.completo(chamado, false);

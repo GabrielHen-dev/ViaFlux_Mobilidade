@@ -233,9 +233,9 @@ class ServicoTerceiroServiceTests {
     }
 
     @Test
-    void fornecedorNaoAtualizaServicoDeChamadoNaLixeira() {
+    void fornecedorNaoAtualizaServicoDeChamadoCancelado() {
         ServicoTerceiro existente = servicoDoGuincho();
-        chamado.moverParaLixeira(QUARTA_AS_DEZ.plusMinutes(15));
+        chamado.cancelar(autor(paula), "Cliente desistiu do atendimento", QUARTA_AS_DEZ.plusMinutes(15));
         given(ambiente.servicos.findById(existente.getId())).willReturn(Optional.of(existente));
 
         ErroDeChamado erro = erroAo(() -> servico.atualizarPeloFornecedor(existente.getId(),
@@ -251,12 +251,12 @@ class ServicoTerceiroServiceTests {
     }
 
     @Test
-    void fornecedorNaoVeServicosDeChamadosNaLixeira() {
+    void fornecedorNaoVeServicosDeChamadosCancelados() {
         ServicoTerceiro ativo = servicoDoGuincho();
-        Chamado excluido = chamadoAberto("VF-0002", QUARTA_AS_DEZ);
-        excluido.moverParaLixeira(QUARTA_AS_DEZ.plusMinutes(1));
-        ServicoTerceiro daLixeira = new ServicoTerceiro(excluido, guincho, "Reboque", "", "", new Autor(null, "Paula"), QUARTA_AS_DEZ);
-        given(ambiente.servicos.findByFornecedorIdAndCanceladoFalseOrderByAtualizadoEmDesc(guincho.getId())).willReturn(List.of(ativo, daLixeira));
+        Chamado cancelado = chamadoAberto("VF-0002", QUARTA_AS_DEZ);
+        cancelado.cancelar(new Autor(null, "Paula"), "Cliente desistiu do atendimento", QUARTA_AS_DEZ.plusMinutes(1));
+        ServicoTerceiro doCancelado = new ServicoTerceiro(cancelado, guincho, "Reboque", "", "", new Autor(null, "Paula"), QUARTA_AS_DEZ);
+        given(ambiente.servicos.findByFornecedorIdAndCanceladoFalseOrderByAtualizadoEmDesc(guincho.getId())).willReturn(List.of(ativo, doCancelado));
 
         assertThat(servico.doFornecedor(fornecedor(guincho.getId()))).extracting(ServicoDoFornecedorResponse::chamadoId).containsExactly("VF-0001");
     }

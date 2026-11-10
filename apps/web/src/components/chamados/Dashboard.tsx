@@ -13,7 +13,7 @@ import { AlertaDeP1, ContadoresDaOperacao } from "@/components/chamados/painel/A
 import { NOME_TIPO } from "@/utils/prioridade";
 import { formatarHora } from "@/utils/date";
 import { useAgora } from "@/hooks/useAgora";
-import { PERFIS_COM_VISAO_GLOBAL, PERFIS_DA_LIXEIRA, PERFIS_DE_TRIAGEM, PERFIS_QUE_ABREM_CHAMADO, PERFIS_QUE_ATENDEM, usuarioTemPerfil } from "@/utils/perfis";
+import { PERFIS_COM_VISAO_GLOBAL, PERFIS_DE_TRIAGEM, PERFIS_QUE_ABREM_CHAMADO, PERFIS_QUE_ATENDEM, usuarioTemPerfil } from "@/utils/perfis";
 
 const TAMANHO_DA_PAGINA = 20;
 const STATUS_DA_FILA: readonly { status: Status; rotulo: string }[] = [
@@ -24,6 +24,7 @@ const STATUS_DA_FILA: readonly { status: Status; rotulo: string }[] = [
   { status: "Aguardando", rotulo: "Aguardando" },
   { status: "Resolvido", rotulo: "Resolvidos" },
   { status: "Fechado", rotulo: "Fechados" },
+  { status: "Cancelado", rotulo: "Cancelados" },
 ];
 
 function AtualizadoHa({ instante }: { instante: number }) {
@@ -113,7 +114,7 @@ export default function Dashboard() {
         {lista.isPending ? <Carregando texto="Carregando chamados…" /> : lista.isError ? (
           <div className="p-5"><FalhaAoCarregar erro={lista.error} aoTentarDeNovo={() => void lista.refetch()} /></div>
         ) : (
-          <TabelaDeChamados resultado={lista.data} pagina={pagina} podeExcluir={usuarioTemPerfil(usuario, PERFIS_DA_LIXEIRA)} podeTriar={fazTriagem} podeAtender={usuarioTemPerfil(usuario, PERFIS_QUE_ATENDEM)} aoMudarDePagina={setPagina} />
+          <TabelaDeChamados resultado={lista.data} pagina={pagina} podeTriar={fazTriagem} podeAtender={usuarioTemPerfil(usuario, PERFIS_QUE_ATENDEM)} aoMudarDePagina={setPagina} />
         )}
       </section>
     </main>

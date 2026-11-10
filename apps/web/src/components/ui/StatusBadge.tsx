@@ -1,4 +1,4 @@
-import { ArrowDown, ChevronsUp, CircleCheck, CircleDot, ClipboardList, Equal, Hourglass, ListOrdered, Lock, Pause, Siren, Zap, type LucideIcon } from "lucide-react";
+import { ArrowDown, Ban, ChevronsUp, CircleCheck, CircleDot, ClipboardList, Equal, Hourglass, ListOrdered, Lock, Pause, Siren, Zap, type LucideIcon } from "lucide-react";
 import type { CodigoPrioridade, Status } from "@/types/chamado";
 import { ROTULO_PRIORIDADE } from "@/utils/prioridade";
 import { cn } from "@/utils/cn";
@@ -17,6 +17,7 @@ export const APARENCIA_DO_STATUS: Record<Status, Aparencia> = {
   "Aguardando": { fundo: "#F5F3FF", texto: "#6D28D9", Icone: Pause },
   "Resolvido": { fundo: "#F0FDF4", texto: "#15803D", Icone: CircleCheck },
   "Fechado": { fundo: "#F1F5F9", texto: "#475569", Icone: Lock },
+  "Cancelado": { fundo: "#FEF2F2", texto: "#B91C1C", Icone: Ban },
 };
 
 export const APARENCIA_DA_PRIORIDADE: Record<CodigoPrioridade, Aparencia> = {

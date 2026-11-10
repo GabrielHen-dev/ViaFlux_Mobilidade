@@ -84,19 +84,11 @@ class AcessoAosChamadosTests {
     }
 
     @Test
-    void chamadoNaLixeiraNaoEhVisivelNemParaACentral() {
-        Chamado excluido = cadastrado(chamadoAberto("VF-0001", QUARTA_AS_DEZ));
-        excluido.moverParaLixeira(QUARTA_AS_DEZ.plusMinutes(1));
+    void chamadoCanceladoContinuaVisivelParaACentral() {
+        Chamado cancelado = cadastrado(chamadoAberto("VF-0001", QUARTA_AS_DEZ));
+        cancelado.cancelar(new Autor(UUID.randomUUID(), "Paula Atendente"), "Cliente desistiu do atendimento", QUARTA_AS_DEZ.plusMinutes(1));
 
-        assertThatThrownBy(() -> acesso.visivel("VF-0001", atendente())).isInstanceOf(ChamadoNaoEncontradoException.class);
-        assertThat(acesso.naLixeira("VF-0001")).isSameAs(excluido);
-    }
-
-    @Test
-    void chamadoForaDaLixeiraNaoPodeSerRestaurado() {
-        cadastrado(chamadoAberto("VF-0001", QUARTA_AS_DEZ));
-
-        assertThatThrownBy(() -> acesso.naLixeira("VF-0001")).isInstanceOf(ChamadoNaoEncontradoException.class);
+        assertThat(acesso.visivel("VF-0001", atendente())).isSameAs(cancelado);
     }
 
     @Test
@@ -113,7 +105,7 @@ class AcessoAosChamadosTests {
         Chamado semTriagem = chamadoAberto("VF-0001", QUARTA_AS_DEZ);
         Chamado daManutencao = chamadoTriado("VF-0002", QUARTA_AS_DEZ, TipoChamado.MANUTENCAO, 3, 3);
         Chamado daTi = chamadoTriado("VF-0003", QUARTA_AS_DEZ, TipoChamado.TI, 3, 3);
-        given(chamados.buscarAtivos(null)).willReturn(List.of(semTriagem, daManutencao, daTi));
+        given(chamados.buscar(null)).willReturn(List.of(semTriagem, daManutencao, daTi));
 
         assertThat(acesso.visiveis(departamento(TipoChamado.MANUTENCAO), null)).containsExactly(daManutencao);
         assertThat(acesso.visiveis(admin(), " ")).containsExactly(semTriagem, daManutencao, daTi);
@@ -122,7 +114,7 @@ class AcessoAosChamadosTests {
 
     @Test
     void buscaEhNormalizadaParaAConsulta() {
-        given(chamados.buscarAtivos("%volvo fh%")).willReturn(List.of());
+        given(chamados.buscar("%volvo fh%")).willReturn(List.of());
 
         assertThat(acesso.visiveis(atendente(), "  Volvo FH ")).isEmpty();
     }
