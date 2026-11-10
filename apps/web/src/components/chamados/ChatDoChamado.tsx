@@ -89,7 +89,8 @@ export default function ChatDoChamado({ chamado, visaoDeCliente = false, somente
   const mensagens = dados?.mensagens ?? [];
   const quantidade = mensagens.length;
   const fechado = chamado.status === "Fechado";
-  const podeEnviar = !somenteLeitura && !fechado;
+  const cancelado = chamado.status === "Cancelado";
+  const podeEnviar = !somenteLeitura && !fechado && !cancelado;
   const interna = !visaoDeCliente && destino === "INTERNO";
   const visivelCliente = !interna;
 
@@ -203,7 +204,10 @@ export default function ChatDoChamado({ chamado, visaoDeCliente = false, somente
           {visaoDeCliente ? "Chamado fechado. Reabra o chamado para continuar a conversa." : "Chamado fechado. A conversa volta a funcionar se o solicitante reabrir o chamado."}
         </p>
       )}
-      {!fechado && somenteLeitura && <p className="mt-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-600">Seu perfil só acompanha esta conversa.</p>}
+      {cancelado && (
+        <p className="mt-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-600">Chamado cancelado. A conversa volta a funcionar quando o chamado for reaberto.</p>
+      )}
+      {!fechado && !cancelado && somenteLeitura && <p className="mt-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-600">Seu perfil só acompanha esta conversa.</p>}
 
       {podeEnviar && (
         <div className={cn("mt-4 rounded-xl border p-3", interna ? "border-amber-200 bg-amber-50" : "border-[#E2E8F0]")}>

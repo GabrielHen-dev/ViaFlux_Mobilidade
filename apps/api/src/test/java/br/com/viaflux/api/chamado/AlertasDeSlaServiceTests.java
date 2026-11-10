@@ -100,7 +100,7 @@ class AlertasDeSlaServiceTests {
         given(ambiente.chamados.idsComStatus(any())).willAnswer(invocacao -> {
             Collection<StatusChamado> status = invocacao.getArgument(0);
             return acompanhados.stream()
-                    .filter(chamado -> status.contains(chamado.getStatus()) && !chamado.naLixeira())
+                    .filter(chamado -> status.contains(chamado.getStatus()))
                     .map(Chamado::getId)
                     .toList();
         });
@@ -408,15 +408,15 @@ class AlertasDeSlaServiceTests {
     }
 
     @Test
-    void chamadoResolvidoFechadoOuNaLixeiraNaoDispara() {
+    void chamadoResolvidoOuCanceladoNaoDispara() {
         Chamado resolvido = acompanhar(chamadoTriado("VF-0001", QUARTA_AS_DEZ, TipoChamado.MANUTENCAO, 5, 3));
         resolvido.resolverComResumo("Motor substituído", responsavel, QUARTA_AS_DEZ.plusMinutes(6));
-        Chamado naLixeira = acompanhar(chamadoTriado("VF-0002", QUARTA_AS_DEZ, TipoChamado.MANUTENCAO, 5, 3));
-        naLixeira.moverParaLixeira(QUARTA_AS_DEZ.plusMinutes(6));
+        Chamado cancelado = acompanhar(chamadoTriado("VF-0002", QUARTA_AS_DEZ, TipoChamado.MANUTENCAO, 5, 3));
+        cancelado.cancelar(responsavel, "Cliente desistiu do atendimento", QUARTA_AS_DEZ.plusMinutes(6));
 
         verificarAos(500);
         disparo.disparar(resolvido.getId(), QUARTA_AS_DEZ.plusMinutes(500));
-        disparo.disparar(naLixeira.getId(), QUARTA_AS_DEZ.plusMinutes(500));
+        disparo.disparar(cancelado.getId(), QUARTA_AS_DEZ.plusMinutes(500));
 
         assertThat(alertasGravados).isEmpty();
     }

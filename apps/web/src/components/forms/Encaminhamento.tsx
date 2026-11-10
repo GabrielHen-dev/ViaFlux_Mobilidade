@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowRightLeft, ChevronLeft, ClipboardList } from "lucide-react";
+import { ArrowRightLeft, Ban, ChevronLeft, ClipboardList, UserRoundCheck } from "lucide-react";
 import { toast } from "sonner";
 import { type Chamado, type TipoChamado } from "@/types/chamado";
-import type { DadosTransferencia } from "@/services/api/contratos";
-import { transferirChamado } from "@/services/api/chamados";
-import { useAcaoNoChamado, useDepartamentos } from "@/hooks/consultas";
+import type { DadosTransferencia, DadosTransferenciaDeResponsavel } from "@/services/api/contratos";
+import { transferirChamado, transferirResponsavel } from "@/services/api/chamados";
+import { useAcaoNoChamado, useDepartamentos, usePessoasDoSetor } from "@/hooks/consultas";
 import { useRascunho } from "@/hooks/useRascunho";
 import ComChamado from "@/components/chamados/ComChamado";
 import PerfilRequerido from "@/components/auth/PerfilRequerido";
@@ -22,6 +22,68 @@ import { PERFIS_DE_TRIAGEM, PERFIS_QUE_ATENDEM, PERFIS_QUE_CONDUZEM, usuarioTemP
 const TAMANHO_MINIMO_DO_MOTIVO = 10;
 const labelClass = "block text-xs font-semibold text-[#475569] uppercase tracking-wide mb-2";
 const inputClass = "w-full px-3.5 py-2.5 rounded-lg border border-[#E2E8F0] bg-white text-sm text-brand-dark outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10";
+const STATUS_SEM_TROCA_DE_RESPONSAVEL = ["Resolvido", "Fechado"];
+
+function TransferenciaParaPessoa({ chamado }: { chamado: Chamado }) {
+  const usuario = useUsuarioAutenticado();
+  const encerrado = STATUS_SEM_TROCA_DE_RESPONSAVEL.includes(chamado.status);
+  const pessoas = usePessoasDoSetor(chamado.id, !encerrado);
+  const [pessoaId, setPessoaId] = useState("");
+  const [observacao, setObservacao] = useState("");
+  const transferencia = useAcaoNoChamado(chamado.id, (api, dados: DadosTransferenciaDeResponsavel) => transferirResponsavel(api, chamado.id, dados));
+  const responsavelAtual = chamado.atendimento?.responsavel ?? null;
+  const opcoes = (pessoas.data ?? [])
+    .filter((pessoa) => pessoa.id !== null && pessoa.id !== responsavelAtual?.id)
+    .map((pessoa) => ({ valor: pessoa.id as string, rotulo: pessoa.id === usuario.id ? `${pessoa.nome} (você)` : pessoa.nome }));
+  const setor = chamado.departamento?.nome ?? "do chamado";
+
+  return (
+    <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5 md:p-6" aria-labelledby="titulo-transferencia-pessoa">
+      <h2 id="titulo-transferencia-pessoa" className="mb-1 flex items-center gap-2 font-display text-sm font-semibold text-brand-navy"><UserRoundCheck size={16} aria-hidden /> Transferir para outra pessoa do setor</h2>
+      <p className="mb-4 text-xs text-slate-500">
+        O chamado continua em {setor}; só muda quem está com ele.{" "}
+        {responsavelAtual ? <>Hoje está com <span className="font-semibold text-brand-dark">{responsavelAtual.id === usuario.id ? "você" : responsavelAtual.nome}</span>.</> : "Ninguém assumiu ainda."}
+      </p>
+      {encerrado ? (
+        <p className="text-sm text-slate-500">Chamados resolvidos ou fechados não mudam de responsável.</p>
+      ) : (
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="transferencia-pessoa" className={labelClass}>Pessoa de destino *</label>
+            <Select
+              id="transferencia-pessoa"
+              value={pessoaId}
+              onChange={setPessoaId}
+              opcoes={opcoes}
+              placeholder={pessoas.isPending ? "Carregando pessoas…" : opcoes.length === 0 ? `Nenhuma outra pessoa ativa em ${setor}` : "Selecione"}
+              disabled={pessoas.isPending || opcoes.length === 0}
+            />
+            {pessoas.isError && <div className="mt-2"><AvisoDeErro erro={pessoas.error} /></div>}
+          </div>
+          <div>
+            <label htmlFor="transferencia-pessoa-observacao" className={labelClass}>Observação</label>
+            <textarea id="transferencia-pessoa-observacao" className={`${inputClass} resize-none`} rows={2} maxLength={2000} value={observacao} onChange={(evento) => setObservacao(evento.target.value)} placeholder="Contexto para quem vai assumir (opcional)" />
+          </div>
+          {transferencia.isError && <AvisoDeErro erro={transferencia.error} />}
+          <button
+            type="button"
+            disabled={pessoaId === "" || transferencia.isPending}
+            onClick={() => transferencia.mutate({ usuarioId: pessoaId, observacao: observacao.trim() || undefined }, {
+              onSuccess: (atualizado) => {
+                setPessoaId("");
+                setObservacao("");
+                toast.success(`Chamado transferido para ${atualizado.atendimento?.responsavel.nome ?? "a pessoa escolhida"}.`);
+              },
+            })}
+            className="alvo-toque w-full rounded-xl bg-brand-blue py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+          >
+            {transferencia.isPending ? "Transferindo…" : "Transferir para a pessoa"}
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
 
 function EncaminhamentoConteudo({ chamado }: { chamado: Chamado }) {
   const usuario = useUsuarioAutenticado();
@@ -98,6 +160,8 @@ function EncaminhamentoConteudo({ chamado }: { chamado: Chamado }) {
               </div>
             </section>
 
+            {atende && <TransferenciaParaPessoa chamado={chamado} />}
+
             {atende && <AlteracaoDeStatus key={`${chamado.id}:${chamado.status}:${chamado.motivoAguardando ?? ""}`} chamado={chamado} />}
           </div>
 
@@ -120,6 +184,19 @@ function EncaminhamentoConteudo({ chamado }: { chamado: Chamado }) {
             </section>
           </aside>
         </div>
+      </div>
+    </main>
+  );
+}
+
+function ChamadoCancelado({ chamado }: { chamado: Chamado }) {
+  return (
+    <main id="conteudo" className="p-4 md:p-8">
+      <div className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center">
+        <Ban size={28} className="mx-auto mb-3 text-red-600" aria-hidden />
+        <h1 className="mb-2 text-xl font-bold text-brand-navy">Transferência — #{chamado.id}</h1>
+        <p className="mb-6 text-sm text-slate-500">Este chamado está cancelado. Reabra o chamado para transferir.</p>
+        <Link href={`/chamados/${chamado.id}`} className="alvo-toque inline-flex rounded-xl border border-[#E2E8F0] px-4 py-2.5 text-sm font-semibold text-[#475569]">Voltar ao chamado</Link>
       </div>
     </main>
   );
@@ -148,7 +225,9 @@ export default function Encaminhamento({ id }: { id: string }) {
   return (
     <PerfilRequerido perfis={PERFIS_QUE_CONDUZEM}>
       <ComChamado id={id}>
-        {(chamado) => chamado.classificacao === null ? <AguardandoTriagem chamado={chamado} /> : <EncaminhamentoConteudo key={chamado.id} chamado={chamado} />}
+        {(chamado) => chamado.status === "Cancelado" ? <ChamadoCancelado chamado={chamado} />
+          : chamado.classificacao === null ? <AguardandoTriagem chamado={chamado} />
+          : <EncaminhamentoConteudo key={chamado.id} chamado={chamado} />}
       </ComChamado>
     </PerfilRequerido>
   );

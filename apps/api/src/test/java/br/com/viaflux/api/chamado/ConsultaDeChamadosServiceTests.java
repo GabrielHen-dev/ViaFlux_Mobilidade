@@ -49,7 +49,7 @@ class ConsultaDeChamadosServiceTests {
         p4Fechado.alterarStatus(StatusChamado.EM_ATENDIMENTO, null, emSaoPaulo("2026-10-21T09:30"));
         p4Fechado.alterarStatus(StatusChamado.RESOLVIDO, null, emSaoPaulo("2026-10-21T10:00"));
         p4Fechado.alterarStatus(StatusChamado.FECHADO, null, emSaoPaulo("2026-10-21T10:30"));
-        given(ambiente.chamados.buscarAtivos(null)).willReturn(List.of(
+        given(ambiente.chamados.buscar(null)).willReturn(List.of(
                 p4Fechado, p1EmAtendimento, triagemEmRisco, p3NaFila, triagemAtrasada, p1SemResposta, triagemEmAndamento));
     }
 
@@ -137,7 +137,7 @@ class ConsultaDeChamadosServiceTests {
         assertThat(resumo.total()).isEqualTo(7);
         assertThat(resumo.porStatus()).containsExactly(
                 Map.entry("Aberto", 2L), Map.entry("Em triagem", 1L), Map.entry("Na fila", 2L), Map.entry("Em atendimento", 1L),
-                Map.entry("Aguardando", 0L), Map.entry("Resolvido", 0L), Map.entry("Fechado", 1L));
+                Map.entry("Aguardando", 0L), Map.entry("Resolvido", 0L), Map.entry("Fechado", 1L), Map.entry("Cancelado", 0L));
         assertThat(resumo.porPrioridade()).containsExactly(
                 Map.entry(Prioridade.P1, 2L), Map.entry(Prioridade.P2, 0L), Map.entry(Prioridade.P3, 1L), Map.entry(Prioridade.P4, 1L));
         assertThat(resumo.porDepartamento()).containsEntry(TipoChamado.MANUTENCAO, 3L).containsEntry(TipoChamado.TI, 1L)

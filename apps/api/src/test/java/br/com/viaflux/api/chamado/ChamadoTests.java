@@ -7,6 +7,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.http.HttpStatus;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static br.com.viaflux.api.chamado.ChamadosDeTeste.QUARTA_AS_DEZ;
@@ -414,17 +415,113 @@ class ChamadoTests {
     }
 
     @Test
-    void lixeiraMarcaERestauraOChamado() {
+    void cancelamentoRegistraQuemQuandoEPorQue() {
+        Chamado chamado = chamadoTriado("VF-0001", QUARTA_AS_DEZ, TipoChamado.MANUTENCAO, 5, 3);
+        chamado.alterarStatus(StatusChamado.AGUARDANDO, MotivoAguardando.CLIENTE, QUARTA_AS_DEZ.plusMinutes(6));
+
+        chamado.cancelar(PAULA, "  Cliente desistiu do atendimento  ", QUARTA_AS_DEZ.plusMinutes(8));
+
+        assertThat(chamado.getStatus()).isEqualTo(StatusChamado.CANCELADO);
+        assertThat(chamado.getCanceladoEm()).isEqualTo(QUARTA_AS_DEZ.plusMinutes(8));
+        assertThat(chamado.getCanceladoPor()).isEqualTo(PAULA);
+        assertThat(chamado.getCancelamentoMotivo()).isEqualTo("Cliente desistiu do atendimento");
+        assertThat(chamado.getMotivoAguardando()).isNull();
+        assertThat(chamado.getPausas()).allSatisfy(pausa -> assertThat(pausa.emAndamento()).isFalse());
+    }
+
+    @Test
+    void chamadoCanceladoBloqueiaAsAcoesDeAtendimento() {
+        Chamado chamado = chamadoTriado("VF-0001", QUARTA_AS_DEZ, TipoChamado.MANUTENCAO, 5, 3);
+        OffsetDateTime depois = QUARTA_AS_DEZ.plusMinutes(10);
+        chamado.cancelar(PAULA, "Chamado aberto em duplicidade", QUARTA_AS_DEZ.plusMinutes(8));
+
+        assertThat(erroAo(() -> chamado.cancelar(PAULA, "De novo por engano", depois)).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(erroAo(() -> chamado.assumirAtendimento(PAULA, depois)).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(erroAo(() -> chamado.alterarStatus(StatusChamado.EM_ATENDIMENTO, null, depois)).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(erroAo(() -> chamado.transferir(TipoChamado.TI, depois)).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(erroAo(chamado::exigirConversaAberta).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(erroAo(chamado::exigirAnexosAbertos).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    void statusCanceladoNaoPodeSerDefinidoPelaAlteracaoDeStatus() {
+        Chamado chamado = chamadoTriado("VF-0001", QUARTA_AS_DEZ, TipoChamado.MANUTENCAO, 5, 3);
+
+        assertThat(errosDeCampo(erroAo(() -> chamado.alterarStatus(StatusChamado.CANCELADO, null, QUARTA_AS_DEZ.plusMinutes(6)))))
+                .containsKey("status");
+        assertThat(chamado.getStatus()).isEqualTo(StatusChamado.NA_FILA);
+    }
+
+    @Test
+    void chamadoResolvidoOuFechadoNaoPodeSerCancelado() {
+        Chamado chamado = chamadoTriado("VF-0001", QUARTA_AS_DEZ, TipoChamado.MANUTENCAO, 5, 3);
+        chamado.resolverComResumo("Motor substituído", PAULA, QUARTA_AS_DEZ.plusMinutes(6));
+
+        assertThat(erroAo(() -> chamado.cancelar(PAULA, "Cancelar depois de resolver", QUARTA_AS_DEZ.plusMinutes(7))).getStatusCode())
+                .isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    void reaberturaDoCanceladoVoltaParaOndeEstavaENaoContaOPeriodoNoSla() {
+        Chamado naFila = chamadoTriado("VF-0001", QUARTA_AS_DEZ, TipoChamado.MANUTENCAO, 5, 3);
+        Chamado emAtendimento = chamadoTriado("VF-0002", QUARTA_AS_DEZ, TipoChamado.MANUTENCAO, 5, 3);
+        emAtendimento.assumirAtendimento(PAULA, QUARTA_AS_DEZ.plusMinutes(6));
+        Chamado semTriagem = chamadoAberto("VF-0003", QUARTA_AS_DEZ);
+        for (Chamado chamado : List.of(naFila, emAtendimento, semTriagem)) {
+            chamado.cancelar(PAULA, "Cancelamento feito por engano", QUARTA_AS_DEZ.plusMinutes(8));
+            chamado.escalonar(PAULA, "Revisar cancelamento", QUARTA_AS_DEZ.plusMinutes(9));
+        }
+
+        assertThat(naFila.reabrirCancelado(QUARTA_AS_DEZ.plusMinutes(30))).isEqualTo(StatusChamado.NA_FILA);
+        assertThat(emAtendimento.reabrirCancelado(QUARTA_AS_DEZ.plusMinutes(30))).isEqualTo(StatusChamado.EM_ATENDIMENTO);
+        assertThat(semTriagem.reabrirCancelado(QUARTA_AS_DEZ.plusMinutes(30))).isEqualTo(StatusChamado.ABERTO);
+        assertThat(emAtendimento.getAtendimentoResponsavel()).isEqualTo(PAULA);
+        assertThat(naFila.getCanceladoEm()).isNull();
+        assertThat(naFila.getCancelamentoMotivo()).isNull();
+        assertThat(naFila.getEscalonadoEm()).isNull();
+        assertThat(naFila.getPausas()).singleElement().satisfies(pausa -> {
+            assertThat(pausa.paraPausa().inicio()).isEqualTo(QUARTA_AS_DEZ.plusMinutes(8).toInstant());
+            assertThat(pausa.paraPausa().fim()).isEqualTo(QUARTA_AS_DEZ.plusMinutes(30).toInstant());
+        });
+        assertThat(erroAo(() -> naFila.reabrirCancelado(QUARTA_AS_DEZ.plusMinutes(31))).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    void canceladoSaiDaFilaDeTriagem() {
         Chamado chamado = chamadoAberto("VF-0001", QUARTA_AS_DEZ);
+        assertThat(chamado.aguardaAnalise()).isTrue();
 
-        chamado.moverParaLixeira(QUARTA_AS_DEZ.plusMinutes(5));
+        chamado.cancelar(PAULA, "Chamado aberto em duplicidade", QUARTA_AS_DEZ.plusMinutes(2));
 
-        assertThat(chamado.naLixeira()).isTrue();
-        assertThat(chamado.getExcluidoEm()).isEqualTo(QUARTA_AS_DEZ.plusMinutes(5));
+        assertThat(chamado.aguardaAnalise()).isFalse();
+        assertThat(erroAo(() -> chamado.iniciarTriagem(PAULA, QUARTA_AS_DEZ.plusMinutes(3))).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
 
-        chamado.restaurar();
+    @Test
+    void transferenciaDeResponsavelTrocaAPessoaEColocaEmAtendimento() {
+        Chamado chamado = chamadoTriado("VF-0001", QUARTA_AS_DEZ, TipoChamado.MANUTENCAO, 5, 3);
+        Autor bruno = new Autor(UUID.randomUUID(), "Bruno Manutenção");
 
-        assertThat(chamado.naLixeira()).isFalse();
+        assertThat(chamado.transferirResponsavel(PAULA, QUARTA_AS_DEZ.plusMinutes(6))).isNull();
+        assertThat(chamado.getStatus()).isEqualTo(StatusChamado.EM_ATENDIMENTO);
+        assertThat(chamado.getPrimeiraRespostaEm()).isNull();
+
+        assertThat(chamado.transferirResponsavel(bruno, QUARTA_AS_DEZ.plusMinutes(7))).isEqualTo(PAULA);
+        assertThat(chamado.getAtendimentoResponsavel()).isEqualTo(bruno);
+        assertThat(chamado.getAtendimentoAssumidoEm()).isEqualTo(QUARTA_AS_DEZ.plusMinutes(7));
+        assertThat(erroAo(() -> chamado.transferirResponsavel(bruno, QUARTA_AS_DEZ.plusMinutes(8))).getStatusCode())
+                .isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    void transferenciaDeResponsavelMantemAguardando() {
+        Chamado chamado = chamadoTriado("VF-0001", QUARTA_AS_DEZ, TipoChamado.MANUTENCAO, 5, 3);
+        chamado.alterarStatus(StatusChamado.AGUARDANDO, MotivoAguardando.FORNECEDOR, QUARTA_AS_DEZ.plusMinutes(6));
+
+        chamado.transferirResponsavel(PAULA, QUARTA_AS_DEZ.plusMinutes(7));
+
+        assertThat(chamado.getStatus()).isEqualTo(StatusChamado.AGUARDANDO);
+        assertThat(chamado.getMotivoAguardando()).isEqualTo(MotivoAguardando.FORNECEDOR);
     }
 
     @Test

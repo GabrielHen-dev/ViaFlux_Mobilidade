@@ -2,21 +2,16 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Trash } from "lucide-react";
-import type { ChamadoResumo, PaginaChamados } from "@/types/chamado";
-import { moverParaLixeira } from "@/services/api/chamados";
-import { useApi } from "@/store/AuthContext";
-import { invalidarListas } from "@/hooks/consultas";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import type { ChamadoResumo, PaginaChamados, Status } from "@/types/chamado";
 import { PrioridadeIndicador, StatusBadge } from "@/components/ui/StatusBadge";
 import { SlaResumo } from "@/components/ui/SlaIndicador";
 import { BotaoDeEscalonamento, SeloDeEscalonamento } from "@/components/chamados/EscalonamentoDoChamado";
 import { PrazoDaTriagem } from "@/components/triagem/PrazoDaTriagem";
-import { AvisoDeErro } from "@/components/feedback/EstadoDaConsulta";
 import { cn } from "@/utils/cn";
 import { NOME_TIPO } from "@/utils/prioridade";
 
+const STATUS_SEM_PRAZO_CORRENDO: readonly Status[] = ["Fechado", "Cancelado"];
 const COLUNAS = ["Protocolo", "Cliente / Veículo", "Departamento / Tipo", "Status", "Prioridade", "Prazo", "Ações"];
 
 function slaCritico(chamado: ChamadoResumo) {
@@ -27,46 +22,21 @@ function PrazoDoChamado({ chamado }: { chamado: ChamadoResumo }) {
   if (chamado.prioridade === null) return <PrazoDaTriagem triagem={chamado.triagem} compacto />;
   return (
     <div className="flex flex-col items-start gap-1">
-      <SlaResumo sla={chamado.status === "Fechado" ? null : chamado.sla} />
+      <SlaResumo sla={STATUS_SEM_PRAZO_CORRENDO.includes(chamado.status) ? null : chamado.sla} />
       <SeloDeEscalonamento chamado={chamado} />
     </div>
-  );
-}
-
-function ExclusaoDaLinha({ chamado }: { chamado: ChamadoResumo }) {
-  const api = useApi();
-  const clienteDeConsultas = useQueryClient();
-  const [confirmando, setConfirmando] = useState(false);
-  const exclusao = useMutation({
-    mutationFn: () => moverParaLixeira(api, chamado.id),
-    onSuccess: () => { setConfirmando(false); void invalidarListas(clienteDeConsultas); },
-  });
-  if (exclusao.isError) return <AvisoDeErro erro={exclusao.error} />;
-  if (confirmando) {
-    return (
-      <span className="flex items-center gap-1">
-        <button type="button" disabled={exclusao.isPending} onClick={() => exclusao.mutate()} className="rounded bg-red-600 px-2 py-0.5 text-xs font-semibold text-white">Confirmar</button>
-        <button type="button" aria-label="Cancelar exclusão" onClick={() => setConfirmando(false)} className="text-xs text-[#94A3B8] hover:text-[#64748B]">✕</button>
-      </span>
-    );
-  }
-  return (
-    <button type="button" onClick={() => setConfirmando(true)} title="Mover para a lixeira" aria-label={`Excluir chamado ${chamado.id}`} className="text-[#CBD5E1] transition-colors hover:text-[#EF4444]">
-      <Trash size={14} />
-    </button>
   );
 }
 
 interface Props {
   resultado: PaginaChamados;
   pagina: number;
-  podeExcluir: boolean;
   podeTriar: boolean;
   podeAtender: boolean;
   aoMudarDePagina: (pagina: number) => void;
 }
 
-export default function TabelaDeChamados({ resultado, pagina, podeExcluir, podeTriar, podeAtender, aoMudarDePagina }: Props) {
+export default function TabelaDeChamados({ resultado, pagina, podeTriar, podeAtender, aoMudarDePagina }: Props) {
   const router = useRouter();
   return (
     <>
@@ -110,7 +80,6 @@ export default function TabelaDeChamados({ resultado, pagina, podeExcluir, podeT
                       <Link href={`/chamados/${chamado.id}`} className="text-xs font-semibold text-brand-blue hover:underline">Ver</Link>
                     )}
                     {podeAtender && <BotaoDeEscalonamento chamado={chamado} compacto />}
-                    {podeExcluir && <ExclusaoDaLinha chamado={chamado} />}
                   </div>
                 </td>
               </tr>

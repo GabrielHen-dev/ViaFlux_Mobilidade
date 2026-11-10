@@ -44,7 +44,7 @@ public class DisparoDeAlertasDeSla {
 
     @Transactional
     public void disparar(UUID chamadoId, OffsetDateTime agora) {
-        Chamado chamado = chamados.findById(chamadoId).filter(encontrado -> !encontrado.naLixeira()).orElse(null);
+        Chamado chamado = chamados.findById(chamadoId).filter(encontrado -> !encontrado.cancelado()).orElse(null);
         if (chamado == null) {
             return;
         }

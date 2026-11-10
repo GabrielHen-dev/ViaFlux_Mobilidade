@@ -40,8 +40,8 @@ export default function AlteracaoDeStatus({ chamado }: { chamado: Chamado }) {
   return (
     <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5 md:p-6" aria-labelledby="titulo-alteracao-status">
       <h2 id="titulo-alteracao-status" className="mb-4 font-display text-sm font-semibold text-brand-navy">Status do chamado</h2>
-      {chamado.status === "Fechado" ? (
-        <p className="text-sm text-slate-500">Este chamado está fechado.</p>
+      {chamado.status === "Fechado" || chamado.status === "Cancelado" ? (
+        <p className="text-sm text-slate-500">Este chamado está {chamado.status === "Fechado" ? "fechado" : "cancelado"}.</p>
       ) : (
         <div className="space-y-4">
           <div>

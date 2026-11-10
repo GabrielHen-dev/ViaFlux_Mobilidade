@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { ChartColumn, CirclePlus, ClipboardList, Inbox, LayoutGrid, ListOrdered, LogOut, Trash, Truck, Users } from "lucide-react";
+import { ChartColumn, CirclePlus, ClipboardList, Inbox, LayoutGrid, ListOrdered, LogOut, Truck, Users } from "lucide-react";
 import MarcaViaFlux from "@/components/ui/MarcaViaFlux";
 import Notificacoes from "@/components/layout/Notificacoes";
 import { useAuth, useUsuarioAutenticado } from "@/store/AuthContext";
 import {
-  PERFIS_COM_VISAO_GLOBAL, PERFIS_DA_CENTRAL, PERFIS_DA_LIXEIRA, PERFIS_DE_CLIENTE, PERFIS_DE_FORNECEDOR, PERFIS_DE_METRICAS, PERFIS_DE_TRIAGEM, PERFIS_QUE_ABREM_PELA_CENTRAL,
+  PERFIS_COM_VISAO_GLOBAL, PERFIS_DA_CENTRAL, PERFIS_DE_CLIENTE, PERFIS_DE_FORNECEDOR, PERFIS_DE_METRICAS, PERFIS_DE_TRIAGEM, PERFIS_QUE_ABREM_PELA_CENTRAL,
   usuarioTemPerfil,
 } from "@/utils/perfis";
 
@@ -63,7 +63,6 @@ export default function Sidebar() {
   const { sair } = useAuth();
   const usuario = useUsuarioAutenticado();
   const comVisaoGlobal = usuarioTemPerfil(usuario, PERFIS_COM_VISAO_GLOBAL);
-  const usaLixeira = usuarioTemPerfil(usuario, PERFIS_DA_LIXEIRA);
   const itens = itensDeMenuPara({
     central: usuarioTemPerfil(usuario, PERFIS_DA_CENTRAL),
     triagem: usuarioTemPerfil(usuario, PERFIS_DE_TRIAGEM),
@@ -75,7 +74,6 @@ export default function Sidebar() {
     admin: usuarioTemPerfil(usuario, ["ADMIN"]),
   });
   const perfis = usuario.perfis.map((perfil) => perfil.descricao).join(" · ");
-  const naLixeira = caminho === "/lixeira";
 
   return (
     <aside className="viaflux-sidebar fixed left-0 top-0 z-20 flex h-full w-56 flex-col" style={{ background: "var(--brand-navy)" }}>
@@ -116,23 +114,6 @@ export default function Sidebar() {
 
         <div className="flex-1" />
 
-        {usaLixeira && (
-          <div className="sidebar-trash border-t border-white/10 pt-3">
-            <Link
-              href="/lixeira"
-              aria-current={naLixeira ? "page" : undefined}
-              className="alvo-toque flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150"
-              style={{
-                background: naLixeira ? "rgba(220,38,38,0.2)" : "transparent",
-                color: naLixeira ? "#FCA5A5" : "rgba(255,255,255,0.45)",
-                borderLeft: naLixeira ? "3px solid #EF4444" : "3px solid transparent",
-              }}
-            >
-              <Trash size={18} aria-hidden />
-              Lixeira
-            </Link>
-          </div>
-        )}
       </nav>
 
       <div className="sidebar-user border-t border-white/10 px-4 py-4">
