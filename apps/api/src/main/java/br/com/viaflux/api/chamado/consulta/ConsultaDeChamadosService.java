@@ -2,6 +2,7 @@ package br.com.viaflux.api.chamado.consulta;
 
 
 import br.com.viaflux.api.chamado.AcessoAosChamados;
+import br.com.viaflux.api.chamado.Autor;
 import br.com.viaflux.api.chamado.Chamado;
 import br.com.viaflux.api.chamado.ChamadoResponse;
 import br.com.viaflux.api.chamado.ChamadoResumoResponse;
@@ -69,6 +70,11 @@ public class ConsultaDeChamadosService{
         return ChamadosPageResponse.de(filtrados, page, size);
     }
 
+    private static boolean atendidoPor(Chamado chamado, UsuarioAtual usuario) {
+        Autor responsavel = chamado.getAtendimentoResponsavel();
+        return responsavel != null && usuario.id().equals(responsavel.id());
+    }
+
     private static boolean filaAtiva(String status) {
         return !StatusChamado.RESOLVIDO.getRotulo().equals(status)
                 && !StatusChamado.FECHADO.getRotulo().equals(status)
@@ -119,6 +125,7 @@ public class ConsultaDeChamadosService{
                 .filter(chamado -> filtros.departamento() == null || chamado.getDepartamento() == filtros.departamento())
                 .filter(chamado -> filtros.tipo() == null || chamado.tipoVigente() == filtros.tipo())
                 .filter(chamado -> filtros.prioridade() == null || chamado.prioridadeEfetiva() == filtros.prioridade())
+                .filter(chamado -> !filtros.apenasMeus() || atendidoPor(chamado, usuario))
                 .map(montagem::resumo)
                 .filter(porSla(filtros.sla()));
     }

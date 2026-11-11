@@ -20,7 +20,7 @@ export function podeEscalonar(chamado: ChamadoResumo) {
   return chamado.status === "Cancelado" || (!STATUS_ENCERRADOS.includes(chamado.status) && slaVencido(chamado.sla));
 }
 
-function DialogoDeEscalonamento({ chamado, aoFechar }: { chamado: ChamadoResumo; aoFechar: () => void }) {
+export function DialogoDeEscalonamento({ chamado, aoFechar }: { chamado: ChamadoResumo; aoFechar: () => void }) {
   const idDoTitulo = useId();
   const campo = useRef<HTMLTextAreaElement>(null);
   const [observacao, setObservacao] = useState("");
@@ -46,19 +46,19 @@ function DialogoDeEscalonamento({ chamado, aoFechar }: { chamado: ChamadoResumo;
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-brand-navy/40 p-4 backdrop-blur-[2px] sm:items-center" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) aoFechar(); }}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#0B2545]/40 p-4 sm:items-center" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) aoFechar(); }}>
       <div role="dialog" aria-modal="true" aria-labelledby={idDoTitulo} className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
         <div className="mb-4 flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600"><ShieldAlert size={20} aria-hidden /></span>
             <div>
-              <h2 id={idDoTitulo} className="font-display text-base font-bold text-brand-navy">Escalonar à liderança</h2>
+              <h2 id={idDoTitulo} className="font-display text-base font-bold text-tinta">Escalonar à liderança</h2>
               <p className="mt-0.5 text-sm text-slate-500">Chamado #{chamado.id} · {chamado.status === "Cancelado" ? "revisão do cancelamento" : "SLA vencido"}</p>
             </div>
           </div>
           <button type="button" onClick={aoFechar} aria-label="Fechar" className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"><X size={16} /></button>
         </div>
-        <label htmlFor={`${idDoTitulo}-observacao`} className="mb-2 block text-xs font-semibold uppercase tracking-wide text-[#475569]">Observação (opcional)</label>
+        <label htmlFor={`${idDoTitulo}-observacao`} className="mb-2 block text-xs font-medium text-[#475569]">Observação (opcional)</label>
         <textarea
           ref={campo}
           id={`${idDoTitulo}-observacao`}
@@ -67,10 +67,10 @@ function DialogoDeEscalonamento({ chamado, aoFechar }: { chamado: ChamadoResumo;
           value={observacao}
           onChange={(evento) => setObservacao(evento.target.value)}
           placeholder="Contexto para a liderança"
-          className="w-full resize-none rounded-lg border border-[#E2E8F0] px-3.5 py-2.5 text-sm text-brand-dark outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10"
+          className="w-full resize-none rounded-lg border border-linha px-3.5 py-2.5 text-sm text-brand-dark outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10"
         />
         <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <button type="button" onClick={aoFechar} className="alvo-toque rounded-xl border border-[#E2E8F0] px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancelar</button>
+          <button type="button" onClick={aoFechar} className="vf-botao-secundario alvo-toque rounded-xl border border-linha px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancelar</button>
           <button type="button" disabled={escalonamento.isPending} onClick={confirmar} className="alvo-toque inline-flex items-center justify-center gap-1.5 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50">
             <ArrowUpRight size={15} aria-hidden /> {escalonamento.isPending ? "Escalonando…" : "Escalonar"}
           </button>
@@ -95,7 +95,7 @@ export function BotaoDeEscalonamento({ chamado, compacto = false }: { chamado: C
           "alvo-toque inline-flex items-center gap-1.5 font-semibold transition-colors",
           compacto
             ? "rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-700 hover:bg-red-100"
-            : "rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700 hover:bg-red-100",
+            : "vf-botao-perigo px-4 py-2",
         )}
       >
         <ArrowUpRight size={compacto ? 12 : 14} aria-hidden /> {compacto ? "Escalonar" : "Escalonar à liderança"}

@@ -36,13 +36,13 @@ function FormularioDoChamado({ usuario }: { usuario: UsuarioAutenticado }) {
   const listaDeErros = Object.entries(erros).filter(([, mensagem]) => mensagem) as [CampoDoFormulario, string][];
 
   return (
-    <main id="conteudo" className="p-4 md:p-8">
+    <main id="conteudo" className="vf-pagina">
       <div className="mx-auto max-w-2xl">
         <div className="mb-6 flex items-center gap-4">
-          <Link href={ehCliente ? "/portal" : "/"} aria-label="Voltar" className="alvo-toque flex h-9 w-9 items-center justify-center rounded-xl border border-[#E2E8F0] text-[#64748B] transition-all hover:border-[#CBD5E1] hover:bg-white">
+          <Link href={ehCliente ? "/portal" : "/"} aria-label="Voltar" className="alvo-toque flex h-9 w-9 items-center justify-center rounded-xl border border-linha text-[#64748B] transition-all hover:border-[#CBD5E1] hover:bg-white">
             <ChevronLeft size={16} />
           </Link>
-          <h1 className="font-display text-2xl font-bold text-brand-navy">Novo Chamado</h1>
+          <h1 className="font-display text-2xl font-bold text-tinta">Novo Chamado</h1>
         </div>
 
         <AvisoDeEmailNaoVerificado usuario={usuario} />
@@ -78,7 +78,7 @@ function FormularioDoChamado({ usuario }: { usuario: UsuarioAutenticado }) {
           <SecaoDoVeiculoELocal campos={campos} erros={erros} alterar={alterar} />
           <SecaoDeAnexos arquivos={abertura.arquivos} aoAdicionar={abertura.adicionarArquivos} aoRemover={abertura.removerArquivo} />
 
-          <button type="submit" disabled={abertura.enviando || emailPendente(usuario)} className="alvo-toque w-full rounded-xl bg-brand-green py-3.5 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60">
+          <button type="submit" disabled={abertura.enviando || emailPendente(usuario)} className="alvo-toque w-full rounded-xl vf-botao-primario py-3.5 text-sm font-semibold text-white transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60">
             {abertura.enviando ? "Enviando…" : abertura.falhaDoEnvio ? "Tentar novamente" : "Abrir Chamado"}
           </button>
         </form>

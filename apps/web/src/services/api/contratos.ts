@@ -24,6 +24,7 @@ export interface FiltrosChamados {
   sla?: SituacaoSlaFiltravel;
   etapa?: Etapa;
   ordenacao?: "fila" | "recentes" | "ativos_recentes";
+  responsavel?: "eu";
   page?: number;
   size?: number;
 }
@@ -67,6 +68,7 @@ export interface DadosTransferenciaDeResponsavel {
 export interface DadosAtualizacao {
   texto: string;
   visivelCliente: boolean;
+  destino?: "SOLICITANTE" | "INTERNO" | "FORNECEDOR";
 }
 
 export interface DadosArquivoNaConversa {

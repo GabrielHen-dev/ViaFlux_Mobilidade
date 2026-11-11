@@ -21,7 +21,7 @@ export default function EtapasDoChamado({ chamado }: { chamado: Chamado }) {
   const atual = ETAPA_DO_STATUS[chamado.status];
   const emAnalise = chamado.prioridade === null;
   return (
-    <section aria-label="Andamento do chamado" className="rounded-2xl border border-[#E2E8F0] bg-white p-5">
+    <section aria-label="Andamento do chamado" className="rounded-2xl border border-linha bg-white p-5">
       <ol className="grid grid-cols-3 gap-x-2 gap-y-4 sm:grid-cols-6">
         {ETAPAS.map((etapa, indice) => {
           const concluida = indice < atual || (indice === atual && chamado.status === "Fechado");
@@ -29,7 +29,7 @@ export default function EtapasDoChamado({ chamado }: { chamado: Chamado }) {
           return (
             <li key={etapa} aria-current={corrente ? "step" : undefined} className="flex flex-col items-center gap-1.5 text-center">
               <span className={cn("flex h-7 w-7 items-center justify-center rounded-full border-2 text-xs font-bold",
-                concluida ? "border-brand-green bg-brand-green text-white" : corrente ? "border-brand-blue text-brand-blue" : "border-slate-200 text-slate-400")}>
+                concluida ? "border-brand-green bg-brand-green text-white" : corrente ? "border-brand-blue text-acao" : "border-slate-200 text-slate-400")}>
                 {concluida ? <Check size={14} strokeWidth={3} aria-hidden /> : indice + 1}
               </span>
               <span className={cn("text-[11px] leading-tight", corrente ? "font-semibold text-brand-dark" : "text-slate-500")}>{etapa}</span>

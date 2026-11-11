@@ -6,13 +6,14 @@ import { ErroApi } from "@/services/api/cliente";
 import { useChamado } from "@/hooks/consultas";
 import ChamadoIndisponivel from "@/components/feedback/ChamadoIndisponivel";
 import { Carregando, FalhaAoCarregar } from "@/components/feedback/EstadoDaConsulta";
+import RaizDaPagina from "@/components/layout/RaizDaPagina";
 
 export default function ComChamado({ id, children }: { id: string; children: (chamado: Chamado) => ReactNode }) {
   const consulta = useChamado(id);
-  if (consulta.isPending) return <main id="conteudo" className="p-4 md:p-8"><Carregando texto={`Carregando chamado ${id}…`} /></main>;
+  if (consulta.isPending) return <RaizDaPagina className="vf-pagina"><Carregando texto={`Carregando chamado ${id}…`} /></RaizDaPagina>;
   if (consulta.isError) {
     if (consulta.error instanceof ErroApi && consulta.error.status === 404) return <ChamadoIndisponivel id={id} />;
-    return <main id="conteudo" className="p-4 md:p-8"><FalhaAoCarregar erro={consulta.error} aoTentarDeNovo={() => void consulta.refetch()} /></main>;
+    return <RaizDaPagina className="vf-pagina"><FalhaAoCarregar erro={consulta.error} aoTentarDeNovo={() => void consulta.refetch()} /></RaizDaPagina>;
   }
   return children(consulta.data);
 }

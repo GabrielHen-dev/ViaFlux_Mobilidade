@@ -21,7 +21,7 @@ const OPCOES_DE_PRIORIDADE: OpcaoDoSelect[] = [
   ...CODIGOS_PRIORIDADE.map((codigo) => ({ valor: codigo, rotulo: `${codigo} · ${ROTULO_PRIORIDADE[codigo]}` })),
 ];
 const OPCOES_DE_TIPO: OpcaoDoSelect[] = [{ valor: "", rotulo: "Todos" }, ...TIPOS_CHAMADO.map((tipo) => ({ valor: tipo, rotulo: NOME_TIPO[tipo] }))];
-const campoClass = "alvo-toque w-full rounded-lg border border-[#E2E8F0] bg-white px-3 py-2 text-sm outline-none focus:border-brand-blue";
+const campoClass = "alvo-toque w-full rounded-lg border border-linha bg-white px-3 py-2 text-sm outline-none focus:border-brand-blue";
 
 function valorFormatado(indicador: IndicadorMetrica) {
   if (indicador.valor === null) return "Sem dados no período";
@@ -32,14 +32,14 @@ function valorFormatado(indicador: IndicadorMetrica) {
 
 function CartaoDeIndicador({ indicador }: { indicador: IndicadorMetrica }) {
   return (
-    <div className="rounded-2xl border border-[#E2E8F0] bg-white p-4">
-      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{indicador.rotulo}</div>
+    <div className="rounded-2xl border border-linha bg-white p-4">
+      <div className="text-xs font-medium text-slate-500">{indicador.rotulo}</div>
       {indicador.pendenteDeLevantamento ? (
         <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
           <Hourglass size={12} aria-hidden /> Pendente de levantamento
         </div>
       ) : (
-        <div className="mt-1 font-display text-2xl font-bold text-brand-navy">{valorFormatado(indicador)}</div>
+        <div className="mt-1 font-display text-2xl font-bold text-tinta">{valorFormatado(indicador)}</div>
       )}
       <p className="mt-2 text-xs text-slate-500">{indicador.observacao}</p>
     </div>
@@ -76,19 +76,19 @@ function ConteudoDasMetricas() {
   const total = metricas.data?.totalChamados ?? 0;
 
   return (
-    <main id="conteudo" className="p-4 md:p-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <main id="conteudo" className="vf-pagina">
+      <div className="vf-cabecalho-pagina mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold text-brand-navy">Métricas operacionais</h1>
+          <h1 className="font-display text-2xl font-bold text-tinta">Métricas operacionais</h1>
           <p className="text-sm text-slate-500">Indicadores do período selecionado. A exportação não inclui dados pessoais.</p>
         </div>
-        <button type="button" onClick={exportar} disabled={exportando || periodoInvalido} className="alvo-toque inline-flex items-center gap-2 rounded-xl bg-brand-blue px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40">
+        <button type="button" onClick={exportar} disabled={exportando || periodoInvalido} className="alvo-toque inline-flex items-center gap-2 rounded-xl vf-botao-primario px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40">
           <Download size={14} aria-hidden /> {exportando ? "Exportando…" : "Exportar CSV"}
         </button>
       </div>
       {erroDeExportacao && <div className="mb-4"><AvisoDeErro erro={new Error(erroDeExportacao)} /></div>}
 
-      <div className="mb-6 grid grid-cols-1 gap-3 rounded-2xl border border-[#E2E8F0] bg-white p-4 sm:grid-cols-2 lg:grid-cols-6">
+      <div className="mb-6 grid grid-cols-1 gap-3 rounded-2xl border border-linha bg-white p-4 sm:grid-cols-2 lg:grid-cols-6">
         <label className="text-xs font-semibold text-slate-500">De
           <input type="date" className={campoClass} value={filtros.de} max={filtros.ate} onChange={(evento) => setFiltros({ ...filtros, de: evento.target.value })} />
         </label>
@@ -123,8 +123,8 @@ function ConteudoDasMetricas() {
         <FalhaAoCarregar erro={metricas.error} aoTentarDeNovo={() => void metricas.refetch()} />
       ) : (
         <div className="space-y-6">
-          <section className="rounded-2xl border border-[#E2E8F0] bg-white p-4" aria-labelledby="distribuicao">
-            <h2 id="distribuicao" className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Distribuição por prioridade · {total} chamados</h2>
+          <section className="rounded-2xl border border-linha bg-white p-4" aria-labelledby="distribuicao">
+            <h2 id="distribuicao" className="mb-3 text-xs font-medium text-slate-500">Distribuição por prioridade · {total} chamados</h2>
             <div className="space-y-2">
               {CODIGOS_PRIORIDADE.map((codigo) => {
                 const quantidade = metricas.data.distribuicaoPorPrioridade[codigo];

@@ -1,12 +1,13 @@
 package br.com.viaflux.api.chamado;
 
-
 import br.com.viaflux.api.chamado.anexo.AnexoResponse;
 import br.com.viaflux.api.chamado.anexo.AnexoService;
 import br.com.viaflux.api.chamado.anexo.ChamadoAnexo;
 import br.com.viaflux.api.chamado.anexo.VisibilidadeDoConteudo;
 import br.com.viaflux.api.chamado.atendimento.AtendimentoService;
 import br.com.viaflux.api.chamado.atendimento.AtualizacaoRequest;
+import br.com.viaflux.api.chamado.servico.ServicoTerceiro;
+import br.com.viaflux.api.usuario.TipoOrganizacao;
 import br.com.viaflux.api.usuario.Usuario;
 import br.com.viaflux.api.usuario.UsuarioAtual;
 import org.assertj.core.groups.Tuple;
@@ -416,5 +417,36 @@ class ConversaDoChamadoTests {
         atendimento.registrarAtualizacao("VF-0001", publica("x".repeat(500)), atendente());
 
         assertThat(avisos.getFirst().mensagem()).endsWith("…").hasSizeLessThan(200);
+    }
+
+    @Test
+    void mensagemAoFornecedorExigeUmFornecedorAcionado() {
+        ErroDeChamado erro = erroAo(() -> atendimento.registrarAtualizacao("VF-0001", new AtualizacaoRequest("Qual a previsão?", false, "FORNECEDOR"), atendente()));
+
+        assertThat(erro.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(ambiente.eventosDoTipo(TipoEvento.ATUALIZACAO)).isEmpty();
+    }
+
+    @Test
+    void mensagemAoFornecedorNaoChegaAoSolicitanteNemContaComoPrimeiraResposta() {
+        given(ambiente.servicos.findByChamadoIdAndCanceladoFalseOrderByAtualizadoEmDesc(any(UUID.class))).willReturn(List.of(new ServicoTerceiro(chamado, ChamadosDeTeste.organizacao("Guincho Rápido", TipoOrganizacao.FORNECEDOR), "Reboque", "", "", BRUNA, QUARTA_AS_DEZ.plusMinutes(10))));
+
+        atendimento.registrarAtualizacao("VF-0001", new AtualizacaoRequest("Qual a previsão?", false, "fornecedor"), atendente());
+
+        ChamadoEvento mensagem = ambiente.eventosDoTipo(TipoEvento.ATUALIZACAO).getFirst();
+        assertThat(mensagem.getVisibilidade()).isEqualTo(VisibilidadeDoConteudo.FORNECEDOR);
+        assertThat(mensagem.isVisivelCliente()).isFalse();
+        assertThat(mensagem.getAcao()).isEqualTo("Mensagem ao fornecedor");
+        assertThat(ambiente.historico.mensagensAoFornecedor(chamado)).containsExactly(mensagem);
+        assertThat(conversa.consultar("VF-0001", ana).mensagens()).isEmpty();
+        assertThat(avisos).isEmpty();
+        assertThat(chamado.getPrimeiraRespostaEm()).isNull();
+    }
+
+    @Test
+    void destinoDesconhecidoEhRecusado() {
+        ErroDeChamado erro = erroAo(() -> atendimento.registrarAtualizacao("VF-0001", new AtualizacaoRequest("Oi", true, "GERENTE"), atendente()));
+
+        assertThat(errosDeCampo(erro)).containsKey("destino");
     }
 }

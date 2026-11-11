@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { ChamadoResumo, PaginaChamados, Status } from "@/types/chamado";
-import { PrioridadeIndicador, StatusBadge } from "@/components/ui/StatusBadge";
+import { APARENCIA_DA_PRIORIDADE, PrioridadeIndicador, StatusBadge } from "@/components/ui/StatusBadge";
 import { SlaResumo } from "@/components/ui/SlaIndicador";
 import { BotaoDeEscalonamento, SeloDeEscalonamento } from "@/components/chamados/EscalonamentoDoChamado";
 import { PrazoDaTriagem } from "@/components/triagem/PrazoDaTriagem";
@@ -41,43 +41,46 @@ export default function TabelaDeChamados({ resultado, pagina, podeTriar, podeAte
   return (
     <>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[960px]">
+        <table className="vf-tabela min-w-[960px]">
           <thead>
-            <tr className="bg-brand-light">
+            <tr>
               {COLUNAS.map((titulo) => (
-                <th key={titulo} scope="col" className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#94A3B8]">{titulo}</th>
+                <th key={titulo} scope="col" className="px-4 py-2.5 text-left">{titulo}</th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#F1F5F9]">
+          <tbody>
             {resultado.content.map((chamado) => (
-              <tr key={chamado.id} className={cn("cursor-pointer transition-colors hover:bg-brand-light", slaCritico(chamado) && "bg-orange-50/40")} onClick={() => router.push(`/chamados/${chamado.id}`)}>
-                <td className="px-5 py-4">
-                  <Link href={`/chamados/${chamado.id}`} onClick={(evento) => evento.stopPropagation()} className="text-sm font-bold text-brand-blue">#{chamado.id}</Link>
+              <tr key={chamado.id} className={cn("cursor-pointer transition-colors", slaCritico(chamado) && "bg-orange-50/60")} onClick={() => router.push(`/chamados/${chamado.id}`)}>
+                <td className="px-4 py-2.5">
+                  <div className="flex items-stretch gap-2.5">
+                    <span className="vf-marcador" style={{ background: chamado.prioridade ? APARENCIA_DA_PRIORIDADE[chamado.prioridade].texto : "#C9CED6" }} aria-hidden />
+                    <Link href={`/chamados/${chamado.id}`} onClick={(evento) => evento.stopPropagation()} className="self-center text-sm font-medium text-acao">#{chamado.id}</Link>
+                  </div>
                 </td>
-                <td className="px-5 py-4">
-                  <div className="text-sm font-semibold text-brand-dark">{chamado.cliente}</div>
+                <td className="px-4 py-2.5">
+                  <div className="text-sm font-medium text-tinta">{chamado.cliente}</div>
                   <div className="mt-0.5 text-xs text-[#94A3B8]">{[chamado.modelo, chamado.placa].filter(Boolean).join(" · ")}</div>
                 </td>
-                <td className="px-5 py-4 text-sm text-[#475569]">
+                <td className="px-4 py-2.5 text-sm text-[#475569]">
                   <div>{chamado.departamento?.nome ?? (chamado.prioridade === null ? "Central" : "—")}</div>
                   <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-[#94A3B8]">
                     {chamado.tipo ? `Tipo: ${NOME_TIPO[chamado.tipo]}` : "Aguardando classificação"}
                     {chamado.triagem.revisaoPendente && <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-700">revisar</span>}
                   </div>
                 </td>
-                <td className="px-5 py-4">
+                <td className="px-4 py-2.5">
                   <StatusBadge status={chamado.status} />
                   {chamado.atendimento && <div className="mt-1 text-xs text-[#94A3B8]">com {chamado.atendimento.responsavel.nome}</div>}
                 </td>
-                <td className="px-5 py-4"><PrioridadeIndicador prioridade={chamado.prioridade} score={chamado.score} /></td>
-                <td className="px-5 py-4"><PrazoDoChamado chamado={chamado} /></td>
-                <td className="px-5 py-4">
+                <td className="px-4 py-2.5"><PrioridadeIndicador prioridade={chamado.prioridade} score={chamado.score} /></td>
+                <td className="px-4 py-2.5"><PrazoDoChamado chamado={chamado} /></td>
+                <td className="px-4 py-2.5">
                   <div className="flex items-center gap-2" onClick={(evento) => evento.stopPropagation()}>
                     {podeTriar && (chamado.prioridade === null || chamado.triagem.revisaoPendente) ? (
-                      <Link href={`/chamados/${chamado.id}/triagem`} className="text-xs font-semibold text-brand-green hover:underline">{chamado.prioridade === null ? "Classificar" : "Revisar"}</Link>
+                      <Link href={`/chamados/${chamado.id}/triagem`} className="text-xs font-medium text-acao hover:underline">{chamado.prioridade === null ? "Classificar" : "Revisar"}</Link>
                     ) : (
-                      <Link href={`/chamados/${chamado.id}`} className="text-xs font-semibold text-brand-blue hover:underline">Ver</Link>
+                      <Link href={`/chamados/${chamado.id}`} className="text-xs font-medium text-acao hover:underline">Ver</Link>
                     )}
                     {podeAtender && <BotaoDeEscalonamento chamado={chamado} compacto />}
                   </div>

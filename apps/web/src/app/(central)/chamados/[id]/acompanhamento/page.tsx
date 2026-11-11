@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import AcompanhamentoTerceiro from "@/components/chamados/AcompanhamentoTerceiro";
+import DetalhesChamado from "@/components/chamados/DetalhesChamado";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  return { title: `Serviço terceirizado · ${id}` };
+  return { title: `Acompanhamento · ${id}` };
 }
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return <AcompanhamentoTerceiro id={id} />;
+  return <DetalhesChamado id={id} painel="acompanhamento" />;
 }

@@ -16,8 +16,8 @@ const OPCOES_DO_AGUARDANDO: Record<MotivoAguardando, Omit<OpcaoDoSelect, "valor"
   OUTRO_DEPARTAMENTO: { rotulo: "Outro departamento", descricao: "SLA segue contando" },
 };
 const OPCOES_DE_MOTIVO_AGUARDANDO: OpcaoDoSelect[] = MOTIVOS_AGUARDANDO.map((motivo) => ({ valor: motivo, ...OPCOES_DO_AGUARDANDO[motivo] }));
-const labelClass = "mb-2 block text-xs font-semibold uppercase tracking-wide text-[#475569]";
-const inputClass = "w-full rounded-lg border border-[#E2E8F0] bg-white px-3.5 py-2.5 text-sm text-brand-dark outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10";
+const labelClass = "mb-2 block text-xs font-medium text-[#475569]";
+const inputClass = "w-full rounded-lg border border-linha bg-white px-3.5 py-2.5 text-sm text-brand-dark outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10";
 
 export default function AlteracaoDeStatus({ chamado }: { chamado: Chamado }) {
   const [status, setStatus] = useState<Status>(chamado.status);
@@ -38,8 +38,8 @@ export default function AlteracaoDeStatus({ chamado }: { chamado: Chamado }) {
   }
 
   return (
-    <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5 md:p-6" aria-labelledby="titulo-alteracao-status">
-      <h2 id="titulo-alteracao-status" className="mb-4 font-display text-sm font-semibold text-brand-navy">Status do chamado</h2>
+    <section className="rounded-2xl border border-linha bg-white p-5 md:p-6" aria-labelledby="titulo-alteracao-status">
+      <h2 id="titulo-alteracao-status" className="mb-4 font-display text-sm font-semibold text-tinta">Status do chamado</h2>
       {chamado.status === "Fechado" || chamado.status === "Cancelado" ? (
         <p className="text-sm text-slate-500">Este chamado está {chamado.status === "Fechado" ? "fechado" : "cancelado"}.</p>
       ) : (
@@ -79,7 +79,7 @@ export default function AlteracaoDeStatus({ chamado }: { chamado: Chamado }) {
             </div>
           )}
           {mudanca.isError && <AvisoDeErro erro={mudanca.error} />}
-          <button type="button" disabled={!formularioValido || mudanca.isPending} onClick={atualizar} className="alvo-toque w-full rounded-xl bg-brand-blue py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40">
+          <button type="button" disabled={!formularioValido || mudanca.isPending} onClick={atualizar} className="alvo-toque w-full rounded-xl vf-botao-primario py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-40">
             {mudanca.isPending ? "Atualizando…" : "Atualizar status"}
           </button>
         </div>

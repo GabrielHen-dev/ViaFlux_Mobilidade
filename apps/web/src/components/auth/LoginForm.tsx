@@ -37,7 +37,7 @@ export default function LoginForm() {
     <CartaoDeAcesso
       titulo="Acessar conta"
       subtitulo="Central de Chamados ViaFlux"
-      rodape={<>Não tem uma conta? <Link href="/cadastro" className="font-semibold text-brand-green underline-offset-2 hover:underline">Criar conta</Link></>}
+      rodape={<>Não tem uma conta? <Link href="/cadastro" className="font-semibold text-acao underline-offset-2 hover:underline">Criar conta</Link></>}
     >
       <form onSubmit={enviar}>
         <div className="mb-4">

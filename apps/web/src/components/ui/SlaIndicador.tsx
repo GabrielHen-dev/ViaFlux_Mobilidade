@@ -7,11 +7,11 @@ import { cn } from "@/utils/cn";
 import { descreverTempoAte, formatarDataHora, formatarDuracao } from "@/utils/date";
 
 const APARENCIA: Record<SituacaoSla, { rotulo: string; fundo: string; texto: string; barra: string; Icone: LucideIcon }> = {
-  NO_PRAZO: { rotulo: "No prazo", fundo: "#F0FDF4", texto: "#15803D", barra: "bg-brand-green", Icone: Clock },
-  EM_RISCO: { rotulo: "Em risco", fundo: "#FFF7ED", texto: "#C2410C", barra: "bg-amber-500", Icone: TriangleAlert },
-  VIOLADO: { rotulo: "Vencido", fundo: "#FEF2F2", texto: "#B91C1C", barra: "bg-red-500", Icone: CircleX },
-  CUMPRIDO: { rotulo: "Cumprido", fundo: "#F0FDF4", texto: "#15803D", barra: "bg-brand-green", Icone: CircleCheck },
-  CUMPRIDO_COM_ATRASO: { rotulo: "Cumprido com atraso", fundo: "#FEF2F2", texto: "#B91C1C", barra: "bg-red-500", Icone: CircleCheck },
+  NO_PRAZO: { rotulo: "No prazo", fundo: "var(--vf-sla-no-prazo-fundo)", texto: "var(--vf-sla-no-prazo)", barra: "bg-brand-green", Icone: Clock },
+  EM_RISCO: { rotulo: "Em risco", fundo: "var(--vf-sla-em-risco-fundo)", texto: "var(--vf-sla-em-risco)", barra: "bg-amber-500", Icone: TriangleAlert },
+  VIOLADO: { rotulo: "Vencido", fundo: "var(--vf-sla-violado-fundo)", texto: "var(--vf-sla-violado)", barra: "bg-red-500", Icone: CircleX },
+  CUMPRIDO: { rotulo: "Cumprido", fundo: "var(--vf-sla-no-prazo-fundo)", texto: "var(--vf-sla-no-prazo)", barra: "bg-brand-green", Icone: CircleCheck },
+  CUMPRIDO_COM_ATRASO: { rotulo: "Cumprido com atraso", fundo: "var(--vf-sla-violado-fundo)", texto: "var(--vf-sla-violado)", barra: "bg-red-500", Icone: CircleCheck },
 };
 
 export type EtapaDoSla = "INICIO" | "SOLUCAO";
@@ -88,7 +88,7 @@ function MarcoDoSla({ etapa, prazo, vigente }: { etapa: EtapaDoSla; prazo: Prazo
       >
         {cumprido ? <Check size={13} strokeWidth={3} /> : <span className={cn("h-2 w-2 rounded-full", vigente ? "bg-brand-blue" : "bg-slate-200")} style={vigente && prazo.situacao !== "NO_PRAZO" ? { background: texto } : undefined} />}
       </span>
-      <span className={cn("text-xs font-semibold", vigente ? "text-brand-navy" : "text-slate-500")}>{NOME_DA_ETAPA[etapa]}</span>
+      <span className={cn("text-xs font-semibold", vigente ? "text-tinta" : "text-slate-500")}>{NOME_DA_ETAPA[etapa]}</span>
       <span className="text-[11px] leading-snug text-slate-500">
         {cumprido ? `Concluído em ${formatarDataHora(prazo.cumpridoEm as string)}` : `Até ${formatarDataHora(prazo.limite)}`}
       </span>

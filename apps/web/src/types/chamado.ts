@@ -106,6 +106,7 @@ export interface Mensagem {
   visivelCliente: boolean;
   origem: "SOLICITANTE" | "EQUIPE";
   anexo: Anexo | null;
+  visibilidade?: "INTERNO" | "SOLICITANTE" | "FORNECEDOR";
 }
 
 export interface Conversa {
@@ -182,6 +183,14 @@ export interface ServicoDoFornecedor {
   status: StatusServico;
   atualizadoEm: string;
   historico: AtualizacaoServico[];
+  mensagens?: MensagemAoFornecedor[];
+}
+
+export interface MensagemAoFornecedor {
+  id: string;
+  texto: string;
+  autor: Autor | null;
+  enviadaEm: string;
 }
 
 export interface Triagem {
@@ -229,6 +238,8 @@ export interface ChamadoResumo {
   triagem: Triagem;
   atendimento: Atendimento | null;
   escalonamento: Escalonamento | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface Chamado extends ChamadoResumo {

@@ -30,7 +30,7 @@ export default function Reclassificacao({ chamado, vigente, aoConcluir }: Props)
 
   return (
     <section className={cartaoClass}>
-      <h2 className="mb-4 font-display text-sm font-semibold text-brand-navy">Reclassificar</h2>
+      <h2 className="mb-4 font-display text-sm font-semibold text-tinta">Reclassificar</h2>
       <div className="space-y-4">
         <SeletorDeTipo id="triagem-tipo" rotulo="Tipo" valor={tipo} aoAlterar={(novoTipo) => { if (novoTipo) setTipo(novoTipo); }} />
         <SeletorDePeso nome="severidade" rotulo="Severidade (impacto)" valor={severidade} aoAlterar={setSeveridade} />
@@ -42,7 +42,7 @@ export default function Reclassificacao({ chamado, vigente, aoConcluir }: Props)
           ) : (
             <p className="text-xs text-slate-500">
               O chamado permanece em {departamentoAtual.nome}.{" "}
-              <Link href={`/chamados/${chamado.id}/encaminhamento`} className="font-semibold text-brand-blue underline">Transferir</Link>
+              <Link href={`/chamados/${chamado.id}/encaminhamento`} className="font-semibold text-acao underline">Transferir</Link>
             </p>
           )
         )}
@@ -57,7 +57,7 @@ export default function Reclassificacao({ chamado, vigente, aoConcluir }: Props)
               aoConcluir(`Chamado reclassificado · ${atualizado.classificacao?.prioridade} (score ${atualizado.classificacao?.score})`);
             },
           })}
-          className="alvo-toque w-full rounded-xl bg-brand-green py-3 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 disabled:opacity-40"
+          className="alvo-toque w-full rounded-xl vf-botao-primario py-3 text-sm font-semibold text-white transition-all disabled:opacity-40"
         >
           {reclassificacao.isPending ? "Salvando…" : "Confirmar reclassificação"}
         </button>

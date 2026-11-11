@@ -105,11 +105,12 @@ public class ChamadoController {
             @Parameter(description = "NO_PRAZO, EM_RISCO ou VIOLADO") @RequestParam(required = false) String sla,
             @Parameter(description = "TRIAGEM ou ATENDIMENTO") @RequestParam(required = false) String etapa,
             @Parameter(description = "fila, recentes ou ativos_recentes") @RequestParam(required = false) String ordenacao,
+            @Parameter(description = "eu: só os chamados em atendimento com o usuário autenticado") @RequestParam(required = false) String responsavel,
             @Min(0) @RequestParam(defaultValue = "0") int page,
             @Min(1) @Max(100) @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal Jwt token
     ) {
-        FiltrosDeChamados filtros = FiltrosDeChamados.de(busca, status, prioridade, departamento, tipo, sla, etapa, ordenacao);
+        FiltrosDeChamados filtros = FiltrosDeChamados.de(busca, status, prioridade, departamento, tipo, sla, etapa, ordenacao, responsavel);
         return consulta.listar(filtros, page, size, identificacao.de(token));
     }
 
