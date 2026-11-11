@@ -8,6 +8,16 @@ public record AtualizacaoRequest(
         @Size(max = 5000, message = "A atualização deve ter no máximo 5000 caracteres.")
         String texto,
 
-        boolean visivelCliente
+        boolean visivelCliente,
+
+        String destino
 ) {
+
+    static final String DESTINO_SOLICITANTE = "SOLICITANTE";
+    static final String DESTINO_INTERNO = "INTERNO";
+    static final String DESTINO_FORNECEDOR = "FORNECEDOR";
+
+    public AtualizacaoRequest(String texto, boolean visivelCliente) {
+        this(texto, visivelCliente, null);
+    }
 }

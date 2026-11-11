@@ -35,6 +35,10 @@ class MontagemDeChamado {
         this.relogio = relogio;
     }
 
+    boolean temFornecedorAtivo(Chamado chamado) {
+        return !servicos.findByChamadoIdAndCanceladoFalseOrderByAtualizadoEmDesc(chamado.getId()).isEmpty();
+    }
+
     ChamadoResumoResponse resumo(Chamado chamado) {
         Instant agora = relogio.instant();
         return new ChamadoResumoResponse(
@@ -53,7 +57,9 @@ class MontagemDeChamado {
                 politicaDeSla.avaliar(chamado, agora),
                 politicaDeTriagem.avaliar(chamado, agora),
                 AtendimentoResponse.de(chamado),
-                EscalonamentoResponse.de(chamado)
+                EscalonamentoResponse.de(chamado),
+                chamado.getLocalizacao().getLatitude(),
+                chamado.getLocalizacao().getLongitude()
         );
     }
 

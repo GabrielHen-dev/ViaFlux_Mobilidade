@@ -88,7 +88,7 @@ class ServicoTerceiroService {
         }
         return servicos.findByFornecedorIdAndCanceladoFalseOrderByAtualizadoEmDesc(usuario.organizacaoId()).stream()
                 .filter(servico -> !servico.getChamado().cancelado())
-                .map(ServicoDoFornecedorResponse::de)
+                .map(servico -> ServicoDoFornecedorResponse.de(servico, historico.mensagensAoFornecedor(servico.getChamado())))
                 .toList();
     }
 
@@ -110,7 +110,7 @@ class ServicoTerceiroService {
         aviso.avisar(chamado, "Serviço terceirizado " + novo.getRotulo().toLowerCase(Locale.ROOT),
                 "O serviço do chamado " + chamado.getCodigo() + " foi atualizado para " + novo.getRotulo() + ".", agora);
         servicos.flush();
-        return ServicoDoFornecedorResponse.de(servico);
+        return ServicoDoFornecedorResponse.de(servico, historico.mensagensAoFornecedor(chamado));
     }
 
     private static StatusServico statusValido(String valor) {

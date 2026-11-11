@@ -1,4 +1,6 @@
 @import "tailwindcss";
 @import "./tokens/brand.css";
+@import "./tokens/estados.css";
 @import "./base/global.css";
+@import "./base/componentes.css";
 @import "./layout/shell.css";

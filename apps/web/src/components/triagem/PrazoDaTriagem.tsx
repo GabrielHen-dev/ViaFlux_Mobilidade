@@ -51,7 +51,7 @@ export function PrazoDaTriagem({ triagem, compacto = false }: { triagem: Triagem
 
   return (
     <div className="rounded-xl border p-3" style={{ background: fundo, borderColor: borda, color: texto }} data-fase={fase}>
-      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide">
+      <div className="flex items-center gap-2 text-xs font-medium">
         <Icone size={14} strokeWidth={2.5} aria-hidden />
         {rotulo}
       </div>

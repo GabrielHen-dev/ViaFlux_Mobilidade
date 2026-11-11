@@ -30,7 +30,7 @@ export default function OverrideDePrioridade({ chamado, prioridadeEfetiva, aoCon
 
   return (
     <section className={cartaoClass}>
-      <h2 className="mb-1 font-display text-sm font-semibold text-brand-navy">Prioridade manual</h2>
+      <h2 className="mb-1 font-display text-sm font-semibold text-tinta">Prioridade manual</h2>
       <p className="mb-4 text-xs text-slate-500">O SLA segue a prioridade efetiva.</p>
       {chamado.override && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
@@ -49,7 +49,7 @@ export default function OverrideDePrioridade({ chamado, prioridadeEfetiva, aoCon
         <legend className={labelClass}>Prioridade efetiva</legend>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {CODIGOS_PRIORIDADE.map((codigo) => (
-            <label key={codigo} className={cn("alvo-toque flex cursor-pointer items-center justify-center rounded-xl border-2 px-2 py-2 text-xs font-semibold transition", prioridadeManual === codigo ? "border-brand-blue bg-blue-50 text-blue-700" : "border-[#E2E8F0] text-slate-600")}>
+            <label key={codigo} className={cn("alvo-toque flex cursor-pointer items-center justify-center rounded-xl border-2 px-2 py-2 text-xs font-semibold transition", prioridadeManual === codigo ? "border-brand-blue bg-blue-50 text-blue-700" : "border-linha text-slate-600")}>
               <input type="radio" name="prioridade-manual" className="sr-only" checked={prioridadeManual === codigo} onChange={() => setPrioridadeManual(codigo)} />
               {codigo} · {ROTULO_PRIORIDADE[codigo]}
             </label>
@@ -64,7 +64,7 @@ export default function OverrideDePrioridade({ chamado, prioridadeEfetiva, aoCon
         onClick={() => override.mutate({ prioridade: prioridadeManual, justificativa: justificativa.trim() }, {
           onSuccess: (atualizado) => { setJustificativa(""); aoConcluir(`Prioridade alterada para ${atualizado.prioridade}`); },
         })}
-        className="alvo-toque mt-4 w-full rounded-xl bg-brand-blue py-3 text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-40"
+        className="alvo-toque mt-4 w-full rounded-xl vf-botao-primario py-3 text-sm font-semibold text-white transition-all disabled:opacity-40"
       >
         {override.isPending ? "Salvando…" : "Aplicar prioridade"}
       </button>

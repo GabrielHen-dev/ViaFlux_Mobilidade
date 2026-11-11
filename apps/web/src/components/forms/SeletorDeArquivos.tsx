@@ -105,7 +105,7 @@ export default function SeletorDeArquivos({ aoAceitar, compacto = false, desabil
     }, "image/jpeg", 0.85);
   }
 
-  const botaoSecundario = "alvo-toque inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-brand-blue hover:text-brand-blue disabled:opacity-40";
+  const botaoSecundario = "vf-botao-secundario alvo-toque inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-brand-blue hover:text-acao disabled:opacity-40";
 
   return (
     <div>
@@ -140,7 +140,7 @@ export default function SeletorDeArquivos({ aoAceitar, compacto = false, desabil
             className={cn("w-full rounded-xl border-2 border-dashed border-slate-300 p-6 text-center transition-colors hover:border-brand-blue", desabilitado && "opacity-40")}
           >
             <Upload className="mx-auto mb-2 text-slate-400" size={26} strokeWidth={1.5} aria-hidden />
-            <span className="block text-sm text-slate-500">Arraste arquivos ou <span className="font-semibold text-brand-blue">clique para anexar</span></span>
+            <span className="block text-sm text-slate-500">Arraste arquivos ou <span className="font-semibold text-acao">clique para anexar</span></span>
           </button>
           <button type="button" disabled={desabilitado || abrindoCamera || cameraAberta} onClick={() => void abrirCamera()} className={cn(botaoSecundario, "w-full")}>
             <Camera size={14} aria-hidden /> {abrindoCamera ? "Abrindo câmera…" : "Tirar foto com a câmera"}
@@ -152,7 +152,7 @@ export default function SeletorDeArquivos({ aoAceitar, compacto = false, desabil
           <video ref={videoDaCamera} aria-label="Prévia da câmera" autoPlay muted playsInline onLoadedMetadata={() => setCameraPronta(true)} className="aspect-video w-full rounded-lg object-contain" />
           <div className="mt-2 flex justify-end gap-2">
             <button type="button" onClick={fecharCamera} className={botaoSecundario}>Cancelar</button>
-            <button type="button" disabled={!cameraPronta || desabilitado} onClick={fotografar} className="alvo-toque rounded-xl bg-brand-blue px-4 py-2 text-xs font-semibold text-white disabled:opacity-40">Fotografar</button>
+            <button type="button" disabled={!cameraPronta || desabilitado} onClick={fotografar} className="alvo-toque rounded-xl vf-botao-primario px-4 py-2 text-xs font-semibold text-white disabled:opacity-40">Fotografar</button>
           </div>
         </div>
       )}

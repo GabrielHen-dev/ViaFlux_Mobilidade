@@ -76,6 +76,11 @@ class ChamadoEvento {
         this.ocorridoEm = ocorridoEm;
     }
 
+    void restringirAoFornecedor() {
+        this.visivelCliente = false;
+        this.visibilidade = VisibilidadeDoConteudo.FORNECEDOR;
+    }
+
     void marcarComoMensagem(OrigemDaMensagem origem, UUID anexoId) {
         this.origemDaMensagem = origem;
         this.anexoId = anexoId;

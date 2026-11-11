@@ -9,9 +9,9 @@ export default function ChamadoIndisponivel({ id }: { id?: string }) {
   const { estado } = useAuth();
   const usuario = estado.status === "autenticado" ? estado.usuario : null;
   return (
-    <main id="conteudo" className="p-4 md:p-8">
+    <main id="conteudo" className="vf-pagina">
       <div className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center md:p-10">
-        <h1 className="mb-3 text-xl font-bold text-brand-navy">{id ? "Chamado não encontrado" : "Página não encontrada"}</h1>
+        <h1 className="mb-3 text-xl font-bold text-tinta">{id ? "Chamado não encontrado" : "Página não encontrada"}</h1>
         <p className="mb-6 text-sm text-slate-500">
           {id ? `O chamado #${id} não existe ou não está disponível para o seu perfil.` : "O endereço acessado não existe."}
         </p>

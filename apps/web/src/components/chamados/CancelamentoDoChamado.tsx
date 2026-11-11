@@ -51,22 +51,22 @@ function DialogoComMotivo({
   }, [aoFechar, enviando]);
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-brand-navy/40 p-4 backdrop-blur-[2px] sm:items-center" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !enviando) aoFechar(); }}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#0B2545]/40 p-4 sm:items-center" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !enviando) aoFechar(); }}>
       <div role="alertdialog" aria-modal="true" aria-labelledby={idDoTitulo} aria-describedby={`${idDoTitulo}-explicacao`} className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
         <div className="mb-4 flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", perigoso ? "bg-red-50 text-red-600" : "bg-blue-50 text-brand-blue")}>
+            <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", perigoso ? "bg-red-50 text-red-600" : "bg-blue-50 text-acao")}>
               {perigoso ? <Ban size={20} aria-hidden /> : <RotateCcw size={20} aria-hidden />}
             </span>
             <div>
-              <h2 id={idDoTitulo} className="font-display text-base font-bold text-brand-navy">{titulo}</h2>
+              <h2 id={idDoTitulo} className="font-display text-base font-bold text-tinta">{titulo}</h2>
               <p className="mt-0.5 text-sm text-slate-500">{subtitulo}</p>
             </div>
           </div>
           <button type="button" onClick={aoFechar} disabled={enviando} aria-label="Fechar" className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"><X size={16} /></button>
         </div>
         <div id={`${idDoTitulo}-explicacao`} className="mb-4 text-sm text-slate-600">{explicacao}</div>
-        <label htmlFor={`${idDoTitulo}-motivo`} className="mb-2 block text-xs font-semibold uppercase tracking-wide text-[#475569]">{rotuloDoMotivo} *</label>
+        <label htmlFor={`${idDoTitulo}-motivo`} className="mb-2 block text-xs font-medium text-[#475569]">{rotuloDoMotivo} *</label>
         <textarea
           ref={campo}
           id={`${idDoTitulo}-motivo`}
@@ -75,18 +75,18 @@ function DialogoComMotivo({
           value={motivo}
           onChange={(evento) => setMotivo(evento.target.value)}
           placeholder={placeholder}
-          className="w-full resize-none rounded-lg border border-[#E2E8F0] px-3.5 py-2.5 text-sm text-brand-dark outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10"
+          className="w-full resize-none rounded-lg border border-linha px-3.5 py-2.5 text-sm text-brand-dark outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10"
         />
         <p className="mt-1 text-xs text-slate-400">Mínimo de {MOTIVO_MINIMO} caracteres.</p>
         <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <button type="button" onClick={aoFechar} disabled={enviando} className="alvo-toque rounded-xl border border-[#E2E8F0] px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">Voltar</button>
+          <button type="button" onClick={aoFechar} disabled={enviando} className="vf-botao-secundario alvo-toque rounded-xl border border-linha px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">Voltar</button>
           <button
             type="button"
             disabled={enviando || curtoDemais}
             onClick={() => aoConfirmar(motivo.trim())}
             className={cn(
               "alvo-toque inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40",
-              perigoso ? "bg-red-600 hover:bg-red-700" : "bg-brand-blue hover:opacity-90",
+              perigoso ? "bg-red-600 hover:bg-red-700" : "vf-botao-primario",
             )}
           >
             {enviando ? rotuloEnquantoEnvia : rotuloDaConfirmacao}
@@ -98,8 +98,15 @@ function DialogoComMotivo({
   );
 }
 
-export function BotaoDeCancelamento({ chamado }: { chamado: Chamado }) {
-  const [aberto, setAberto] = useState(false);
+export interface ControleDoDialogo {
+  aberto: boolean;
+  aoMudar: (aberto: boolean) => void;
+}
+
+export function BotaoDeCancelamento({ chamado, controle }: { chamado: Chamado; controle?: ControleDoDialogo }) {
+  const [abertoInterno, setAbertoInterno] = useState(false);
+  const aberto = controle ? controle.aberto : abertoInterno;
+  const setAberto = controle ? controle.aoMudar : setAbertoInterno;
   const cancelamento = useAcaoNoChamado(chamado.id, (api, motivo: string) => cancelarChamado(api, chamado.id, motivo));
   if (!podeCancelar(chamado)) return null;
 
@@ -115,9 +122,11 @@ export function BotaoDeCancelamento({ chamado }: { chamado: Chamado }) {
 
   return (
     <>
-      <button type="button" onClick={() => setAberto(true)} className="alvo-toque inline-flex items-center gap-1.5 rounded-xl border border-[#FECACA] px-3 py-2 text-sm font-semibold text-[#EF4444] transition-all hover:bg-[#FEF2F2]">
-        <Ban size={14} aria-hidden /> Cancelar chamado
-      </button>
+      {!controle && (
+        <button type="button" onClick={() => setAberto(true)} className="vf-botao-perigo alvo-toque inline-flex items-center gap-1.5 px-3 py-2">
+          <Ban size={14} aria-hidden /> Cancelar chamado
+        </button>
+      )}
       {aberto && (
         <DialogoComMotivo
           titulo="Cancelar este chamado?"
@@ -179,7 +188,7 @@ export function AvisoDeCancelamento({ chamado, podeReabrir, visaoDeCliente = fal
         {(podeReabrir || children) && (
           <div className="flex flex-wrap gap-2 sm:flex-col sm:items-stretch">
             {podeReabrir && (
-              <button type="button" onClick={() => setReabrindo(true)} className="alvo-toque inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:opacity-90">
+              <button type="button" onClick={() => setReabrindo(true)} className="alvo-toque inline-flex items-center justify-center gap-1.5 rounded-xl vf-botao-primario px-4 py-2 text-sm font-semibold text-white">
                 <RotateCcw size={14} aria-hidden /> Reabrir chamado
               </button>
             )}

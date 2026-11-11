@@ -12,10 +12,15 @@ public record ServicoDoFornecedorResponse(
         String observacao,
         StatusServico status,
         OffsetDateTime atualizadoEm,
-        List<AtualizacaoServicoResponse> historico
+        List<AtualizacaoServicoResponse> historico,
+        List<MensagemAoFornecedorResponse> mensagens
 ) {
 
     static ServicoDoFornecedorResponse de(ServicoTerceiro servico) {
+        return de(servico, List.of());
+    }
+
+    static ServicoDoFornecedorResponse de(ServicoTerceiro servico, List<ChamadoEvento> mensagens) {
         return new ServicoDoFornecedorResponse(
                 servico.getId(),
                 servico.getChamado().getCodigo(),
@@ -24,7 +29,8 @@ public record ServicoDoFornecedorResponse(
                 servico.getObservacao(),
                 servico.getStatus(),
                 Datas.local(servico.getAtualizadoEm()),
-                servico.getHistorico().stream().map(AtualizacaoServicoResponse::de).toList()
+                servico.getHistorico().stream().map(AtualizacaoServicoResponse::de).toList(),
+                mensagens.stream().map(MensagemAoFornecedorResponse::de).toList()
         );
     }
 }

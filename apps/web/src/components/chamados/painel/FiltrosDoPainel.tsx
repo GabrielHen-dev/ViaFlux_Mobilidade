@@ -39,8 +39,8 @@ export function filtrosEstaoAtivos(filtros: FiltrosDoPainel, departamentoFixo?: 
 export default function FiltrosDoPainel({ filtros, departamentoFixo, comFiltroDeEtapa, aoFiltrar }: Props) {
   const { ordenacao } = filtros;
   return (
-    <div className="mb-5 rounded-2xl border border-[#E2E8F0] bg-white p-4">
-      <div className={cn("grid grid-cols-1 gap-3 sm:grid-cols-2", comFiltroDeEtapa ? "lg:grid-cols-8" : "lg:grid-cols-7")}>
+    <div className="mb-5 rounded-2xl border border-linha bg-white p-4">
+      <div className={cn("grid grid-cols-1 gap-3 sm:grid-cols-2", comFiltroDeEtapa ? "lg:grid-cols-4 2xl:grid-cols-8" : "lg:grid-cols-4 2xl:grid-cols-7")}>
         <div className="relative sm:col-span-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={16} aria-hidden />
           <input
@@ -49,7 +49,7 @@ export default function FiltrosDoPainel({ filtros, departamentoFixo, comFiltroDe
             placeholder="Buscar por protocolo, cliente ou veículo…"
             value={filtros.busca ?? ""}
             onChange={(evento) => aoFiltrar({ busca: evento.target.value || undefined })}
-            className="alvo-toque w-full rounded-lg border border-[#E2E8F0] py-2 pl-9 pr-4 text-sm outline-none transition-colors focus:border-brand-blue"
+            className="alvo-toque w-full rounded-lg border border-linha py-2 pl-9 pr-4 text-sm outline-none transition-colors focus:border-brand-blue"
           />
         </div>
         {comFiltroDeEtapa && (
@@ -64,7 +64,7 @@ export default function FiltrosDoPainel({ filtros, departamentoFixo, comFiltroDe
       <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
         <span className="font-medium text-slate-500">Ordenar:</span>
         {([["fila", "Fila (prioridade, score e antiguidade)"], ["recentes", "Mais recentes"]] as const).map(([valor, rotulo]) => (
-          <button key={valor} type="button" aria-pressed={ordenacao === valor} onClick={() => aoFiltrar({ ordenacao: valor })} className={cn("alvo-toque rounded-lg px-3 py-1.5 font-semibold", ordenacao === valor ? "bg-brand-navy text-white" : "bg-slate-100 text-slate-600")}>
+          <button key={valor} type="button" aria-pressed={ordenacao === valor} onClick={() => aoFiltrar({ ordenacao: valor })} className={cn("alvo-toque rounded border px-3 py-1.5 font-medium", ordenacao === valor ? "border-acao bg-acao-suave text-acao" : "border-linha bg-white text-tinta-suave hover:bg-fundo")}>
             {rotulo}
           </button>
         ))}
@@ -72,7 +72,7 @@ export default function FiltrosDoPainel({ filtros, departamentoFixo, comFiltroDe
           <button
             type="button"
             onClick={() => aoFiltrar({ busca: undefined, status: undefined, prioridade: undefined, sla: undefined, etapa: undefined, departamento: departamentoFixo, tipo: undefined })}
-            className="ml-auto font-semibold text-brand-blue hover:underline"
+            className="ml-auto font-semibold text-acao hover:underline"
           >
             Limpar filtros
           </button>

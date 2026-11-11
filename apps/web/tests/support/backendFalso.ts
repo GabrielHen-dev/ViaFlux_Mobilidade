@@ -266,6 +266,8 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
       triagem: triagem(chamado),
       atendimento: chamado.atendimento ? { responsavel: chamado.atendimento.responsavel, assumidoEm: horarioDeSaoPaulo(chamado.atendimento.assumidoEm) } : null,
       escalonamento: null,
+      latitude: chamado.localizacao?.latitude ?? null,
+      longitude: chamado.localizacao?.longitude ?? null,
     };
   }
 
@@ -446,6 +448,7 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
         .filter((chamado) => !parametro("prioridade") || prioridadeEfetiva(chamado) === parametro("prioridade"))
         .filter((chamado) => !parametro("departamento") || chamado.departamento === parametro("departamento"))
         .filter((chamado) => !parametro("etapa") || (parametro("etapa") === "TRIAGEM") !== triado(chamado))
+        .filter((chamado) => parametro("responsavel") !== "eu" || chamado.atendimento?.responsavel.id === usuario.id)
         .sort(parametro("ordenacao") === "ativos_recentes"
           ? (a, b) => Number(!["Resolvido", "Fechado"].includes(b.status)) - Number(!["Resolvido", "Fechado"].includes(a.status))
             || b.atualizadoEm.getTime() - a.atualizadoEm.getTime()
@@ -516,7 +519,10 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
       return json(chamados.filter((chamado) => chamado.servico?.fornecedor.id === usuario.organizacao?.id).map((chamado) => {
         const { fornecedor, ...servico } = chamado.servico as ServicoTerceiro;
         void fornecedor;
-        return servico;
+        const mensagens = chamado.timeline
+          .filter((evento) => evento.tipo === "ATUALIZACAO" && evento.visibilidade === "FORNECEDOR")
+          .map((evento) => ({ id: evento.id, texto: evento.detalhe, autor: evento.autor, enviadaEm: evento.ocorridoEm }));
+        return { ...servico, mensagens };
       }));
     }
     const atualizacaoDoFornecedor = /^\/api\/fornecedor\/servicos\/([^/]+)\/status$/.exec(caminho);
@@ -799,6 +805,12 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
     if (sufixo === "atualizacoes" && metodo === "POST") {
       const chamado = buscar(codigo);
       exigirQueConduzaOuSejaOCliente(chamado);
+      if (!apenasCliente && dados.destino === "FORNECEDOR") {
+        if (!chamado.servico) recusar(409, "Acione um fornecedor antes de enviar uma mensagem a ele.");
+        registrar(chamado, "ATUALIZACAO", "Mensagem ao fornecedor", texto("texto").trim(), autorDe(usuario), false);
+        chamado.timeline[chamado.timeline.length - 1].visibilidade = "FORNECEDOR";
+        return devolver(chamado, 201);
+      }
       publicarMensagem(chamado, texto("texto").trim(), dados.visivelCliente === true, null);
       return devolver(chamado, 201);
     }
@@ -820,6 +832,7 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
         .map((evento) => ({
           id: evento.id, texto: evento.detalhe, autor: evento.autor, enviadaEm: evento.ocorridoEm, visivelCliente: evento.visivelCliente,
           origem: evento.acao === "Complemento do solicitante" ? "SOLICITANTE" : "EQUIPE", anexo: anexosDasMensagens.get(evento.id) ?? null,
+          visibilidade: evento.visibilidade ?? (evento.visivelCliente ? "SOLICITANTE" : "INTERNO"),
         }));
       return json({ mensagens, lidoAte: leituras.get(`${chamado.id}:${usuario.id}`) ?? null });
     }

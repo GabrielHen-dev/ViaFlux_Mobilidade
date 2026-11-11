@@ -7,9 +7,9 @@ import { NOME_TIPO, ROTULO_PESO, calcularScore, prioridadePorScore } from "@/uti
 import { cn } from "@/utils/cn";
 
 export const TAMANHO_MINIMO_DA_JUSTIFICATIVA = 10;
-export const labelClass = "block text-xs font-semibold text-[#475569] uppercase tracking-wide mb-2";
-export const inputClass = "w-full px-3.5 py-2.5 rounded-lg border border-[#E2E8F0] bg-white text-sm text-brand-dark outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10";
-export const cartaoClass = "rounded-2xl border border-[#E2E8F0] bg-white p-5 md:p-6";
+export const labelClass = "block text-xs font-medium text-[#475569] mb-2";
+export const inputClass = "w-full px-3.5 py-2.5 rounded-lg border border-linha bg-white text-sm text-brand-dark outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10";
+export const cartaoClass = "rounded-2xl border border-linha bg-white p-5 md:p-6";
 
 const OPCOES_DE_TIPO = TIPOS_CHAMADO.map((tipo) => ({ valor: tipo, rotulo: NOME_TIPO[tipo] }));
 
@@ -32,7 +32,7 @@ export function SeletorDePeso({ nome, rotulo, valor, aoAlterar }: { nome: string
       <legend className={labelClass}>{rotulo}</legend>
       <div className="grid grid-cols-3 gap-2">
         {PESOS.map((peso) => (
-          <label key={peso} className={cn("alvo-toque flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border-2 px-2 py-2 text-xs font-semibold transition", valor === peso ? "border-brand-blue bg-blue-50 text-blue-700" : "border-[#E2E8F0] text-slate-600")}>
+          <label key={peso} className={cn("alvo-toque flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border-2 px-2 py-2 text-xs font-semibold transition", valor === peso ? "border-brand-blue bg-blue-50 text-blue-700" : "border-linha text-slate-600")}>
             <input type="radio" name={nome} className="sr-only" checked={valor === peso} onChange={() => aoAlterar(peso)} />
             {ROTULO_PESO[peso]} ({peso})
           </label>

@@ -57,6 +57,11 @@ class ConsultaDeChamadosService {
         return ChamadosPageResponse.de(filtrados, page, size);
     }
 
+    private static boolean atendidoPor(Chamado chamado, UsuarioAtual usuario) {
+        Autor responsavel = chamado.getAtendimentoResponsavel();
+        return responsavel != null && usuario.id().equals(responsavel.id());
+    }
+
     private static boolean filaAtiva(String status) {
         return !StatusChamado.RESOLVIDO.getRotulo().equals(status)
                 && !StatusChamado.FECHADO.getRotulo().equals(status)
@@ -107,6 +112,7 @@ class ConsultaDeChamadosService {
                 .filter(chamado -> filtros.departamento() == null || chamado.getDepartamento() == filtros.departamento())
                 .filter(chamado -> filtros.tipo() == null || chamado.tipoVigente() == filtros.tipo())
                 .filter(chamado -> filtros.prioridade() == null || chamado.prioridadeEfetiva() == filtros.prioridade())
+                .filter(chamado -> !filtros.apenasMeus() || atendidoPor(chamado, usuario))
                 .map(montagem::resumo)
                 .filter(porSla(filtros.sla()));
     }

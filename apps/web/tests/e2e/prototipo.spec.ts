@@ -29,7 +29,7 @@ async function entrarComo(page: Page, usuario: UsuarioDeTeste) {
   await page.getByLabel("E-mail").fill(usuario.email);
   await page.getByLabel("Senha").fill(SENHA_DE_TESTE);
   await page.getByRole("button", { name: "Entrar" }).click();
-  await expect(page.getByRole("button", { name: "Sair" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Menu do usuário" })).toBeVisible();
 }
 
 async function escolher(page: Page, rotuloDoCampo: string, textoDaOpcao: string | RegExp) {
@@ -38,7 +38,8 @@ async function escolher(page: Page, rotuloDoCampo: string, textoDaOpcao: string 
 }
 
 async function sair(page: Page) {
-  await page.getByRole("button", { name: "Sair" }).click();
+  await page.getByRole("button", { name: "Menu do usuário" }).click();
+  await page.getByRole("menuitem", { name: "Sair" }).click();
   await expect(page).toHaveURL(/\/login$/);
 }
 
