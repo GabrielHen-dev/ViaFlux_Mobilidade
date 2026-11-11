@@ -12,6 +12,8 @@ Abra http://localhost:5261. Todas as telas exigem login, então a API precisa es
 
 A API é procurada em `http://localhost:8281`. Para usar outro endereço, crie `apps/web/.env.local` com `NEXT_PUBLIC_API_URL`.
 
+Os mapas usam Leaflet com os blocos públicos do OpenStreetMap, que pedem o crédito "© OpenStreetMap" e não suportam uso pesado. Para trocar de provedor, defina `NEXT_PUBLIC_MAPA_TILES_URL` (modelo com `{z}/{x}/{y}`) e, se o provedor exigir outro crédito, `NEXT_PUBLIC_MAPA_ATRIBUICAO`.
+
 Todos os dados vêm da API; não há mais simulação no navegador. Para popular o banco com usuários, organizações e chamados de exemplo (parte deles na fila de triagem), habilite `DEV_TOOLS_HABILITADO` na API e use a tela `/dev-tools` como admin.
 
 ```powershell

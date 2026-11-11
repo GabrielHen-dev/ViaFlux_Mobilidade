@@ -93,4 +93,12 @@ public class Localizacao {
     public String getEndereco() {
         return endereco;
     }
+
+    Double getLatitude() {
+        return latitude;
+    }
+
+    Double getLongitude() {
+        return longitude;
+    }
 }

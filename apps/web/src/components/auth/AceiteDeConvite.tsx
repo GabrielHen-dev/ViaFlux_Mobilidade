@@ -22,18 +22,18 @@ function mensagemDaFalha(falha: unknown, padrao: string) {
 
 function DadosDoConvite({ convite }: { convite: Convite }) {
   return (
-    <dl className="mb-5 space-y-3 rounded-xl border border-[#E2E8F0] bg-slate-50 px-4 py-3.5 text-sm">
+    <dl className="mb-5 space-y-3 rounded-xl border border-linha bg-slate-50 px-4 py-3.5 text-sm">
       <div>
-        <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Nome</dt>
+        <dt className="text-[11px] font-medium text-slate-500">Nome</dt>
         <dd className="font-semibold text-brand-dark">{convite.nome}</dd>
       </div>
       <div>
-        <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">E-mail de acesso</dt>
+        <dt className="text-[11px] font-medium text-slate-500">E-mail de acesso</dt>
         <dd className="break-all font-semibold text-brand-dark">{convite.email}</dd>
       </div>
       {convite.perfis.length > 0 && (
         <div>
-          <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{convite.perfis.length === 1 ? "Perfil" : "Perfis"}</dt>
+          <dt className="text-[11px] font-medium text-slate-500">{convite.perfis.length === 1 ? "Perfil" : "Perfis"}</dt>
           <dd className="mt-1 flex flex-wrap gap-1.5">
             {convite.perfis.map((perfil) => (
               <span key={perfil.codigo} className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-800">{perfil.descricao}</span>
@@ -124,7 +124,7 @@ export default function AceiteDeConvite({ token }: { token: string }) {
     <CartaoDeAcesso
       titulo="Ative seu acesso"
       subtitulo="Crie uma senha com pelo menos 8 caracteres."
-      rodape={<Link href="/login" className="font-semibold text-brand-green underline-offset-2 hover:underline">Ir para o login</Link>}
+      rodape={<Link href="/login" className="font-semibold text-acao underline-offset-2 hover:underline">Ir para o login</Link>}
     >
       <DadosDoConvite convite={consulta.convite} />
       <form noValidate onSubmit={enviar}>

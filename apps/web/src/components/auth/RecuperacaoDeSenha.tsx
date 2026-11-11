@@ -32,7 +32,7 @@ export default function RecuperacaoDeSenha() {
     <CartaoDeAcesso
       titulo="Recuperar senha"
       subtitulo="Informe o e-mail cadastrado."
-      rodape={<Link href="/login" className="font-semibold text-brand-green underline-offset-2 hover:underline">Voltar ao login</Link>}
+      rodape={<Link href="/login" className="font-semibold text-acao underline-offset-2 hover:underline">Voltar ao login</Link>}
     >
       <form onSubmit={enviar}>
         <div className="mb-4">

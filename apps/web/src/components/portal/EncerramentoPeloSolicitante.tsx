@@ -12,8 +12,8 @@ import { formatarDataHora } from "@/utils/date";
 
 const MOTIVO_MINIMO = 10;
 const cartaoClass = "rounded-2xl border p-5";
-const botaoPrincipalClass = "alvo-toque inline-flex items-center justify-center gap-2 rounded-xl bg-brand-green px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-40";
-const botaoSecundarioClass = "alvo-toque inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40";
+const botaoPrincipalClass = "alvo-toque inline-flex items-center justify-center gap-2 rounded-xl vf-botao-primario px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40";
+const botaoSecundarioClass = "vf-botao-secundario alvo-toque inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40";
 
 function avisarResultado(acao: Promise<unknown>, sucesso: { titulo: string; descricao?: string }, falha: string) {
   acao.then(
@@ -34,14 +34,14 @@ function CampoDeMotivo({ id, rotulo, enviando, rotuloDoEnvio, aoEnviar, aoCancel
   const curtoDemais = motivo.trim().length < MOTIVO_MINIMO;
   return (
     <div className="mt-4 space-y-3">
-      <label htmlFor={id} className="block text-xs font-semibold uppercase tracking-wide text-[#475569]">{rotulo} *</label>
+      <label htmlFor={id} className="block text-xs font-medium text-[#475569]">{rotulo} *</label>
       <textarea
         id={id}
         rows={3}
         maxLength={2000}
         value={motivo}
         onChange={(evento) => setMotivo(evento.target.value)}
-        className="w-full resize-none rounded-lg border border-[#E2E8F0] bg-white px-3.5 py-2.5 text-sm text-brand-dark outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10"
+        className="w-full resize-none rounded-lg border border-linha bg-white px-3.5 py-2.5 text-sm text-brand-dark outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10"
         placeholder={`Mínimo de ${MOTIVO_MINIMO} caracteres.`}
       />
       <div className="flex flex-wrap gap-2">
@@ -101,8 +101,8 @@ function ReaberturaDoChamado({ chamado, limite }: { chamado: Chamado; limite: st
   const reabrir = useAcaoNoChamado(chamado.id, (api, motivo: string) => reabrirChamado(api, chamado.id, motivo));
 
   return (
-    <section aria-labelledby="titulo-reabertura" className={`${cartaoClass} border-[#E2E8F0] bg-white`}>
-      <h2 id="titulo-reabertura" className="flex items-center gap-2 font-display text-sm font-semibold text-brand-navy">
+    <section aria-labelledby="titulo-reabertura" className={`${cartaoClass} border-linha bg-white`}>
+      <h2 id="titulo-reabertura" className="flex items-center gap-2 font-display text-sm font-semibold text-tinta">
         <RotateCcw size={16} aria-hidden /> O problema voltou?
       </h2>
       <p className="mt-2 text-xs text-slate-500">
@@ -130,7 +130,7 @@ export default function EncerramentoPeloSolicitante({ chamado }: { chamado: Cham
   if (chamado.status !== "Fechado" || !chamado.reaberturaAte) return null;
   if (new Date(chamado.reaberturaAte) > agora) return <ReaberturaDoChamado chamado={chamado} limite={chamado.reaberturaAte} />;
   return (
-    <p className="rounded-2xl border border-[#E2E8F0] bg-white p-4 text-xs text-slate-500">
+    <p className="rounded-2xl border border-linha bg-white p-4 text-xs text-slate-500">
       Prazo de reabertura encerrado. Para uma nova ocorrência, abra outro chamado informando o protocolo {chamado.id}.
     </p>
   );

@@ -15,12 +15,13 @@ import { cartaoClass } from "@/components/triagem/CamposDaTriagem";
 import { NOME_TIPO, ROTULO_PESO } from "@/utils/prioridade";
 import { formatarDataHora } from "@/utils/date";
 import { PERFIS_DE_TRIAGEM } from "@/utils/perfis";
+import RaizDaPagina from "@/components/layout/RaizDaPagina";
 
 function RelatoDoSolicitante({ chamado }: { chamado: Chamado }) {
   return (
     <section className={cartaoClass}>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-display text-sm font-semibold text-brand-navy">Relato do solicitante</h2>
+        <h2 className="font-display text-sm font-semibold text-tinta">Relato do solicitante</h2>
         <StatusBadge status={chamado.status} />
       </div>
       <p className="text-xs text-slate-500">{chamado.cliente} · aberto em {formatarDataHora(chamado.abertura)}</p>
@@ -48,7 +49,7 @@ function ClassificacaoVigente({ chamado }: { chamado: Chamado }) {
   if (!classificacao) return null;
   return (
     <section className={cartaoClass}>
-      <h2 className="mb-3 font-display text-sm font-semibold text-brand-navy">Classificação vigente</h2>
+      <h2 className="mb-3 font-display text-sm font-semibold text-tinta">Classificação vigente</h2>
       <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
         <div><div className="text-xs text-slate-400">Tipo</div><div className="font-semibold">{NOME_TIPO[classificacao.tipo]}</div></div>
         <div><div className="text-xs text-slate-400">Severidade</div><div className="font-semibold">{ROTULO_PESO[classificacao.severidade]} ({classificacao.severidade})</div></div>
@@ -70,14 +71,14 @@ function ClassificacaoConteudo({ chamado }: { chamado: Chamado }) {
   const emRevisao = chamado.triagem.revisaoPendente;
 
   return (
-    <main id="conteudo" className="p-4 md:p-8">
+    <RaizDaPagina className="vf-pagina">
       <div className="mx-auto max-w-2xl">
         <div className="mb-6 flex items-center gap-4">
-          <Link aria-label="Voltar ao chamado" href={`/chamados/${chamado.id}`} className="alvo-toque flex h-9 w-9 items-center justify-center rounded-xl border border-[#E2E8F0] text-[#64748B] transition-all hover:bg-white">
+          <Link aria-label="Voltar ao chamado" href={`/chamados/${chamado.id}`} className="alvo-toque flex h-9 w-9 items-center justify-center rounded-xl border border-linha text-[#64748B] transition-all hover:bg-white">
             <ChevronLeft size={16} />
           </Link>
           <div>
-            <h1 className="font-display text-2xl font-bold text-brand-navy">Classificação · #{chamado.id}</h1>
+            <h1 className="font-display text-2xl font-bold text-tinta">Classificação · #{chamado.id}</h1>
             {chamado.departamento && <p className="mt-0.5 text-sm text-[#64748B]">{chamado.departamento.nome}</p>}
           </div>
         </div>
@@ -97,7 +98,7 @@ function ClassificacaoConteudo({ chamado }: { chamado: Chamado }) {
           )}
         </div>
       </div>
-    </main>
+    </RaizDaPagina>
   );
 }
 

@@ -1,4 +1,4 @@
-export const STATUS_CHAMADO = ["Aberto", "Em triagem", "Na fila", "Em atendimento", "Aguardando", "Resolvido", "Fechado"] as const;
+export const STATUS_CHAMADO = ["Aberto", "Em triagem", "Na fila", "Em atendimento", "Aguardando", "Resolvido", "Fechado", "Cancelado"] as const;
 export type Status = (typeof STATUS_CHAMADO)[number];
 
 export const STATUS_AGUARDANDO_TRIAGEM: readonly Status[] = ["Aberto", "Em triagem"];
@@ -106,6 +106,7 @@ export interface Mensagem {
   visivelCliente: boolean;
   origem: "SOLICITANTE" | "EQUIPE";
   anexo: Anexo | null;
+  visibilidade?: "INTERNO" | "SOLICITANTE" | "FORNECEDOR";
 }
 
 export interface Conversa {
@@ -182,6 +183,14 @@ export interface ServicoDoFornecedor {
   status: StatusServico;
   atualizadoEm: string;
   historico: AtualizacaoServico[];
+  mensagens?: MensagemAoFornecedor[];
+}
+
+export interface MensagemAoFornecedor {
+  id: string;
+  texto: string;
+  autor: Autor | null;
+  enviadaEm: string;
 }
 
 export interface Triagem {
@@ -199,6 +208,12 @@ export interface Escalonamento {
   em: string;
   por: Autor | null;
   observacao: string | null;
+}
+
+export interface Cancelamento {
+  em: string;
+  por: Autor | null;
+  motivo: string;
 }
 
 export interface Atendimento {
@@ -223,6 +238,8 @@ export interface ChamadoResumo {
   triagem: Triagem;
   atendimento: Atendimento | null;
   escalonamento: Escalonamento | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface Chamado extends ChamadoResumo {
@@ -247,6 +264,7 @@ export interface Chamado extends ChamadoResumo {
   timeline: EventoTimeline[];
   anexos: Anexo[];
   servico: ServicoTerceiro | null;
+  cancelamento?: Cancelamento | null;
 }
 
 export interface PaginaChamados {

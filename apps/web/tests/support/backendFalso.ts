@@ -31,6 +31,10 @@ export const USUARIOS: Record<string, UsuarioDeTeste> = {
     id: "u-departamento", nome: "Davi Departamento", email: "departamento@viaflux.test", perfis: ["DEPARTAMENTO"],
     organizacao: null, departamentos: [{ codigo: "ASSISTENCIA_24H", nome: "Assistência 24h" }],
   },
+  plantao: {
+    id: "u-plantao", nome: "Bia Plantão", email: "plantao@viaflux.test", perfis: ["DEPARTAMENTO"],
+    organizacao: null, departamentos: [{ codigo: "ASSISTENCIA_24H", nome: "Assistência 24h" }],
+  },
   manutencao: {
     id: "u-manutencao", nome: "Mara Manutenção", email: "manutencao@viaflux.test", perfis: ["DEPARTAMENTO"],
     organizacao: null, departamentos: [{ codigo: "MANUTENCAO", nome: "Manutenção" }],
@@ -57,7 +61,6 @@ const PERFIS_GLOBAIS = ["ADMIN", "ATENDENTE", "LIDER_OPERACIONAL"];
 const PERFIS_DE_CLIENTE = ["CLIENTE", "GESTOR_FROTA"];
 const PERFIS_DE_TRIAGEM = ["ADMIN", "ATENDENTE"];
 const PERFIS_DA_CENTRAL = [...PERFIS_GLOBAIS, "DEPARTAMENTO"];
-const PERFIS_DA_LIXEIRA = ["ADMIN", "ATENDENTE"];
 const PERFIS_QUE_CONDUZEM_QUALQUER_FILA = ["ADMIN", "ATENDENTE"];
 const PERFIS_QUE_ATENDEM_QUALQUER_FILA = ["ADMIN", "ATENDENTE"];
 const STATUS_QUE_PODEM_SER_ASSUMIDOS: Status[] = ["Na fila", "Em atendimento", "Aguardando"];
@@ -100,7 +103,7 @@ interface ChamadoArmazenado {
   timeline: EventoTimeline[];
   anexos: Anexo[];
   servico: ServicoTerceiro | null;
-  excluido: boolean;
+  cancelamento: { em: Date; por: Autor; motivo: string } | null;
   chaveIdempotencia: string | null;
 }
 
@@ -263,6 +266,8 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
       triagem: triagem(chamado),
       atendimento: chamado.atendimento ? { responsavel: chamado.atendimento.responsavel, assumidoEm: horarioDeSaoPaulo(chamado.atendimento.assumidoEm) } : null,
       escalonamento: null,
+      latitude: chamado.localizacao?.latitude ?? null,
+      longitude: chamado.localizacao?.longitude ?? null,
     };
   }
 
@@ -284,6 +289,7 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
       resolucaoResumo: chamado.resolucaoResumo,
       confirmacaoAte: chamado.status === "Resolvido" && chamado.resolvidoEm ? new Date(chamado.resolvidoEm.getTime() + DIAS_PARA_CONFIRMAR * DIA_MS).toISOString() : null,
       reaberturaAte: chamado.status === "Fechado" && chamado.fechadoEm ? new Date(chamado.fechadoEm.getTime() + DIAS_PARA_REABRIR * DIA_MS).toISOString() : null,
+      cancelamento: chamado.cancelamento ? { em: horarioDeSaoPaulo(chamado.cancelamento.em), por: chamado.cancelamento.por, motivo: chamado.cancelamento.motivo } : null,
     };
   }
 
@@ -322,7 +328,7 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
     const apenasCliente = temPerfil(PERFIS_DE_CLIENTE) && !temPerfil(PERFIS_DA_CENTRAL);
     const departamentosDoUsuario = usuario.departamentos.map((departamento) => departamento.codigo);
 
-    const visivel = (chamado: ChamadoArmazenado) => !chamado.excluido && (
+    const visivel = (chamado: ChamadoArmazenado) => (
       global
       || (temPerfil(["DEPARTAMENTO"]) && triado(chamado) && chamado.departamento !== null && departamentosDoUsuario.includes(chamado.departamento))
       || (temPerfil(PERFIS_DE_CLIENTE) && chamado.solicitanteId === usuario.id)
@@ -422,7 +428,7 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
         timeline: [],
         anexos: [],
         servico: null,
-        excluido: false,
+        cancelamento: null,
         chaveIdempotencia: chave,
       };
       chamados.push(chamado);
@@ -442,6 +448,7 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
         .filter((chamado) => !parametro("prioridade") || prioridadeEfetiva(chamado) === parametro("prioridade"))
         .filter((chamado) => !parametro("departamento") || chamado.departamento === parametro("departamento"))
         .filter((chamado) => !parametro("etapa") || (parametro("etapa") === "TRIAGEM") !== triado(chamado))
+        .filter((chamado) => parametro("responsavel") !== "eu" || chamado.atendimento?.responsavel.id === usuario.id)
         .sort(parametro("ordenacao") === "ativos_recentes"
           ? (a, b) => Number(!["Resolvido", "Fechado"].includes(b.status)) - Number(!["Resolvido", "Fechado"].includes(a.status))
             || b.atualizadoEm.getTime() - a.atualizadoEm.getTime()
@@ -503,15 +510,6 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
       });
     }
 
-    if (caminho === "/api/chamados/lixeira") {
-      exigir(PERFIS_DA_LIXEIRA);
-      if (metodo === "GET") return json(chamados.filter((chamado) => chamado.excluido).map(resumo));
-      if (metodo === "DELETE") {
-        chamados.splice(0, chamados.length, ...chamados.filter((chamado) => !chamado.excluido));
-        return semConteudo();
-      }
-    }
-
     if (metodo === "GET" && caminho === "/api/fornecedores") {
       exigir([...PERFIS_QUE_CONDUZEM_QUALQUER_FILA, "DEPARTAMENTO"]);
       return json(FORNECEDORES);
@@ -521,7 +519,10 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
       return json(chamados.filter((chamado) => chamado.servico?.fornecedor.id === usuario.organizacao?.id).map((chamado) => {
         const { fornecedor, ...servico } = chamado.servico as ServicoTerceiro;
         void fornecedor;
-        return servico;
+        const mensagens = chamado.timeline
+          .filter((evento) => evento.tipo === "ATUALIZACAO" && evento.visibilidade === "FORNECEDOR")
+          .map((evento) => ({ id: evento.id, texto: evento.detalhe, autor: evento.autor, enviadaEm: evento.ocorridoEm }));
+        return { ...servico, mensagens };
       }));
     }
     const atualizacaoDoFornecedor = /^\/api\/fornecedor\/servicos\/([^/]+)\/status$/.exec(caminho);
@@ -574,29 +575,62 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
 
     if (metodo === "GET" && caminho.startsWith("/api/dev/")) return problema(404, "Dev tools desabilitado.");
 
-    const exclusaoDefinitiva = /^\/api\/chamados\/lixeira\/([^/]+)$/.exec(caminho);
-    if (exclusaoDefinitiva && metodo === "DELETE") {
-      exigir(PERFIS_DA_LIXEIRA);
-      const indice = chamados.findIndex((chamado) => chamado.id === exclusaoDefinitiva[1] && chamado.excluido);
-      if (indice < 0) recusar(404, `Chamado ${exclusaoDefinitiva[1]} não encontrado na lixeira.`);
-      chamados.splice(indice, 1);
-      return semConteudo();
-    }
-
     const rota = /^\/api\/chamados\/([^/]+)(?:\/(.+))?$/.exec(caminho);
     if (!rota) return problema(404, `Recurso ${metodo} ${caminho} não existe no backend.`);
     const [, codigo, sufixo = ""] = rota;
 
     if (sufixo === "" && metodo === "GET") return devolver(buscar(codigo));
-    if (sufixo === "" && metodo === "DELETE") {
-      exigir(PERFIS_DA_LIXEIRA);
-      buscar(codigo).excluido = true;
-      return semConteudo();
+    if (sufixo === "cancelamento" && metodo === "POST") {
+      exigir(["ADMIN", "ATENDENTE", "DEPARTAMENTO"]);
+      const chamado = paraConduzir(codigo);
+      if (chamado.status === "Cancelado") recusar(409, "Este chamado já está cancelado.");
+      if (chamado.status === "Resolvido" || chamado.status === "Fechado") recusar(409, "Chamados resolvidos ou fechados não podem ser cancelados.");
+      const motivo = texto("motivo").trim();
+      if (motivo.length < 10) recusar(400, "Um ou mais campos são inválidos.", { motivo: "O motivo deve ter entre 10 e 2000 caracteres." });
+      const anterior = chamado.status;
+      chamado.status = "Cancelado";
+      chamado.motivoAguardando = null;
+      chamado.cancelamento = { em: agora(), por: autorDe(usuario), motivo };
+      registrar(chamado, "STATUS", "Chamado cancelado", `${anterior} → Cancelado · Motivo: ${motivo}`, autorDe(usuario), true);
+      return devolver(chamado);
     }
-    if (sufixo === "restauracao" && metodo === "POST") {
-      exigir(PERFIS_DA_LIXEIRA);
-      const chamado = chamados.find((candidato) => candidato.id === codigo && candidato.excluido) ?? recusar(404, `Chamado ${codigo} não encontrado.`);
-      chamado.excluido = false;
+    if (sufixo === "cancelamento/reabertura" && metodo === "POST") {
+      exigir(["ADMIN", "ATENDENTE", "DEPARTAMENTO", ...PERFIS_DE_CLIENTE]);
+      const chamado = buscar(codigo);
+      exigirQueConduzaOuSejaOCliente(chamado);
+      if (chamado.status !== "Cancelado") recusar(409, "Só é possível reabrir um chamado cancelado.");
+      if (texto("motivo").trim().length < 10) recusar(400, "Um ou mais campos são inválidos.", { motivo: "O motivo deve ter entre 10 e 2000 caracteres." });
+      chamado.status = !triado(chamado) ? "Aberto" : chamado.atendimento ? "Em atendimento" : "Na fila";
+      chamado.cancelamento = null;
+      registrar(chamado, "STATUS", "Chamado reaberto após cancelamento", `Cancelado → ${chamado.status} · ${texto("motivo").trim()}`, autorDe(usuario), true);
+      return devolver(chamado);
+    }
+    const pessoasDoSetor = (chamado: ChamadoArmazenado) => Object.values(USUARIOS)
+      .filter((candidato) => candidato.perfis.includes("DEPARTAMENTO") && candidato.departamentos.some((departamento) => departamento.codigo === chamado.departamento))
+      .sort((a, b) => a.nome.localeCompare(b.nome));
+    if (sufixo === "responsaveis-possiveis" && metodo === "GET") {
+      exigir(["ADMIN", "ATENDENTE", "DEPARTAMENTO"]);
+      const chamado = paraAtender(codigo);
+      exigirTriagem(chamado);
+      return json(pessoasDoSetor(chamado).map((pessoa) => ({ id: pessoa.id, nome: pessoa.nome })));
+    }
+    if (sufixo === "responsavel" && metodo === "POST") {
+      exigir(["ADMIN", "ATENDENTE", "DEPARTAMENTO"]);
+      const chamado = paraAtender(codigo);
+      exigirTriagem(chamado);
+      if (chamado.status === "Cancelado") recusar(409, "Este chamado está cancelado. Reabra o chamado antes desta ação.");
+      if (chamado.status === "Resolvido" || chamado.status === "Fechado") recusar(409, "Chamados resolvidos ou fechados não podem mudar de responsável.");
+      const pessoa = pessoasDoSetor(chamado).find((candidato) => candidato.id === texto("usuarioId"))
+        ?? recusar(400, "Um ou mais campos são inválidos.", { usuarioId: "Escolha uma pessoa ativa do departamento responsável pelo chamado." });
+      if (chamado.atendimento?.responsavel.id === pessoa.id) recusar(409, `${pessoa.nome} já é a pessoa responsável por este chamado.`);
+      const anterior = chamado.atendimento?.responsavel.nome ?? "Sem responsável";
+      if (chamado.status === "Na fila") {
+        chamado.status = "Em atendimento";
+        registrar(chamado, "STATUS", "Status alterado para Em atendimento", `Na fila → Em atendimento · atribuído a ${pessoa.nome}`, autorDe(usuario), true);
+      }
+      chamado.atendimento = { responsavel: { id: pessoa.id, nome: pessoa.nome }, assumidoEm: agora() };
+      const observacao = texto("observacao").trim() ? ` · ${texto("observacao").trim()}` : "";
+      registrar(chamado, "TRANSFERENCIA", "Responsável transferido", `${anterior} → ${pessoa.nome}${observacao}`, autorDe(usuario), false);
       return devolver(chamado);
     }
 
@@ -687,6 +721,7 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
       const novo = texto("status") as Status;
       if (STATUS_AGUARDANDO_TRIAGEM.includes(novo)) recusar(400, "Um ou mais campos são inválidos.", { status: "Abertura e triagem não podem ser definidas manualmente." });
       const anterior = chamado.status;
+      if (anterior === "Cancelado" || novo === "Cancelado") recusar(409, "Este chamado está cancelado. Reabra o chamado antes desta ação.");
       if (anterior === "Fechado") recusar(409, "Chamados fechados não podem mudar de status.");
       if (anterior === "Resolvido" && novo !== "Fechado") recusar(409, "Reabertura exige o fluxo específico de reabertura.");
       if (novo === "Fechado" && anterior !== "Resolvido") recusar(409, "Só é possível fechar um chamado depois de resolvido.");
@@ -754,6 +789,7 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
     }
     const publicarMensagem = (chamado: ChamadoArmazenado, conteudo: string, solicitouPublica: boolean, anexo: Anexo | null) => {
       if (chamado.status === "Fechado") recusar(409, "Este chamado está fechado. A conversa volta a funcionar na reabertura.");
+      if (chamado.status === "Cancelado") recusar(409, "Este chamado está cancelado. A conversa volta a funcionar quando ele for reaberto.");
       const visivelCliente = apenasCliente || solicitouPublica;
       const acao = apenasCliente ? "Complemento do solicitante" : visivelCliente ? "Mensagem ao solicitante" : "Registro interno";
       registrar(chamado, "ATUALIZACAO", acao, conteudo, autorDe(usuario), visivelCliente);
@@ -769,6 +805,12 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
     if (sufixo === "atualizacoes" && metodo === "POST") {
       const chamado = buscar(codigo);
       exigirQueConduzaOuSejaOCliente(chamado);
+      if (!apenasCliente && dados.destino === "FORNECEDOR") {
+        if (!chamado.servico) recusar(409, "Acione um fornecedor antes de enviar uma mensagem a ele.");
+        registrar(chamado, "ATUALIZACAO", "Mensagem ao fornecedor", texto("texto").trim(), autorDe(usuario), false);
+        chamado.timeline[chamado.timeline.length - 1].visibilidade = "FORNECEDOR";
+        return devolver(chamado, 201);
+      }
       publicarMensagem(chamado, texto("texto").trim(), dados.visivelCliente === true, null);
       return devolver(chamado, 201);
     }
@@ -790,6 +832,7 @@ export function criarBackendFalso(opcoes: { agora?: () => Date } = {}) {
         .map((evento) => ({
           id: evento.id, texto: evento.detalhe, autor: evento.autor, enviadaEm: evento.ocorridoEm, visivelCliente: evento.visivelCliente,
           origem: evento.acao === "Complemento do solicitante" ? "SOLICITANTE" : "EQUIPE", anexo: anexosDasMensagens.get(evento.id) ?? null,
+          visibilidade: evento.visibilidade ?? (evento.visivelCliente ? "SOLICITANTE" : "INTERNO"),
         }));
       return json({ mensagens, lidoAte: leituras.get(`${chamado.id}:${usuario.id}`) ?? null });
     }

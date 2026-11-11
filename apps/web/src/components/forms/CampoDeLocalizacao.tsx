@@ -12,6 +12,7 @@ import {
 } from "@/utils/endereco";
 import { cn } from "@/utils/cn";
 import Select, { type OpcaoDoSelect } from "@/components/ui/Select";
+import Mapa from "@/components/mapa/Mapa";
 
 export { descreverCoordenadas };
 
@@ -269,7 +270,7 @@ export default function CampoDeLocalizacao({ id, valor, aoAlterar, inputClassNam
           type="button"
           onClick={usarGps}
           disabled={etapaDoGps !== "parado"}
-          className="alvo-toque inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-blue px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60 sm:w-auto"
+          className="alvo-toque inline-flex w-full items-center justify-center gap-2 rounded-lg vf-botao-primario px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60 sm:w-auto"
         >
           {etapaDoGps === "parado"
             ? <LocateFixed size={16} aria-hidden />
@@ -278,6 +279,20 @@ export default function CampoDeLocalizacao({ id, valor, aoAlterar, inputClassNam
         </button>
         {avisoDoGps && <MensagemDeAviso aviso={avisoDoGps} />}
       </div>
+
+      {temCoordenadas(localizacao) && (
+        <div className="space-y-1">
+          <Mapa
+            latitude={localizacao.latitude}
+            longitude={localizacao.longitude}
+            arrastavel
+            aoMover={(latitude, longitude) => void identificarPosicao(latitude, longitude)}
+            altura={200}
+            rotulo="Mapa da localização do chamado"
+          />
+          <p className="text-xs text-tinta-apagada">Arraste o pino para ajustar o ponto exato.</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-6">
         <div className="sm:col-span-2">

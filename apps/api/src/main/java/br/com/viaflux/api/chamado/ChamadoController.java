@@ -11,7 +11,6 @@ import br.com.viaflux.api.chamado.consulta.ChamadosPageResponse;
 import br.com.viaflux.api.chamado.consulta.ConsultaDeChamadosService;
 import br.com.viaflux.api.chamado.consulta.FiltrosDeChamados;
 import br.com.viaflux.api.chamado.consulta.ResumoDeChamadosResponse;
-import br.com.viaflux.api.chamado.operacao.LixeiraService;
 import br.com.viaflux.api.usuario.IdentificacaoDoUsuario;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -25,7 +24,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,27 +41,27 @@ import java.util.List;
 @RestController
 @Validated
 @RequestMapping("/api/chamados")
-@Tag(name = "Chamados", description = "Abertura, consulta, atendimento e lixeira de chamados")
+@Tag(name = "Chamados", description = "Abertura, consulta e atendimento de chamados")
 public class ChamadoController {
 
     private final IdentificacaoDoUsuario identificacao;
     private final AberturaDeChamadoService abertura;
     private final ConsultaDeChamadosService consulta;
     private final AtendimentoService atendimento;
-    private final LixeiraService lixeira;
+    private final ResponsavelPeloAtendimentoService responsavel;
 
     public ChamadoController(
             IdentificacaoDoUsuario identificacao,
             AberturaDeChamadoService abertura,
             ConsultaDeChamadosService consulta,
             AtendimentoService atendimento,
-            LixeiraService lixeira
+            ResponsavelPeloAtendimentoService responsavel
     ) {
         this.identificacao = identificacao;
         this.abertura = abertura;
         this.consulta = consulta;
         this.atendimento = atendimento;
-        this.lixeira = lixeira;
+        this.responsavel = responsavel;
     }
 
     @PostMapping
@@ -107,11 +105,12 @@ public class ChamadoController {
             @Parameter(description = "NO_PRAZO, EM_RISCO ou VIOLADO") @RequestParam(required = false) String sla,
             @Parameter(description = "TRIAGEM ou ATENDIMENTO") @RequestParam(required = false) String etapa,
             @Parameter(description = "fila, recentes ou ativos_recentes") @RequestParam(required = false) String ordenacao,
+            @Parameter(description = "eu: só os chamados em atendimento com o usuário autenticado") @RequestParam(required = false) String responsavel,
             @Min(0) @RequestParam(defaultValue = "0") int page,
             @Min(1) @Max(100) @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal Jwt token
     ) {
-        FiltrosDeChamados filtros = FiltrosDeChamados.de(busca, status, prioridade, departamento, tipo, sla, etapa, ordenacao);
+        FiltrosDeChamados filtros = FiltrosDeChamados.de(busca, status, prioridade, departamento, tipo, sla, etapa, ordenacao, responsavel);
         return consulta.listar(filtros, page, size, identificacao.de(token));
     }
 
@@ -136,39 +135,6 @@ public class ChamadoController {
         return consulta.resumir(filtros, identificacao.de(token));
     }
 
-    @GetMapping("/lixeira")
-    @Operation(
-            summary = "Listar chamados na lixeira",
-            description = "Perfis: ADMIN e ATENDENTE.",
-            security = @SecurityRequirement(name = "bearerAuth")
-    )
-    public List<ChamadoResumoResponse> listarLixeira() {
-        return lixeira.listar();
-    }
-
-    @DeleteMapping("/lixeira")
-    @Operation(
-            summary = "Esvaziar a lixeira",
-            description = "Exclui definitivamente todos os chamados da lixeira, com histórico e anexos. Não pode ser desfeito. Perfis: "
-                    + "ADMIN e ATENDENTE.",
-            security = @SecurityRequirement(name = "bearerAuth")
-    )
-    public ResponseEntity<Void> esvaziarLixeira() {
-        lixeira.esvaziar();
-        return ResponseEntity.noContent().build();
-    }
-
-    @DeleteMapping("/lixeira/{codigo}")
-    @Operation(
-            summary = "Excluir definitivamente um chamado da lixeira",
-            description = "Só para chamados que já estão na lixeira. Não pode ser desfeito. Perfis: ADMIN e ATENDENTE.",
-            security = @SecurityRequirement(name = "bearerAuth")
-    )
-    public ResponseEntity<Void> excluirDefinitivamente(@PathVariable String codigo) {
-        lixeira.excluirDefinitivamente(codigo);
-        return ResponseEntity.noContent().build();
-    }
-
     @GetMapping("/{codigo}")
     @Operation(
             summary = "Consultar chamado",
@@ -180,27 +146,6 @@ public class ChamadoController {
     )
     public ChamadoResponse consultar(@PathVariable String codigo, @AuthenticationPrincipal Jwt token) {
         return consulta.consultar(codigo, identificacao.de(token));
-    }
-
-    @DeleteMapping("/{codigo}")
-    @Operation(
-            summary = "Mover chamado para a lixeira",
-            description = "Exclusão reversível: o chamado sai das listas e pode ser restaurado. Perfis: ADMIN e ATENDENTE.",
-            security = @SecurityRequirement(name = "bearerAuth")
-    )
-    public ResponseEntity<Void> moverParaLixeira(@PathVariable String codigo, @AuthenticationPrincipal Jwt token) {
-        lixeira.moverParaLixeira(codigo, identificacao.de(token));
-        return ResponseEntity.noContent().build();
-    }
-
-    @PostMapping("/{codigo}/restauracao")
-    @Operation(
-            summary = "Restaurar chamado da lixeira",
-            description = "Perfis: ADMIN e ATENDENTE.",
-            security = @SecurityRequirement(name = "bearerAuth")
-    )
-    public ChamadoResponse restaurar(@PathVariable String codigo) {
-        return lixeira.restaurar(codigo);
     }
 
     @PatchMapping("/{codigo}/status")
@@ -238,6 +183,30 @@ public class ChamadoController {
     )
     public ChamadoResponse transferir(@PathVariable String codigo, @Valid @RequestBody TransferenciaRequest request, @AuthenticationPrincipal Jwt token) {
         return atendimento.transferir(codigo, request, identificacao.de(token));
+    }
+
+    @GetMapping("/{codigo}/responsaveis-possiveis")
+    @Operation(
+            summary = "Listar pessoas do setor que podem assumir o chamado",
+            description = "Usuários ativos com perfil DEPARTAMENTO no departamento responsável pelo chamado. Antes da triagem a resposta "
+                    + "é 409. Perfis: ADMIN, ATENDENTE e DEPARTAMENTO (só a própria fila).",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    List<Autor> pessoasDoSetor(@PathVariable String codigo, @AuthenticationPrincipal Jwt token) {
+        return responsavel.pessoasDoSetor(codigo, identificacao.de(token));
+    }
+
+    @PostMapping("/{codigo}/responsavel")
+    @Operation(
+            summary = "Transferir o chamado para outra pessoa do setor",
+            description = "Troca o responsável pelo atendimento por outra pessoa ativa do mesmo departamento, sem mudar a fila. Na fila "
+                    + "passa para Em atendimento; os demais status são mantidos. A pessoa recebe uma notificação. Chamados resolvidos, "
+                    + "fechados ou cancelados respondem 409. Perfis: ADMIN, ATENDENTE e DEPARTAMENTO (só a própria fila).",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    ChamadoResponse transferirResponsavel(@PathVariable String codigo, @Valid @RequestBody TransferenciaDeResponsavelRequest request,
+                                          @AuthenticationPrincipal Jwt token) {
+        return responsavel.transferir(codigo, request, identificacao.de(token));
     }
 
     @PostMapping("/{codigo}/atualizacoes")

@@ -9,7 +9,8 @@ import Encaminhamento from "@/components/forms/Encaminhamento";
 import DetalhesChamado from "@/components/chamados/DetalhesChamado";
 import PortalDoCliente from "@/components/portal/PortalDoCliente";
 import ChamadoDoCliente from "@/components/portal/ChamadoDoCliente";
-import { type ClienteApi, abrirChamado, alterarStatus, concluirTriagem } from "@/services/api/chamados";
+import { type ClienteApi, abrirChamado, alterarStatus, assumirAtendimento, cancelarChamado, concluirTriagem } from "@/services/api/chamados";
+import { navegacao } from "../setup";
 import { requisitarApi } from "@/services/api/cliente";
 import { render } from "@testing-library/react";
 import { USUARIOS, type UsuarioDeTeste, tokenDeAcesso } from "../support/backendFalso";
@@ -160,7 +161,7 @@ describe("classificação", () => {
     await renderizarComo(USUARIOS.departamento, <Dashboard />);
     expect(await screen.findByRole("link", { name: "#VF-0000" })).toBeInTheDocument();
     expect(screen.getAllByText("Na fila").length).toBeGreaterThan(0);
-    expect(screen.queryByRole("button", { name: /Excluir chamado/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Excluir|Cancelar chamado/ })).not.toBeInTheDocument();
   });
 });
 
@@ -180,7 +181,9 @@ describe("o que cada perfil faz no chamado", () => {
     expect(await screen.findByText("Você")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Assumir chamado" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Transferir / status" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Excluir/ })).not.toBeInTheDocument();
+    await usuario.click(screen.getByRole("button", { name: "Opções" }));
+    expect(await screen.findByRole("menuitem", { name: "Cancelar chamado" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: /Excluir/ })).not.toBeInTheDocument();
   });
 
   it("outra pessoa da fila pode assumir no lugar de quem está com o chamado", async () => {
@@ -196,13 +199,16 @@ describe("o que cada perfil faz no chamado", () => {
   });
 
   it("o atendente pode assumir, alterar o status e acionar fornecedor", async () => {
+    const usuario = userEvent.setup();
     await chamadoTriado();
     await renderizarComo(USUARIOS.atendente, <DetalhesChamado id="VF-0000" />);
     expect(await screen.findByRole("link", { name: "Transferir / status" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Assumir chamado" })).toBeInTheDocument();
     expect(screen.getByLabelText("Alterar status")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Incluir serviço terceirizado" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Excluir/ })).toBeInTheDocument();
+    await usuario.click(screen.getByRole("button", { name: "Opções" }));
+    expect(await screen.findByRole("menuitem", { name: "Cancelar chamado" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: /Excluir/ })).not.toBeInTheDocument();
   });
 
   it("altera o status pelo menu até fechar o chamado resolvido", async () => {
@@ -235,11 +241,101 @@ describe("o que cada perfil faz no chamado", () => {
     expect(await screen.findByRole("heading", { name: "#VF-0000" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Assumir chamado" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Transferir/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Excluir/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Excluir|Cancelar chamado/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Incluir serviço terceirizado" })).not.toBeInTheDocument();
     expect(await screen.findByText("Seu perfil só acompanha esta conversa.")).toBeInTheDocument();
     expect(screen.queryByLabelText("Escrever mensagem")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Selecionar anexos")).not.toBeInTheDocument();
+  });
+});
+
+describe("cancelamento do chamado", () => {
+  async function chamadoTriado() {
+    ligarBackendFalso();
+    await abrirPane();
+    await concluirTriagem(apiComo(USUARIOS.atendente), "VF-0000", { tipo: "ASSISTENCIA_24H", severidade: 5, urgencia: 5 });
+  }
+
+  it("pede confirmação com motivo antes de cancelar e o chamado continua visível", async () => {
+    const usuario = userEvent.setup();
+    await chamadoTriado();
+    await renderizarComo(USUARIOS.atendente, <DetalhesChamado id="VF-0000" />);
+    await usuario.click(await screen.findByRole("button", { name: "Opções" }));
+    await usuario.click(await screen.findByRole("menuitem", { name: "Cancelar chamado" }));
+
+    const dialogo = screen.getByRole("alertdialog", { name: "Cancelar este chamado?" });
+    const confirmar = within(dialogo).getByRole("button", { name: "Sim, cancelar chamado" });
+    expect(confirmar).toBeDisabled();
+    await usuario.click(within(dialogo).getByRole("button", { name: "Voltar" }));
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(screen.queryByText("Chamado cancelado")).not.toBeInTheDocument();
+
+    await usuario.click(screen.getByRole("button", { name: "Opções" }));
+    await usuario.click(await screen.findByRole("menuitem", { name: "Cancelar chamado" }));
+    const novoDialogo = screen.getByRole("alertdialog", { name: "Cancelar este chamado?" });
+    await usuario.type(within(novoDialogo).getByLabelText("Motivo do cancelamento *"), "Cliente resolveu por conta própria");
+    await usuario.click(within(novoDialogo).getByRole("button", { name: "Sim, cancelar chamado" }));
+
+    const aviso = await screen.findByRole("status", { name: "Chamado cancelado" });
+    expect(within(aviso).getByText(/Cliente resolveu por conta própria/)).toBeInTheDocument();
+    expect(screen.getAllByText("Cancelado").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: "Cancelar chamado" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Assumir chamado" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Transferir/ })).not.toBeInTheDocument();
+    expect(within(aviso).getByRole("button", { name: /Escalonar à liderança/ })).toBeInTheDocument();
+  });
+
+  it("a equipe reabre o chamado cancelado e ele volta para a fila", async () => {
+    const usuario = userEvent.setup();
+    await chamadoTriado();
+    await cancelarChamado(apiComo(USUARIOS.atendente), "VF-0000", "Chamado aberto em duplicidade");
+    await renderizarComo(USUARIOS.departamento, <DetalhesChamado id="VF-0000" />);
+
+    const aviso = await screen.findByRole("status", { name: "Chamado cancelado" });
+    await usuario.click(within(aviso).getByRole("button", { name: "Reabrir chamado" }));
+    const dialogo = screen.getByRole("alertdialog", { name: "Reabrir este chamado?" });
+    await usuario.type(within(dialogo).getByLabelText("Motivo da reabertura *"), "Não era duplicado, são veículos diferentes");
+    await usuario.click(within(dialogo).getByRole("button", { name: "Reabrir chamado" }));
+
+    await waitFor(() => expect(screen.queryByRole("status", { name: "Chamado cancelado" })).not.toBeInTheDocument());
+    expect(await screen.findByRole("button", { name: "Assumir chamado" })).toBeInTheDocument();
+    expect(screen.getAllByText("Na fila").length).toBeGreaterThan(0);
+  });
+
+  it("o cliente vê o motivo e pode reabrir pelo portal", async () => {
+    const usuario = userEvent.setup();
+    await chamadoTriado();
+    await cancelarChamado(apiComo(USUARIOS.atendente), "VF-0000", "Sem retorno do cliente há 3 dias");
+    await renderizarComo(USUARIOS.cliente, <ChamadoDoCliente id="VF-0000" />);
+
+    const aviso = await screen.findByRole("status", { name: "Chamado cancelado" });
+    expect(within(aviso).getByText(/Sem retorno do cliente há 3 dias/)).toBeInTheDocument();
+    expect(screen.queryByLabelText("Escrever mensagem")).not.toBeInTheDocument();
+    await usuario.click(within(aviso).getByRole("button", { name: "Reabrir chamado" }));
+    const dialogo = screen.getByRole("alertdialog", { name: "Reabrir este chamado?" });
+    await usuario.type(within(dialogo).getByLabelText("Motivo da reabertura *"), "Respondi pelo telefone, ainda preciso do guincho");
+    await usuario.click(within(dialogo).getByRole("button", { name: "Reabrir chamado" }));
+
+    await waitFor(() => expect(screen.queryByRole("status", { name: "Chamado cancelado" })).not.toBeInTheDocument());
+  });
+});
+
+describe("transferência para outra pessoa do setor", () => {
+  it("passa o chamado para outra pessoa do mesmo departamento", async () => {
+    const usuario = userEvent.setup();
+    ligarBackendFalso();
+    await abrirPane();
+    await concluirTriagem(apiComo(USUARIOS.atendente), "VF-0000", { tipo: "ASSISTENCIA_24H", severidade: 5, urgencia: 5 });
+    await renderizarComo(USUARIOS.departamento, <Encaminhamento id="VF-0000" />);
+
+    await waitFor(() => expect(screen.getByLabelText("Pessoa de destino *")).toBeEnabled());
+    await escolher(usuario, "Pessoa de destino *", "Bia Plantão");
+    await usuario.type(screen.getByLabelText("Observação"), "Assume o plantão da tarde");
+    await usuario.click(screen.getByRole("button", { name: "Transferir para a pessoa" }));
+
+    expect(await screen.findByText("Bia Plantão", { selector: "span.font-semibold" })).toBeInTheDocument();
+    expect(screen.getByText(/Sem responsável → Bia Plantão · Assume o plantão da tarde/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Observação")).toHaveValue("");
   });
 });
 
@@ -255,6 +351,20 @@ describe("dashboard", () => {
     await concluirTriagem(comoAtendente, "VF-0001", { tipo: "FINANCEIRO", severidade: 1, urgencia: 1 });
     return backend;
   }
+
+  it("a visualização Meus chamados lista só o que está em atendimento com o usuário", async () => {
+    await criarChamados();
+    await assumirAtendimento(apiComo(USUARIOS.atendente), "VF-0000");
+    navegacao.busca = "visao=meus";
+    try {
+      await renderizarComo(USUARIOS.atendente, <Dashboard />);
+      expect(await screen.findByRole("link", { name: "#VF-0000" })).toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: "#VF-0001" })).not.toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Meus chamados" })).toHaveAttribute("aria-current", "page");
+    } finally {
+      navegacao.busca = "";
+    }
+  });
 
   it("destaca P1 sem início de atendimento, mostra contadores e combina filtros", async () => {
     const usuario = userEvent.setup();

@@ -32,8 +32,8 @@ function Contador({ rotulo, valor, destaque }: { rotulo: string; valor: number; 
 
 function GrupoDeContadores({ titulo, Icone, children }: { titulo: string; Icone: LucideIcon; children: ReactNode }) {
   return (
-    <section aria-label={titulo} className="flex flex-col gap-3 rounded-2xl border border-[#E2E8F0] bg-white p-4">
-      <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-brand-navy"><Icone size={16} aria-hidden /> {titulo}</h2>
+    <section aria-label={titulo} className="flex flex-col gap-3 rounded-2xl border border-linha bg-white p-4">
+      <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-tinta"><Icone size={16} aria-hidden /> {titulo}</h2>
       <div className="flex flex-wrap gap-x-6 gap-y-3">{children}</div>
     </section>
   );
@@ -66,7 +66,7 @@ export function ContadoresDaOperacao({ resumo, comLink }: { resumo: ResumoChamad
         <Contador rotulo="a revisar" valor={triagem.aguardandoRevisao} destaque="text-amber-600" />
         <Contador rotulo="escalonados" valor={resumo.escalonados} destaque="text-red-600" />
         {comLink && pendentes > 0 && (
-          <Link href="/triagem" className="alvo-toque self-center rounded-xl bg-brand-green px-3 py-2 text-xs font-semibold text-white hover:opacity-90">Analisar</Link>
+          <Link href="/triagem" className="alvo-toque self-center rounded-xl vf-botao-primario px-3 py-2 text-xs font-semibold text-white">Analisar</Link>
         )}
         {triagem.proximoLimite && (
           <div className="basis-full text-xs text-slate-500">

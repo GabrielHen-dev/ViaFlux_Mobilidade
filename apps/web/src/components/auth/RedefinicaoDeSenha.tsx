@@ -58,7 +58,7 @@ export default function RedefinicaoDeSenha({ token }: { token: string }) {
     <CartaoDeAcesso
       titulo="Redefinir senha"
       subtitulo={`Mínimo de ${SENHA_MINIMA} caracteres.`}
-      rodape={<Link href="/login" className="font-semibold text-brand-green underline-offset-2 hover:underline">Voltar ao login</Link>}
+      rodape={<Link href="/login" className="font-semibold text-acao underline-offset-2 hover:underline">Voltar ao login</Link>}
     >
       <form noValidate onSubmit={enviar}>
         <div className="mb-4">

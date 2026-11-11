@@ -26,9 +26,9 @@ interface PropsDaSecao {
 
 function Secao({ numero, titulo, children }: { numero: number; titulo: string; children: ReactNode }) {
   return (
-    <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5 md:p-6">
-      <h2 className="mb-5 flex items-center gap-2 font-display text-sm font-semibold text-brand-navy">
-        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#EFF6FF] text-xs font-bold text-brand-blue">{numero}</span>
+    <section className="rounded-2xl border border-linha bg-white p-5 md:p-6">
+      <h2 className="mb-5 flex items-center gap-2 font-display text-sm font-semibold text-tinta">
+        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#EFF6FF] text-xs font-bold text-acao">{numero}</span>
         {titulo}
       </h2>
       {children}

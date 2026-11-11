@@ -7,10 +7,11 @@ import type { Chamado, Localizacao } from "@/types/chamado";
 import { registrarLocalizacao } from "@/services/api/chamados";
 import { useAcaoNoChamado } from "@/hooks/consultas";
 import CampoDeLocalizacao, { descreverCoordenadas } from "@/components/forms/CampoDeLocalizacao";
+import Mapa from "@/components/mapa/Mapa";
 import { mensagemDeErro } from "@/components/feedback/EstadoDaConsulta";
 import { completarLocalizacao, formatarCep, linkNoOpenStreetMap, temCoordenadas, temEnderecoEstruturado } from "@/utils/endereco";
 
-const inputClass = "w-full px-3 py-2 rounded-lg border border-[#E2E8F0] text-sm text-brand-dark outline-none focus:border-brand-blue";
+const inputClass = "w-full px-3 py-2 rounded-lg border border-linha text-sm text-brand-dark outline-none focus:border-brand-blue";
 
 export function enderecoNoMapa(localizacao: Pick<Localizacao, "endereco" | "latitude" | "longitude">) {
   const consulta = localizacao.latitude !== null && localizacao.longitude !== null
@@ -50,11 +51,11 @@ export default function LocalizacaoDoChamado({ chamado, somenteLeitura = false }
   }
 
   return (
-    <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5" aria-labelledby={`local-${chamado.id}`}>
+    <section className="vf-cartao p-4" aria-labelledby={`local-${chamado.id}`}>
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h3 id={`local-${chamado.id}`} className="font-display text-xs font-semibold uppercase tracking-wide text-brand-navy">Localização</h3>
+        <h3 id={`local-${chamado.id}`} className="font-display text-sm font-medium text-tinta">Localização</h3>
         {!editando && !somenteLeitura && (
-          <button type="button" onClick={comecarEdicao} className="text-xs font-semibold text-brand-blue hover:underline">
+          <button type="button" onClick={comecarEdicao} className="text-xs font-semibold text-acao hover:underline">
             {atual ? "Atualizar" : "Registrar"}
           </button>
         )}
@@ -65,6 +66,9 @@ export default function LocalizacaoDoChamado({ chamado, somenteLeitura = false }
             <MapPin size={14} className="mt-0.5 flex-shrink-0 text-red-500" aria-hidden />
             <EnderecoRegistrado localizacao={atual} />
           </div>
+          {temCoordenadas(atual) && !editando && (
+            <Mapa latitude={atual.latitude} longitude={atual.longitude} altura={180} rotulo="Mapa da localização registrada" />
+          )}
           {temCoordenadas(atual) && (
             <p className="text-xs text-slate-500">GPS: {descreverCoordenadas(atual.latitude, atual.longitude)}</p>
           )}
@@ -72,7 +76,7 @@ export default function LocalizacaoDoChamado({ chamado, somenteLeitura = false }
             href={temCoordenadas(atual) ? linkNoOpenStreetMap(atual.latitude, atual.longitude) : enderecoNoMapa(atual)}
             target="_blank"
             rel="noreferrer"
-            className="alvo-toque inline-flex items-center gap-1.5 text-xs font-semibold text-brand-blue hover:underline"
+            className="alvo-toque inline-flex items-center gap-1.5 text-xs font-semibold text-acao hover:underline"
           >
             Abrir no mapa <ExternalLink size={12} aria-hidden />
           </a>
@@ -84,7 +88,7 @@ export default function LocalizacaoDoChamado({ chamado, somenteLeitura = false }
         <div className="mt-3 space-y-3">
           <CampoDeLocalizacao id={`local-campo-${chamado.id}`} valor={rascunho} aoAlterar={setRascunho} inputClassName={inputClass} />
           <div className="flex gap-2">
-            <button type="button" onClick={() => setEditando(false)} className="alvo-toque flex-1 rounded-lg border border-slate-200 py-2 text-xs font-semibold text-slate-600">Cancelar</button>
+            <button type="button" onClick={() => setEditando(false)} className="vf-botao-secundario alvo-toque flex-1 rounded-lg border border-slate-200 py-2 text-xs font-semibold text-slate-600">Cancelar</button>
             <button
               type="button"
               disabled={salvar.isPending || (!rascunho.endereco.trim() && rascunho.latitude === null)}
@@ -95,7 +99,7 @@ export default function LocalizacaoDoChamado({ chamado, somenteLeitura = false }
                 },
                 onError: (erro) => toast.error("Não foi possível salvar a localização", { description: mensagemDeErro(erro) }),
               })}
-              className="alvo-toque flex-1 rounded-lg bg-brand-green py-2 text-xs font-semibold text-white disabled:opacity-40"
+              className="alvo-toque flex-1 rounded-lg vf-botao-primario py-2 text-xs font-semibold text-white disabled:opacity-40"
             >
               {salvar.isPending ? "Salvando…" : "Salvar localização"}
             </button>

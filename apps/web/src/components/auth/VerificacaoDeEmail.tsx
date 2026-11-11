@@ -88,7 +88,7 @@ export default function VerificacaoDeEmail({ token }: { token: string }) {
     <CartaoDeAcesso
       titulo="Confirmar e-mail"
       subtitulo="Informe o e-mail cadastrado para receber um novo link."
-      rodape={<Link href="/login" className="font-semibold text-brand-green underline-offset-2 hover:underline">Voltar ao login</Link>}
+      rodape={<Link href="/login" className="font-semibold text-acao underline-offset-2 hover:underline">Voltar ao login</Link>}
     >
       <ErroDeAcesso mensagem={situacao.erro} />
       <ReenvioDaVerificacao emailInicial={estado.status === "autenticado" ? estado.usuario.email : ""} />

@@ -37,7 +37,7 @@ async function entrarComo(page: Page, usuario: UsuarioDeTeste) {
   await page.getByLabel("E-mail").fill(usuario.email);
   await page.getByLabel("Senha").fill(SENHA_DE_TESTE);
   await page.getByRole("button", { name: "Entrar" }).click();
-  await expect(page.getByRole("button", { name: "Sair" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Menu do usuário" })).toBeVisible();
 }
 
 async function escolher(page: Page, rotuloDoCampo: string, textoDaOpcao: string | RegExp) {
@@ -46,7 +46,8 @@ async function escolher(page: Page, rotuloDoCampo: string, textoDaOpcao: string 
 }
 
 async function sair(page: Page) {
-  await page.getByRole("button", { name: "Sair" }).click();
+  await page.getByRole("button", { name: "Menu do usuário" }).click();
+  await page.getByRole("menuitem", { name: "Sair" }).click();
   await expect(page).toHaveURL(/\/login$/);
 }
 
@@ -264,13 +265,12 @@ test("rotas diretas, recarregamento e protocolo inexistente", async ({ page }) =
     ["/chamados/VF-0000", "#VF-0000"],
     ["/chamados/VF-0000/triagem", "Classificação · #VF-0000"],
     ["/chamados/VF-0000/encaminhamento", "Transferência — #VF-0000"],
-    ["/lixeira", "Lixeira"],
   ]) {
     await page.goto(url);
     await expect(page.getByRole("heading", { name: titulo, exact: true })).toBeVisible();
   }
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Lixeira", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Transferência — #VF-0000", exact: true })).toBeVisible();
   await page.goto("/chamados/VF-9999");
   await expect(page.getByRole("heading", { name: "Chamado não encontrado" })).toBeVisible();
 });

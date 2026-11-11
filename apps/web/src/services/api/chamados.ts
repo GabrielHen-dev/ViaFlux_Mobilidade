@@ -1,8 +1,8 @@
 import type {
-  Anexo, Chamado, ChamadoResumo, Contexto, Conversa, Departamento, Localizacao, Motivo, PaginaChamados, ResumoChamados, TipoChamado,
+  Anexo, Autor, Chamado, Contexto, Conversa, Departamento, Localizacao, Motivo, PaginaChamados, ResumoChamados, TipoChamado,
 } from "@/types/chamado";
 import type {
-  DadosAberturaChamado, DadosArquivoNaConversa, DadosAtualizacao, DadosConclusaoTriagem, DadosOverride, DadosReclassificacao, DadosStatus, DadosTransferencia, FiltrosChamados,
+  DadosAberturaChamado, DadosArquivoNaConversa, DadosAtualizacao, DadosConclusaoTriagem, DadosOverride, DadosReclassificacao, DadosStatus, DadosTransferencia, DadosTransferenciaDeResponsavel, FiltrosChamados,
 } from "@/services/api/contratos";
 
 export interface ClienteApi {
@@ -141,22 +141,18 @@ export function baixarAnexo(api: ClienteApi, codigo: string, anexoId: string) {
   return api.baixar(caminhoDo(codigo, `/anexos/${encodeURIComponent(anexoId)}/conteudo`));
 }
 
-export function moverParaLixeira(api: ClienteApi, codigo: string) {
-  return api.requisitar<void>(caminhoDo(codigo), json("DELETE"));
+export function cancelarChamado(api: ClienteApi, codigo: string, motivo: string) {
+  return api.requisitar<Chamado>(caminhoDo(codigo, "/cancelamento"), json("POST", { motivo }));
 }
 
-export function listarLixeira(api: ClienteApi) {
-  return api.requisitar<ChamadoResumo[]>("/api/chamados/lixeira");
+export function reabrirChamadoCancelado(api: ClienteApi, codigo: string, motivo: string) {
+  return api.requisitar<Chamado>(caminhoDo(codigo, "/cancelamento/reabertura"), json("POST", { motivo }));
 }
 
-export function restaurarDaLixeira(api: ClienteApi, codigo: string) {
-  return api.requisitar<Chamado>(caminhoDo(codigo, "/restauracao"), json("POST"));
+export function listarPessoasDoSetor(api: ClienteApi, codigo: string) {
+  return api.requisitar<Autor[]>(caminhoDo(codigo, "/responsaveis-possiveis"));
 }
 
-export function excluirDefinitivamente(api: ClienteApi, codigo: string) {
-  return api.requisitar<void>(`/api/chamados/lixeira/${encodeURIComponent(codigo)}`, json("DELETE"));
-}
-
-export function esvaziarLixeira(api: ClienteApi) {
-  return api.requisitar<void>("/api/chamados/lixeira", json("DELETE"));
+export function transferirResponsavel(api: ClienteApi, codigo: string, dados: DadosTransferenciaDeResponsavel) {
+  return api.requisitar<Chamado>(caminhoDo(codigo, "/responsavel"), json("POST", dados));
 }
