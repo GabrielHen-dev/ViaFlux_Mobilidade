@@ -73,7 +73,7 @@ public class ServicoTerceiroController{
     @GetMapping("/api/fornecedor/servicos")
     @Operation(
             summary = "Listar os serviços do fornecedor autenticado",
-            description = "Serviços ativos da organização do fornecedor, sem dados pessoais do cliente. Chamados na lixeira não "
+            description = "Serviços ativos da organização do fornecedor, sem dados pessoais do cliente. Chamados cancelados não "
                     + "aparecem. Perfil: FORNECEDOR.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
@@ -85,7 +85,7 @@ public class ServicoTerceiroController{
     @Operation(
             summary = "Atualizar o status de um serviço pelo fornecedor",
             description = "O status só avança: Recebido, Em execução e Concluído, podendo pular etapas. Voltar ou repetir o status atual "
-                    + "responde 409, e Concluído é final. Serviço de chamado na lixeira responde 404. O cliente é notificado. "
+                    + "responde 409, e Concluído é final. Serviço de chamado cancelado responde 404. O cliente é notificado. "
                     + "Perfil: FORNECEDOR.",
             security = @SecurityRequirement(name = "bearerAuth")
     )

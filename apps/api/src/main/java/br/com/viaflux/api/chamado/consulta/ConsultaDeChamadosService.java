@@ -2,6 +2,7 @@ package br.com.viaflux.api.chamado.consulta;
 
 
 import br.com.viaflux.api.chamado.AcessoAosChamados;
+import br.com.viaflux.api.chamado.Autor;
 import br.com.viaflux.api.chamado.Chamado;
 import br.com.viaflux.api.chamado.ChamadoResponse;
 import br.com.viaflux.api.chamado.ChamadoResumoResponse;
@@ -69,9 +70,19 @@ public class ConsultaDeChamadosService{
         return ChamadosPageResponse.de(filtrados, page, size);
     }
 
+    private static boolean atendidoPor(Chamado chamado, UsuarioAtual usuario) {
+        Autor responsavel = chamado.getAtendimentoResponsavel();
+        return responsavel != null && usuario.id().equals(responsavel.id());
+    }
+
     private static boolean filaAtiva(String status) {
         return !StatusChamado.RESOLVIDO.getRotulo().equals(status)
-                && !StatusChamado.FECHADO.getRotulo().equals(status);
+                && !StatusChamado.FECHADO.getRotulo().equals(status)
+                && !StatusChamado.CANCELADO.getRotulo().equals(status);
+    }
+
+    private static boolean aguardaLideranca(String status) {
+        return filaAtiva(status) || StatusChamado.CANCELADO.getRotulo().equals(status);
     }
 
     @Transactional(readOnly = true)
@@ -80,7 +91,9 @@ public class ConsultaDeChamadosService{
         List<ChamadoResumoResponse> ativosTriados = chamados.stream()
                 .filter(chamado -> chamado.sla() != null && filaAtiva(chamado.status()))
                 .toList();
-        List<ChamadoResumoResponse> emTriagem = chamados.stream().filter(chamado -> chamado.prioridade() == null).toList();
+        List<ChamadoResumoResponse> emTriagem = chamados.stream()
+                .filter(chamado -> chamado.prioridade() == null && filaAtiva(chamado.status()))
+                .toList();
         return new ResumoDeChamadosResponse(
                 chamados.size(),
                 contarPorStatus(chamados),
@@ -96,7 +109,7 @@ public class ConsultaDeChamadosService{
                         .map(ChamadoResumoResponse::id)
                         .toList(),
                 resumoDaTriagem(emTriagem, chamados.stream().filter(chamado -> chamado.triagem().revisaoPendente()).count()),
-                chamados.stream().filter(chamado -> chamado.escalonamento() != null && filaAtiva(chamado.status())).count()
+                chamados.stream().filter(chamado -> chamado.escalonamento() != null && aguardaLideranca(chamado.status())).count()
         );
     }
 
@@ -112,6 +125,7 @@ public class ConsultaDeChamadosService{
                 .filter(chamado -> filtros.departamento() == null || chamado.getDepartamento() == filtros.departamento())
                 .filter(chamado -> filtros.tipo() == null || chamado.tipoVigente() == filtros.tipo())
                 .filter(chamado -> filtros.prioridade() == null || chamado.prioridadeEfetiva() == filtros.prioridade())
+                .filter(chamado -> !filtros.apenasMeus() || atendidoPor(chamado, usuario))
                 .map(montagem::resumo)
                 .filter(porSla(filtros.sla()));
     }

@@ -77,7 +77,7 @@ export default function CadastroForm() {
   return (
     <CartaoDeAcesso
       titulo="Criar conta"
-      rodape={<>Já tem uma conta? <Link href="/login" className="font-semibold text-brand-green underline-offset-2 hover:underline">Entrar</Link></>}
+      rodape={<>Já tem uma conta? <Link href="/login" className="font-semibold text-acao underline-offset-2 hover:underline">Entrar</Link></>}
     >
       <form noValidate onSubmit={enviar} className="space-y-4">
         <div>
@@ -107,7 +107,7 @@ export default function CadastroForm() {
         </div>
         <div>
           <label className="flex items-start gap-2 text-sm text-slate-600">
-            <input {...propriedadesDoCampo("aceiteDosTermos", erros)} type="checkbox" className="mt-0.5 h-4 w-4 accent-brand-green" checked={aceite} onChange={(e) => setAceite(e.target.checked)} />
+            <input {...propriedadesDoCampo("aceiteDosTermos", erros)} type="checkbox" className="mt-0.5 h-4 w-4 accent-acao" checked={aceite} onChange={(e) => setAceite(e.target.checked)} />
             <span>Li e aceito os termos de uso e a política de privacidade.</span>
           </label>
           <ErroDoCampo id="cadastro-aceiteDosTermos-erro" mensagem={erros.aceiteDosTermos} />

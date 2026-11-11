@@ -17,7 +17,7 @@ export default function RevisaoDaClassificacao({ chamado, vigente, aoConcluir }:
       <div className="mb-4 flex items-start gap-3">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600"><ScanSearch size={18} aria-hidden /></span>
         <div>
-          <h2 id="titulo-revisao" className="font-display text-sm font-semibold text-brand-navy">Revisão da classificação automática</h2>
+          <h2 id="titulo-revisao" className="font-display text-sm font-semibold text-tinta">Revisão da classificação automática</h2>
           <p className="mt-0.5 text-xs text-slate-500">Gerada a partir do relato do solicitante.</p>
         </div>
       </div>
@@ -34,7 +34,7 @@ export default function RevisaoDaClassificacao({ chamado, vigente, aoConcluir }:
           type="button"
           disabled={confirmacao.isPending}
           onClick={() => confirmacao.mutate(undefined, { onSuccess: () => aoConcluir("Classificação confirmada") })}
-          className="alvo-toque inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-brand-green py-3 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 disabled:opacity-40"
+          className="alvo-toque inline-flex w-full items-center justify-center gap-1.5 rounded-xl vf-botao-primario py-3 text-sm font-semibold text-white transition-all disabled:opacity-40"
         >
           <CircleCheck size={15} aria-hidden /> {confirmacao.isPending ? "Confirmando…" : "Confirmar classificação"}
         </button>

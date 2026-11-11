@@ -23,7 +23,6 @@ public class AcessoDoDestinatarioAoChamado implements AcessoDoDestinatario {
     @Transactional(readOnly = true)
     public boolean podeVerChamado(UUID usuarioId, UUID chamadoId) {
         return chamados.findById(chamadoId)
-                .filter(chamado -> !chamado.naLixeira())
                 .flatMap(chamado -> identificacao.ativoPorId(usuarioId).map(usuario -> acesso.podeVer(chamado, usuario)))
                 .orElse(false);
     }

@@ -17,16 +17,24 @@ public record FiltrosDeChamados(
         TipoChamado tipo,
         SituacaoPrazo sla,
         Etapa etapa,
-        Ordenacao ordenacao
+        Ordenacao ordenacao,
+        boolean apenasMeus
 ) {
 
     public enum Etapa { TRIAGEM, ATENDIMENTO }
 
     public enum Ordenacao { FILA, RECENTES, ATIVOS_RECENTES }
 
+    static final String RESPONSAVEL_EU = "eu";
+
     public FiltrosDeChamados(String busca, StatusChamado status, Prioridade prioridade, TipoChamado departamento,
-                      SituacaoPrazo sla, Etapa etapa, Ordenacao ordenacao) {
-        this(busca, status, prioridade, departamento, null, sla, etapa, ordenacao);
+                             TipoChamado tipo, SituacaoPrazo sla, Etapa etapa, Ordenacao ordenacao) {
+        this(busca, status, prioridade, departamento, tipo, sla, etapa, ordenacao, false);
+    }
+
+    public FiltrosDeChamados(String busca, StatusChamado status, Prioridade prioridade, TipoChamado departamento,
+                             SituacaoPrazo sla, Etapa etapa, Ordenacao ordenacao) {
+        this(busca, status, prioridade, departamento, null, sla, etapa, ordenacao, false);
     }
 
     public static FiltrosDeChamados de(String busca, String status, String prioridade, String departamento, String sla, String etapa, String ordenacao) {
@@ -34,6 +42,11 @@ public record FiltrosDeChamados(
     }
 
     public static FiltrosDeChamados de(String busca, String status, String prioridade, String departamento, String tipo, String sla, String etapa, String ordenacao) {
+        return de(busca, status, prioridade, departamento, tipo, sla, etapa, ordenacao, null);
+    }
+
+    public static FiltrosDeChamados de(String busca, String status, String prioridade, String departamento, String tipo, String sla, String etapa,
+                                       String ordenacao, String responsavel) {
         return new FiltrosDeChamados(
                 busca,
                 vazio(status) ? null : StatusChamado.fromRotulo(status),
@@ -42,12 +55,23 @@ public record FiltrosDeChamados(
                 vazio(tipo) ? null : tipoValido(tipo),
                 vazio(sla) ? null : situacaoFiltravel(sla),
                 vazio(etapa) ? null : valor(Etapa.class, etapa, "A etapa informada não é válida."),
-                vazio(ordenacao) ? Ordenacao.FILA : valor(Ordenacao.class, ordenacao, "A ordenação informada não é válida.")
+                vazio(ordenacao) ? Ordenacao.FILA : valor(Ordenacao.class, ordenacao, "A ordenação informada não é válida."),
+                apenasMeus(responsavel)
         );
     }
 
+    private static boolean apenasMeus(String responsavel) {
+        if (vazio(responsavel)) {
+            return false;
+        }
+        if (!RESPONSAVEL_EU.equalsIgnoreCase(responsavel.trim())) {
+            throw new FiltroChamadoInvalidoException("O responsável informado não é válido. Use responsavel=eu.");
+        }
+        return true;
+    }
+
     public FiltrosDeChamados semStatus() {
-        return new FiltrosDeChamados(busca, null, prioridade, departamento, tipo, sla, etapa, ordenacao);
+        return new FiltrosDeChamados(busca, null, prioridade, departamento, tipo, sla, etapa, ordenacao, apenasMeus);
     }
 
     private static boolean vazio(String valor) {

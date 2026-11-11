@@ -49,7 +49,7 @@ class ConsultaDeChamadosServiceTests {
         p4Fechado.alterarStatus(StatusChamado.EM_ATENDIMENTO, null, emSaoPaulo("2026-10-21T09:30"));
         p4Fechado.alterarStatus(StatusChamado.RESOLVIDO, null, emSaoPaulo("2026-10-21T10:00"));
         p4Fechado.alterarStatus(StatusChamado.FECHADO, null, emSaoPaulo("2026-10-21T10:30"));
-        given(ambiente.chamados.buscarAtivos(null)).willReturn(List.of(
+        given(ambiente.chamados.buscar(null)).willReturn(List.of(
                 p4Fechado, p1EmAtendimento, triagemEmRisco, p3NaFila, triagemAtrasada, p1SemResposta, triagemEmAndamento));
     }
 
@@ -137,7 +137,7 @@ class ConsultaDeChamadosServiceTests {
         assertThat(resumo.total()).isEqualTo(7);
         assertThat(resumo.porStatus()).containsExactly(
                 Map.entry("Aberto", 2L), Map.entry("Em triagem", 1L), Map.entry("Na fila", 2L), Map.entry("Em atendimento", 1L),
-                Map.entry("Aguardando", 0L), Map.entry("Resolvido", 0L), Map.entry("Fechado", 1L));
+                Map.entry("Aguardando", 0L), Map.entry("Resolvido", 0L), Map.entry("Fechado", 1L), Map.entry("Cancelado", 0L));
         assertThat(resumo.porPrioridade()).containsExactly(
                 Map.entry(Prioridade.P1, 2L), Map.entry(Prioridade.P2, 0L), Map.entry(Prioridade.P3, 1L), Map.entry(Prioridade.P4, 1L));
         assertThat(resumo.porDepartamento()).containsEntry(TipoChamado.MANUTENCAO, 3L).containsEntry(TipoChamado.TI, 1L)
@@ -231,5 +231,25 @@ class ConsultaDeChamadosServiceTests {
 
     private static List<String> codigos(ChamadosPageResponse pagina) {
         return pagina.content().stream().map(ChamadoResumoResponse::id).toList();
+    }
+
+    @Test
+    void responsavelEuListaSoOsChamadosEmAtendimentoComOUsuario() {
+        Chamado meu = triado("VF-0010", "2026-10-21T11:00", TipoChamado.MANUTENCAO, 3, 3);
+        meu.assumirAtendimento(new Autor(paula.id(), paula.nome()), emSaoPaulo("2026-10-21T11:05"));
+        Chamado deOutraPessoa = triado("VF-0011", "2026-10-21T11:00", TipoChamado.MANUTENCAO, 3, 3);
+        deOutraPessoa.assumirAtendimento(PAULA, emSaoPaulo("2026-10-21T11:05"));
+        Chamado semResponsavel = triado("VF-0012", "2026-10-21T11:00", TipoChamado.MANUTENCAO, 3, 3);
+        given(ambiente.chamados.buscar(null)).willReturn(List.of(meu, deOutraPessoa, semResponsavel));
+
+        ChamadosPageResponse pagina = servico.listar(FiltrosDeChamados.de(null, null, null, null, null, null, null, null, "eu"), 0, 20, paula);
+
+        assertThat(codigos(pagina)).containsExactly("VF-0010");
+    }
+
+    @Test
+    void responsavelDiferenteDeEuEhRecusado() {
+        assertThatThrownBy(() -> FiltrosDeChamados.de(null, null, null, null, null, null, null, null, "todos"))
+                .isInstanceOf(FiltroChamadoInvalidoException.class);
     }
 }

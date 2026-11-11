@@ -1,5 +1,6 @@
 "use client";
 
+import AbasDeConfiguracoes from "@/components/layout/AbasDeConfiguracoes";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Database, Eraser, FlaskConical, Trash, TriangleAlert } from "lucide-react";
@@ -29,8 +30,8 @@ function apagarDadosDoNavegador() {
 
 function Cartao({ titulo, icone, children }: { titulo: string; icone: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5 md:p-6">
-      <h2 className="mb-4 flex items-center gap-2 font-display text-sm font-semibold text-brand-navy">{icone}{titulo}</h2>
+    <section className="rounded-2xl border border-linha bg-white p-5 md:p-6">
+      <h2 className="mb-4 flex items-center gap-2 font-display text-sm font-semibold text-tinta">{icone}{titulo}</h2>
       {children}
     </section>
   );
@@ -85,10 +86,11 @@ function ConteudoDasFerramentas() {
   const cancelarConfirmacao = () => { setConfirmandoLimpeza(null); setConfirmacaoDigitada(""); };
 
   return (
-    <main id="conteudo" className="p-4 md:p-8">
+    <main id="conteudo" className="vf-pagina">
       <div className="mx-auto max-w-4xl space-y-5">
+        <AbasDeConfiguracoes />
         <div>
-          <h1 className="flex items-center gap-2 font-display text-2xl font-bold text-brand-navy"><FlaskConical size={22} aria-hidden /> Dev tools</h1>
+          <h1 className="flex items-center gap-2 font-display text-2xl font-bold text-tinta"><FlaskConical size={22} aria-hidden /> Dev tools</h1>
           <p className="text-sm text-slate-500">Dados de exemplo do ambiente local.</p>
         </div>
 
@@ -100,9 +102,9 @@ function ConteudoDasFerramentas() {
         ) : estado.isError ? <AvisoDeErro erro={estado.error} /> : (
           <>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-[#E2E8F0] bg-white p-4"><div className="text-xs uppercase tracking-wide text-slate-500">Chamados no banco</div><div className="font-display text-2xl font-bold text-brand-navy">{estado.data.totalDeChamados}</div></div>
-              <div className="rounded-2xl border border-[#E2E8F0] bg-white p-4"><div className="text-xs uppercase tracking-wide text-slate-500">Chamados de exemplo</div><div className="font-display text-2xl font-bold text-brand-navy">{estado.data.chamadosDeExemplo}</div></div>
-              <div className="rounded-2xl border border-[#E2E8F0] bg-white p-4"><div className="text-xs uppercase tracking-wide text-slate-500">Usuários de exemplo</div><div className="font-display text-2xl font-bold text-brand-navy">{estado.data.usuarios.filter((usuario) => usuario.cadastrado).length} / {estado.data.usuarios.length}</div></div>
+              <div className="rounded-2xl border border-linha bg-white p-4"><div className="text-xs text-slate-500">Chamados no banco</div><div className="font-display text-2xl font-bold text-tinta">{estado.data.totalDeChamados}</div></div>
+              <div className="rounded-2xl border border-linha bg-white p-4"><div className="text-xs text-slate-500">Chamados de exemplo</div><div className="font-display text-2xl font-bold text-tinta">{estado.data.chamadosDeExemplo}</div></div>
+              <div className="rounded-2xl border border-linha bg-white p-4"><div className="text-xs text-slate-500">Usuários de exemplo</div><div className="font-display text-2xl font-bold text-tinta">{estado.data.usuarios.filter((usuario) => usuario.cadastrado).length} / {estado.data.usuarios.length}</div></div>
             </div>
 
             <Cartao titulo="Popular banco" icone={<Database size={16} aria-hidden />}>
@@ -115,9 +117,9 @@ function ConteudoDasFerramentas() {
                 Execuções repetidas acumulam chamados.
               </p>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <label className="text-xs font-medium text-slate-500">
                   Quantidade de chamados
-                  <input type="number" min={1} max={LIMITE_POR_VEZ} value={quantidade} onChange={(evento) => setQuantidade(Number(evento.target.value))} className="alvo-toque mt-1 block w-32 rounded-lg border border-[#E2E8F0] px-3 py-2 text-sm" />
+                  <input type="number" min={1} max={LIMITE_POR_VEZ} value={quantidade} onChange={(evento) => setQuantidade(Number(evento.target.value))} className="alvo-toque mt-1 block w-32 rounded-lg border border-linha px-3 py-2 text-sm" />
                 </label>
                 <label className="flex items-center gap-2 text-sm text-slate-600 sm:pb-2">
                   <input type="checkbox" checked={enriquecer} onChange={(evento) => setEnriquecer(evento.target.checked)} />
@@ -125,7 +127,7 @@ function ConteudoDasFerramentas() {
                 </label>
               </div>
               {!quantidadeValida && <p className="mt-2 text-xs text-red-600">Informe um valor entre 1 e {LIMITE_POR_VEZ}.</p>}
-              <button type="button" disabled={!quantidadeValida || ocupado || !estado.data.senhaConfigurada} onClick={() => populacao.mutate()} className="alvo-toque mt-4 inline-flex items-center gap-2 rounded-xl bg-brand-green px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40">
+              <button type="button" disabled={!quantidadeValida || ocupado || !estado.data.senhaConfigurada} onClick={() => populacao.mutate()} className="alvo-toque mt-4 inline-flex items-center gap-2 rounded-xl vf-botao-primario px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40">
                 <Database size={14} aria-hidden /> {populacao.isPending ? "Populando…" : "Popular banco"}
               </button>
             </Cartao>
@@ -134,7 +136,7 @@ function ConteudoDasFerramentas() {
               <p className="mb-3 text-sm text-slate-600">Senha: valor de <code>DEV_TOOLS_SENHA</code> em <code>infra/.env</code>.</p>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[640px] text-left text-sm">
-                  <thead><tr className="text-xs uppercase tracking-wide text-slate-400"><th className="py-2 pr-3">E-mail</th><th className="py-2 pr-3">Perfil</th><th className="py-2 pr-3">Vínculo</th><th className="py-2">Situação</th></tr></thead>
+                  <thead><tr className="text-xs text-slate-400"><th className="py-2 pr-3">E-mail</th><th className="py-2 pr-3">Perfil</th><th className="py-2 pr-3">Vínculo</th><th className="py-2">Situação</th></tr></thead>
                   <tbody className="divide-y divide-slate-100">
                     {estado.data.usuarios.map((usuario) => (
                       <tr key={usuario.email}>
@@ -156,10 +158,10 @@ function ConteudoDasFerramentas() {
                   {confirmandoLimpeza === "banco" ? (
                     <div className="flex gap-2">
                       <button type="button" disabled={ocupado} onClick={() => limpezaDoBanco.mutate()} className="alvo-toque rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white">Confirmar exclusão</button>
-                      <button type="button" onClick={cancelarConfirmacao} className="alvo-toque rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600">Cancelar</button>
+                      <button type="button" onClick={cancelarConfirmacao} className="vf-botao-secundario alvo-toque rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600">Cancelar</button>
                     </div>
                   ) : (
-                    <button type="button" disabled={ocupado} onClick={() => setConfirmandoLimpeza("banco")} className="alvo-toque inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-600">
+                    <button type="button" disabled={ocupado} onClick={() => setConfirmandoLimpeza("banco")} className="vf-botao-perigo alvo-toque inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-600">
                       <Trash size={14} aria-hidden /> Remover dados de exemplo
                     </button>
                   )}
@@ -169,10 +171,10 @@ function ConteudoDasFerramentas() {
                   {confirmandoLimpeza === "navegador" ? (
                     <div className="flex gap-2">
                       <button type="button" onClick={() => { apagarDadosDoNavegador(); void aposMudanca("Rascunhos removidos"); }} className="alvo-toque rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white">Confirmar</button>
-                      <button type="button" onClick={cancelarConfirmacao} className="alvo-toque rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600">Cancelar</button>
+                      <button type="button" onClick={cancelarConfirmacao} className="vf-botao-secundario alvo-toque rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600">Cancelar</button>
                     </div>
                   ) : (
-                    <button type="button" onClick={() => setConfirmandoLimpeza("navegador")} className="alvo-toque inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">
+                    <button type="button" onClick={() => setConfirmandoLimpeza("navegador")} className="vf-botao-secundario alvo-toque inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">
                       <Eraser size={14} aria-hidden /> Limpar rascunhos do navegador
                     </button>
                   )}
@@ -184,14 +186,14 @@ function ConteudoDasFerramentas() {
                   </p>
                   {confirmandoLimpeza === "tudo" ? (
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                      <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <label className="text-xs font-medium text-slate-500">
                         Digite {PALAVRA_DE_CONFIRMACAO} para confirmar
                         <input value={confirmacaoDigitada} onChange={(evento) => setConfirmacaoDigitada(evento.target.value)} autoFocus className="alvo-toque mt-1 block w-48 rounded-lg border border-red-200 px-3 py-2 text-sm" />
                       </label>
                       <button type="button" disabled={ocupado || confirmacaoDigitada.trim().toUpperCase() !== PALAVRA_DE_CONFIRMACAO} onClick={() => limpezaGeral.mutate()} className="alvo-toque rounded-xl bg-red-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">
                         {limpezaGeral.isPending ? "Apagando…" : "Apagar tudo"}
                       </button>
-                      <button type="button" onClick={cancelarConfirmacao} className="alvo-toque rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600">Cancelar</button>
+                      <button type="button" onClick={cancelarConfirmacao} className="vf-botao-secundario alvo-toque rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600">Cancelar</button>
                     </div>
                   ) : (
                     <button type="button" disabled={ocupado} onClick={() => setConfirmandoLimpeza("tudo")} className="alvo-toque inline-flex items-center gap-2 rounded-xl bg-red-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">

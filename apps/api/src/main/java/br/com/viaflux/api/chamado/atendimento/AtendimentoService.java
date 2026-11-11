@@ -31,6 +31,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Locale;
 
 @Service
@@ -41,6 +42,9 @@ public class AtendimentoService{
     private static final String ACAO_DO_SOLICITANTE = "Complemento do solicitante";
     private static final String ACAO_MENSAGEM_DA_EQUIPE = "Mensagem ao solicitante";
     private static final String ACAO_NOTA_INTERNA = "Registro interno";
+    private static final String ACAO_MENSAGEM_AO_FORNECEDOR = "Mensagem ao fornecedor";
+    private static final List<String> DESTINOS = List.of(
+            AtualizacaoRequest.DESTINO_SOLICITANTE, AtualizacaoRequest.DESTINO_INTERNO, AtualizacaoRequest.DESTINO_FORNECEDOR);
 
     private final AcessoAosChamados acesso;
     private final HistoricoDoChamado historico;
@@ -128,8 +132,17 @@ public class AtendimentoService{
 
     @Transactional
     public ChamadoResponse registrarAtualizacao(String codigo, AtualizacaoRequest request, UsuarioAtual usuario) {
+        String destino = destinoValido(request.destino());
         Chamado chamado = chamadoParaAConversa(codigo, usuario);
-        publicarMensagem(chamado, request.texto().trim(), usuario.apenasCliente() || request.visivelCliente(), null, usuario);
+        if (!usuario.apenasCliente() && AtualizacaoRequest.DESTINO_FORNECEDOR.equals(destino)) {
+            if (!montagem.temFornecedorAtivo(chamado)) {
+                throw ErroDeChamado.conflito("Acione um fornecedor antes de enviar uma mensagem a ele.");
+            }
+            historico.registrarMensagemAoFornecedor(chamado, ACAO_MENSAGEM_AO_FORNECEDOR, request.texto().trim(), autor(usuario), agora());
+            return montagem.completo(chamado, false);
+        }
+        boolean publica = destino == null ? request.visivelCliente() : AtualizacaoRequest.DESTINO_SOLICITANTE.equals(destino);
+        publicarMensagem(chamado, request.texto().trim(), usuario.apenasCliente() || publica, null, usuario);
         return montagem.completo(chamado, usuario.apenasCliente());
     }
 
@@ -148,6 +161,17 @@ public class AtendimentoService{
             publicarMensagem(chamado, conteudo, publica, resultado.anexo(), usuario);
         }
         return montagem.completo(chamado, usuario.apenasCliente());
+    }
+
+    private static String destinoValido(String destino) {
+        if (destino == null || destino.isBlank()) {
+            return null;
+        }
+        String normalizado = destino.trim().toUpperCase(Locale.ROOT);
+        if (!DESTINOS.contains(normalizado)) {
+            throw ErroDeChamado.campoInvalido("destino", "O destino deve ser SOLICITANTE, INTERNO ou FORNECEDOR.");
+        }
+        return normalizado;
     }
 
     private Chamado chamadoParaAConversa(String codigo, UsuarioAtual usuario) {

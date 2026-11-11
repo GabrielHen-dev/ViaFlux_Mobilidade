@@ -72,7 +72,7 @@ export function BotaoDeDownload({ codigo, anexo }: { codigo: string; anexo: Anex
   }
 
   return (
-    <button type="button" onClick={baixar} disabled={baixando} aria-label={`Baixar ${anexo.nome}`} className="alvo-toque inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-brand-blue hover:bg-blue-50 disabled:opacity-50">
+    <button type="button" onClick={baixar} disabled={baixando} aria-label={`Baixar ${anexo.nome}`} className="alvo-toque inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-acao hover:bg-blue-50 disabled:opacity-50">
       <Download size={12} aria-hidden /> {baixando ? "Baixando…" : "Baixar"}
     </button>
   );
@@ -112,17 +112,21 @@ export default function AnexosDoChamado({ chamado, somenteLeitura = false }: { c
   const falhas = envios.filter((envio) => envio.erro);
 
   return (
-    <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5" aria-labelledby={`anexos-${chamado.id}`}>
-      <h3 id={`anexos-${chamado.id}`} className="mb-3 font-display text-xs font-semibold uppercase tracking-wide text-brand-navy">Anexos</h3>
+    <section className="vf-cartao" aria-labelledby={`anexos-${chamado.id}`}>
+      <div className="flex items-center justify-between gap-2 border-b border-linha px-4 py-3">
+        <h3 id={`anexos-${chamado.id}`} className="text-sm font-medium text-tinta">Anexos</h3>
+        <span className="text-xs text-tinta-apagada">{chamado.anexos.length} arquivo{chamado.anexos.length !== 1 ? "s" : ""}</span>
+      </div>
+      <div className="p-4">
       {imagens.length > 0 && (
-        <div className="mb-3 grid grid-cols-3 gap-2">
+        <div className="mb-3 grid grid-cols-3 gap-2 sm:grid-cols-4 xl:grid-cols-6">
           {imagens.map((anexo) => <MiniaturaDaImagem key={anexo.id} codigo={chamado.id} anexo={anexo} />)}
         </div>
       )}
       {chamado.anexos.length > 0 ? (
-        <ul className="mb-3 space-y-1.5">
+        <ul className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
           {chamado.anexos.map((anexo) => (
-            <li key={anexo.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2">
+            <li key={anexo.id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-linha bg-white px-3 py-2">
               <span className="flex min-w-0 items-center gap-2 text-xs text-slate-600">
                 <FileText size={14} className="flex-shrink-0" aria-hidden />
                 <span className="min-w-0">
@@ -147,11 +151,12 @@ export default function AnexosDoChamado({ chamado, somenteLeitura = false }: { c
         </ul>
       )}
       {falhas.length > 0 && !enviando && (
-        <button type="button" onClick={() => void enviar(falhas.map((falha) => ({ ...falha, erro: null })))} className="alvo-toque mb-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 py-2 text-xs font-semibold text-red-700">
+        <button type="button" onClick={() => void enviar(falhas.map((falha) => ({ ...falha, erro: null })))} className="vf-botao-perigo alvo-toque mb-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 py-2 text-xs font-semibold text-red-700">
           <RotateCcw size={12} aria-hidden /> Reenviar anexos
         </button>
       )}
-      {!somenteLeitura && chamado.status !== "Fechado" && <SeletorDeArquivos compacto aoAceitar={aoAceitar} desabilitado={enviando} />}
+      {!somenteLeitura && chamado.status !== "Fechado" && chamado.status !== "Cancelado" && <SeletorDeArquivos compacto aoAceitar={aoAceitar} desabilitado={enviando} />}
+      </div>
     </section>
   );
 }

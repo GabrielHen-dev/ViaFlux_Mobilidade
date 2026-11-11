@@ -3,12 +3,11 @@
 import Link from "next/link";
 import { ArrowLeft, Compass, House, Radio } from "lucide-react";
 import { useAuth } from "@/store/AuthContext";
-import { PERFIS_DA_CENTRAL, rotaInicialDo, usuarioTemPerfil } from "@/utils/perfis";
+import { rotaInicialDo } from "@/utils/perfis";
 
 export default function ChamadoIndisponivel({ id }: { id?: string }) {
   const { estado } = useAuth();
   const usuario = estado.status === "autenticado" ? estado.usuario : null;
-  const daCentral = usuario !== null && usuarioTemPerfil(usuario, PERFIS_DA_CENTRAL);
   const inicio = usuario ? rotaInicialDo(usuario) : "/";
   return (
     <main id="conteudo" className="relative isolate flex min-h-[calc(100vh-5rem)] items-center overflow-hidden bg-[#F3F7FB] px-4 py-12 md:px-8">
@@ -39,7 +38,6 @@ export default function ChamadoIndisponivel({ id }: { id?: string }) {
           </h1>
           <p className="mt-5 max-w-lg text-base leading-7 text-slate-600">
             {id ? `O chamado #${id} não existe ou não está disponível para o seu perfil.` : "O endereço pode ter mudado ou não estar mais disponível. Vamos ajudar você a voltar para uma área conhecida."}
-            {daCentral && id ? " Confira também a lixeira." : ""}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href={inicio} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-brand-navy px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-14px_rgba(15,46,77,0.75)] transition hover:-translate-y-0.5 hover:bg-brand-blue focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200">
@@ -48,7 +46,6 @@ export default function ChamadoIndisponivel({ id }: { id?: string }) {
             <Link href={inicio} className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-brand-navy transition hover:border-blue-300 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100">
               <ArrowLeft size={16} aria-hidden /> Voltar à minha área
             </Link>
-            {daCentral && id && <Link href="/lixeira" className="inline-flex min-h-12 items-center rounded-xl px-3 py-3 text-sm font-semibold text-brand-blue underline-offset-4 hover:underline">Abrir lixeira</Link>}
           </div>
           <p className="mt-8 border-l-2 border-brand-green pl-3 text-xs leading-5 text-slate-500">Se você chegou aqui por um link de chamado, confirme o protocolo ou peça acesso à equipe responsável.</p>
         </section>

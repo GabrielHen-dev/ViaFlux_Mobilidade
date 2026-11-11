@@ -75,7 +75,7 @@ export default function ConclusaoDaTriagem({ chamado, aoConcluir }: { chamado: C
       </section>
 
       <section className={cartaoClass}>
-        <h2 className="mb-4 font-display text-sm font-semibold text-brand-navy">Classificar chamado</h2>
+        <h2 className="mb-4 font-display text-sm font-semibold text-tinta">Classificar chamado</h2>
         <div className="space-y-4">
           <SeletorDeTipo id="conclusao-tipo" rotulo="Tipo" valor={tipo} aoAlterar={setTipo} />
           <SeletorDePeso nome="conclusao-severidade" rotulo="Severidade (impacto)" valor={severidade} aoAlterar={setSeveridade} />
@@ -97,7 +97,7 @@ export default function ConclusaoDaTriagem({ chamado, aoConcluir }: { chamado: C
             type="button"
             disabled={conclusao.isPending || !tipo || !severidade || !urgencia}
             onClick={confirmar}
-            className="alvo-toque w-full rounded-xl bg-brand-green py-3 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 disabled:opacity-40"
+            className="alvo-toque w-full rounded-xl vf-botao-primario py-3 text-sm font-semibold text-white transition-all disabled:opacity-40"
           >
             {conclusao.isPending ? "Salvando…" : "Classificar e encaminhar"}
           </button>

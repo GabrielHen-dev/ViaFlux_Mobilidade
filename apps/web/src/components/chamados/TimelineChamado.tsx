@@ -18,9 +18,9 @@ export default function TimelineChamado({ chamado, visaoDeCliente = false }: Pro
   const eventos = somentePublicos ? eventosSemConversa.filter((evento) => evento.visivelCliente) : eventosSemConversa;
 
   return (
-    <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5 md:p-6" aria-labelledby={`timeline-${chamado.id}`}>
+    <section className="rounded-2xl border border-linha bg-white p-5 md:p-6" aria-labelledby={`timeline-${chamado.id}`}>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
-        <h3 id={`timeline-${chamado.id}`} className="font-display text-sm font-semibold text-brand-navy">Histórico</h3>
+        <h3 id={`timeline-${chamado.id}`} className="font-display text-sm font-semibold text-tinta">Histórico</h3>
         {!visaoDeCliente && (
           <label className="flex items-center gap-2 text-xs text-slate-500">
             <input type="checkbox" checked={somentePublicos} onChange={(evento) => setSomentePublicos(evento.target.checked)} />
@@ -32,7 +32,7 @@ export default function TimelineChamado({ chamado, visaoDeCliente = false }: Pro
         <span className="absolute bottom-0 left-4 top-0 w-px bg-[#E2E8F0]" aria-hidden />
         {eventos.map((evento) => (
           <li key={evento.id} className="relative flex gap-4">
-            <span className={cn("z-10 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border-2 bg-white", evento.tipo === "SLA" ? "border-orange-200 text-orange-600" : "border-[#E2E8F0] text-[#475569]")}>
+            <span className={cn("z-10 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border-2 bg-white", evento.tipo === "SLA" ? "border-orange-200 text-orange-600" : "border-linha text-[#475569]")}>
               <IconeDoEvento tipo={evento.tipo} size={14} />
             </span>
             <div className="min-w-0 flex-1 pb-1">

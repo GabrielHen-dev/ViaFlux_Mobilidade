@@ -97,8 +97,8 @@ public class ServicoTerceiroService{
             return List.of();
         }
         return servicos.findByFornecedorIdAndCanceladoFalseOrderByAtualizadoEmDesc(usuario.organizacaoId()).stream()
-                .filter(servico -> !servico.getChamado().naLixeira())
-                .map(ServicoDoFornecedorResponse::de)
+                .filter(servico -> !servico.getChamado().cancelado())
+                .map(servico -> ServicoDoFornecedorResponse.de(servico, historico.mensagensAoFornecedor(servico.getChamado())))
                 .toList();
     }
 
@@ -107,7 +107,7 @@ public class ServicoTerceiroService{
         StatusServico novo = statusValido(request.status());
         ServicoTerceiro servico = servicos.findById(servicoId)
                 .filter(candidato -> !candidato.isCancelado())
-                .filter(candidato -> !candidato.getChamado().naLixeira())
+                .filter(candidato -> !candidato.getChamado().cancelado())
                 .filter(candidato -> candidato.getFornecedor().getId().equals(usuario.organizacaoId()))
                 .orElseThrow(() -> ErroDeChamado.naoEncontrado("Serviço não encontrado para este fornecedor."));
         OffsetDateTime agora = agora();
@@ -120,7 +120,7 @@ public class ServicoTerceiroService{
         aviso.avisar(chamado, "Serviço terceirizado " + novo.getRotulo().toLowerCase(Locale.ROOT),
                 "O serviço do chamado " + chamado.getCodigo() + " foi atualizado para " + novo.getRotulo() + ".", agora);
         servicos.flush();
-        return ServicoDoFornecedorResponse.de(servico);
+        return ServicoDoFornecedorResponse.de(servico, historico.mensagensAoFornecedor(chamado));
     }
 
     private static StatusServico statusValido(String valor) {

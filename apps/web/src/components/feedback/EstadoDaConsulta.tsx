@@ -25,7 +25,7 @@ export function FalhaAoCarregar({ erro, aoTentarDeNovo }: { erro: unknown; aoTen
       <CircleAlert size={22} className="text-red-600" aria-hidden />
       <p className="text-sm font-semibold text-red-700">{mensagemDeErro(erro)}</p>
       {aoTentarDeNovo && (
-        <button type="button" onClick={aoTentarDeNovo} className="alvo-toque rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50">
+        <button type="button" onClick={aoTentarDeNovo} className="vf-botao-perigo alvo-toque rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50">
           Tentar novamente
         </button>
       )}

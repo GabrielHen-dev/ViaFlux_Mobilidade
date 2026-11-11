@@ -90,7 +90,7 @@ class MensagensNaCentralTests {
     }
 
     @Test
-    void quemPerdeuOAcessoOuChamadoNaLixeiraNaoRecebeEmail() {
+    void quemPerdeuOAcessoAoChamadoNaoRecebeEmail() {
         Notificacao existente = pendente(DESTINATARIO);
         given(notificacoes.findByLidaFalseAndEmailAdiadoDesdeLessThanEqual(AGORA.plusMinutes(5))).willReturn(List.of(existente));
         given(acesso.podeVerChamado(DESTINATARIO, CHAMADO)).willReturn(false);

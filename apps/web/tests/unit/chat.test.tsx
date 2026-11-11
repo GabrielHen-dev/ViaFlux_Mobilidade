@@ -5,6 +5,7 @@ import ChamadoDoCliente from "@/components/portal/ChamadoDoCliente";
 import DetalhesChamado from "@/components/chamados/DetalhesChamado";
 import { type ClienteApi, abrirChamado, alterarStatus, assumirAtendimento, concluirTriagem, registrarAtualizacao } from "@/services/api/chamados";
 import { requisitarApi } from "@/services/api/cliente";
+import { vincularServico } from "@/services/api/operacao";
 import { USUARIOS, type UsuarioDeTeste, tokenDeAcesso } from "../support/backendFalso";
 import { ligarBackendFalso, renderizarComo } from "../support/renderizar";
 
@@ -35,6 +36,30 @@ describe("conversa do chamado", () => {
 
     const conversa = await screen.findByRole("log", { name: "Mensagens do chamado" });
     expect(conversa).toHaveClass("overflow-y-auto", "max-h-96");
+  });
+
+  it("a equipe escreve ao fornecedor acionado, e o solicitante não vê a mensagem", async () => {
+    const usuario = userEvent.setup();
+    await chamadoNaFila();
+    await vincularServico(apiComo(USUARIOS.atendente), CODIGO, { fornecedorId: "org-guincho-teste", tipoServico: "Remoção do veículo", local: "", observacao: "" });
+    await renderizarComo(USUARIOS.atendente, <DetalhesChamado id={CODIGO} />);
+    await usuario.click(await screen.findByRole("radio", { name: "Fornecedor" }));
+    await usuario.type(screen.getByLabelText("Escrever mensagem ao fornecedor"), "Qual a previsão de chegada?");
+    await usuario.click(screen.getByRole("button", { name: "Enviar ao fornecedor" }));
+    const conversa = await screen.findByRole("log", { name: "Mensagens do chamado" });
+    expect(await within(conversa).findByText("Qual a previsão de chegada?")).toBeInTheDocument();
+    expect(within(conversa).getByText("Fornecedor")).toBeInTheDocument();
+    cleanup();
+    await renderizarComo(USUARIOS.cliente, <ChamadoDoCliente id={CODIGO} />);
+    expect(await screen.findByText("Chamado aberto")).toBeInTheDocument();
+    expect(screen.queryByText("Qual a previsão de chegada?")).not.toBeInTheDocument();
+  });
+
+  it("sem fornecedor acionado, a aba Fornecedor não aparece", async () => {
+    await chamadoNaFila();
+    await renderizarComo(USUARIOS.atendente, <DetalhesChamado id={CODIGO} />);
+    expect(await screen.findByRole("radio", { name: "Nota interna" })).toBeInTheDocument();
+    expect(screen.queryByRole("radio", { name: "Fornecedor" })).not.toBeInTheDocument();
   });
 
   it("a equipe envia ao solicitante, e a mensagem aparece no chat e não no histórico", async () => {

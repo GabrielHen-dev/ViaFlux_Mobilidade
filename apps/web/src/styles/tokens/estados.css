@@ -1,0 +1,45 @@
+:root {
+  --vf-sucesso: #15803D;
+  --vf-sucesso-fundo: #ECFDF3;
+  --vf-alerta: #B45309;
+  --vf-alerta-fundo: #FFF7E6;
+  --vf-perigo: #B91C1C;
+  --vf-perigo-fundo: #FEF2F2;
+  --vf-info: #0F5BA7;
+  --vf-info-fundo: #E8F0F9;
+  --vf-neutro: #4B5563;
+  --vf-neutro-fundo: #F1F3F5;
+
+  --vf-status-aberto: #A16207;
+  --vf-status-aberto-fundo: #FEFCE8;
+  --vf-status-triagem: #A16207;
+  --vf-status-triagem-fundo: #FEFCE8;
+  --vf-status-fila: #0E7490;
+  --vf-status-fila-fundo: #ECFEFF;
+  --vf-status-atendimento: #0F5BA7;
+  --vf-status-atendimento-fundo: #E8F0F9;
+  --vf-status-aguardando: #6D28D9;
+  --vf-status-aguardando-fundo: #F5F3FF;
+  --vf-status-resolvido: #15803D;
+  --vf-status-resolvido-fundo: #ECFDF3;
+  --vf-status-fechado: #4B5563;
+  --vf-status-fechado-fundo: #F1F3F5;
+  --vf-status-cancelado: #B91C1C;
+  --vf-status-cancelado-fundo: #FEF2F2;
+
+  --vf-prioridade-p1: #B91C1C;
+  --vf-prioridade-p1-fundo: #FEF2F2;
+  --vf-prioridade-p2: #C2410C;
+  --vf-prioridade-p2-fundo: #FFF7ED;
+  --vf-prioridade-p3: #A16207;
+  --vf-prioridade-p3-fundo: #FEFCE8;
+  --vf-prioridade-p4: #1E40AF;
+  --vf-prioridade-p4-fundo: #EFF6FF;
+
+  --vf-sla-no-prazo: #15803D;
+  --vf-sla-no-prazo-fundo: #ECFDF3;
+  --vf-sla-em-risco: #C2410C;
+  --vf-sla-em-risco-fundo: #FFF7ED;
+  --vf-sla-violado: #B91C1C;
+  --vf-sla-violado-fundo: #FEF2F2;
+}

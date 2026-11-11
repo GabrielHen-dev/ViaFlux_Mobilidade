@@ -51,6 +51,10 @@ public class MontagemDeChamado {
         this.relogio = relogio;
     }
 
+    public boolean temFornecedorAtivo(Chamado chamado) {
+        return !servicos.findByChamadoIdAndCanceladoFalseOrderByAtualizadoEmDesc(chamado.getId()).isEmpty();
+    }
+
     public ChamadoResumoResponse resumo(Chamado chamado) {
         Instant agora = relogio.instant();
         return new ChamadoResumoResponse(
@@ -69,7 +73,9 @@ public class MontagemDeChamado {
                 politicaDeSla.avaliar(chamado, agora),
                 politicaDeTriagem.avaliar(chamado, agora),
                 AtendimentoResponse.de(chamado),
-                EscalonamentoResponse.de(chamado)
+                EscalonamentoResponse.de(chamado),
+                chamado.getLocalizacao().getLatitude(),
+                chamado.getLocalizacao().getLongitude()
         );
     }
 
@@ -125,7 +131,8 @@ public class MontagemDeChamado {
                 chamado.getEpisodio(),
                 Datas.local(janelaDeEncerramento.confirmacaoAte(chamado)),
                 Datas.local(janelaDeEncerramento.reaberturaAte(chamado)),
-                visaoDeCliente ? null : resumo.escalonamento()
+                visaoDeCliente ? null : resumo.escalonamento(),
+                CancelamentoResponse.de(chamado)
         );
     }
 }

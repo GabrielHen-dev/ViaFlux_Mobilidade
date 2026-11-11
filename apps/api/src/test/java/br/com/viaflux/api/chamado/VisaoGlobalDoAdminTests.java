@@ -24,7 +24,7 @@ class VisaoGlobalDoAdminTests {
         AmbienteDeChamados ambiente = new AmbienteDeChamados(QUARTA_AS_DEZ.plusHours(1));
         Chamado naFila = chamadoTriado("VF-0001", QUARTA_AS_DEZ, TipoChamado.LOGISTICA, 5, 5);
         Chamado emTriagem = chamadoAberto("VF-0002", QUARTA_AS_DEZ);
-        given(ambiente.chamados.buscarAtivos(null)).willReturn(List.of(naFila, emTriagem));
+        given(ambiente.chamados.buscar(null)).willReturn(List.of(naFila, emTriagem));
 
         ConsultaDeChamadosService consulta = new ConsultaDeChamadosService(ambiente.acesso, ambiente.montagem);
         FiltrosDeChamados filtros = FiltrosDeChamados.de(null, null, null, null, null, null, null);

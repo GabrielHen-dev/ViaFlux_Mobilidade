@@ -2,21 +2,16 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Trash } from "lucide-react";
-import type { ChamadoResumo, PaginaChamados } from "@/types/chamado";
-import { moverParaLixeira } from "@/services/api/chamados";
-import { useApi } from "@/store/AuthContext";
-import { invalidarListas } from "@/hooks/consultas";
-import { PrioridadeIndicador, StatusBadge } from "@/components/ui/StatusBadge";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import type { ChamadoResumo, PaginaChamados, Status } from "@/types/chamado";
+import { APARENCIA_DA_PRIORIDADE, PrioridadeIndicador, StatusBadge } from "@/components/ui/StatusBadge";
 import { SlaResumo } from "@/components/ui/SlaIndicador";
 import { BotaoDeEscalonamento, SeloDeEscalonamento } from "@/components/chamados/EscalonamentoDoChamado";
 import { PrazoDaTriagem } from "@/components/triagem/PrazoDaTriagem";
-import { AvisoDeErro } from "@/components/feedback/EstadoDaConsulta";
 import { cn } from "@/utils/cn";
 import { NOME_TIPO } from "@/utils/prioridade";
 
+const STATUS_SEM_PRAZO_CORRENDO: readonly Status[] = ["Fechado", "Cancelado"];
 const COLUNAS = ["Protocolo", "Cliente / Veículo", "Departamento / Tipo", "Status", "Prioridade", "Prazo", "Ações"];
 
 function slaCritico(chamado: ChamadoResumo) {
@@ -27,90 +22,67 @@ function PrazoDoChamado({ chamado }: { chamado: ChamadoResumo }) {
   if (chamado.prioridade === null) return <PrazoDaTriagem triagem={chamado.triagem} compacto />;
   return (
     <div className="flex flex-col items-start gap-1">
-      <SlaResumo sla={chamado.status === "Fechado" ? null : chamado.sla} />
+      <SlaResumo sla={STATUS_SEM_PRAZO_CORRENDO.includes(chamado.status) ? null : chamado.sla} />
       <SeloDeEscalonamento chamado={chamado} />
     </div>
-  );
-}
-
-function ExclusaoDaLinha({ chamado }: { chamado: ChamadoResumo }) {
-  const api = useApi();
-  const clienteDeConsultas = useQueryClient();
-  const [confirmando, setConfirmando] = useState(false);
-  const exclusao = useMutation({
-    mutationFn: () => moverParaLixeira(api, chamado.id),
-    onSuccess: () => { setConfirmando(false); void invalidarListas(clienteDeConsultas); },
-  });
-  if (exclusao.isError) return <AvisoDeErro erro={exclusao.error} />;
-  if (confirmando) {
-    return (
-      <span className="flex items-center gap-1">
-        <button type="button" disabled={exclusao.isPending} onClick={() => exclusao.mutate()} className="rounded bg-red-600 px-2 py-0.5 text-xs font-semibold text-white">Confirmar</button>
-        <button type="button" aria-label="Cancelar exclusão" onClick={() => setConfirmando(false)} className="text-xs text-[#94A3B8] hover:text-[#64748B]">✕</button>
-      </span>
-    );
-  }
-  return (
-    <button type="button" onClick={() => setConfirmando(true)} title="Mover para a lixeira" aria-label={`Excluir chamado ${chamado.id}`} className="text-[#CBD5E1] transition-colors hover:text-[#EF4444]">
-      <Trash size={14} />
-    </button>
   );
 }
 
 interface Props {
   resultado: PaginaChamados;
   pagina: number;
-  podeExcluir: boolean;
   podeTriar: boolean;
   podeAtender: boolean;
   aoMudarDePagina: (pagina: number) => void;
 }
 
-export default function TabelaDeChamados({ resultado, pagina, podeExcluir, podeTriar, podeAtender, aoMudarDePagina }: Props) {
+export default function TabelaDeChamados({ resultado, pagina, podeTriar, podeAtender, aoMudarDePagina }: Props) {
   const router = useRouter();
   return (
     <>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[960px]">
+        <table className="vf-tabela min-w-[960px]">
           <thead>
-            <tr className="bg-brand-light">
+            <tr>
               {COLUNAS.map((titulo) => (
-                <th key={titulo} scope="col" className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#94A3B8]">{titulo}</th>
+                <th key={titulo} scope="col" className="px-4 py-2.5 text-left">{titulo}</th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#F1F5F9]">
+          <tbody>
             {resultado.content.map((chamado) => (
-              <tr key={chamado.id} className={cn("cursor-pointer transition-colors hover:bg-brand-light", slaCritico(chamado) && "bg-orange-50/40")} onClick={() => router.push(`/chamados/${chamado.id}`)}>
-                <td className="px-5 py-4">
-                  <Link href={`/chamados/${chamado.id}`} onClick={(evento) => evento.stopPropagation()} className="text-sm font-bold text-brand-blue">#{chamado.id}</Link>
+              <tr key={chamado.id} className={cn("cursor-pointer transition-colors", slaCritico(chamado) && "bg-orange-50/60")} onClick={() => router.push(`/chamados/${chamado.id}`)}>
+                <td className="px-4 py-2.5">
+                  <div className="flex items-stretch gap-2.5">
+                    <span className="vf-marcador" style={{ background: chamado.prioridade ? APARENCIA_DA_PRIORIDADE[chamado.prioridade].texto : "#C9CED6" }} aria-hidden />
+                    <Link href={`/chamados/${chamado.id}`} onClick={(evento) => evento.stopPropagation()} className="self-center text-sm font-medium text-acao">#{chamado.id}</Link>
+                  </div>
                 </td>
-                <td className="px-5 py-4">
-                  <div className="text-sm font-semibold text-brand-dark">{chamado.cliente}</div>
+                <td className="px-4 py-2.5">
+                  <div className="text-sm font-medium text-tinta">{chamado.cliente}</div>
                   <div className="mt-0.5 text-xs text-[#94A3B8]">{[chamado.modelo, chamado.placa].filter(Boolean).join(" · ")}</div>
                 </td>
-                <td className="px-5 py-4 text-sm text-[#475569]">
+                <td className="px-4 py-2.5 text-sm text-[#475569]">
                   <div>{chamado.departamento?.nome ?? (chamado.prioridade === null ? "Central" : "—")}</div>
                   <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-[#94A3B8]">
                     {chamado.tipo ? `Tipo: ${NOME_TIPO[chamado.tipo]}` : "Aguardando classificação"}
                     {chamado.triagem.revisaoPendente && <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-700">revisar</span>}
                   </div>
                 </td>
-                <td className="px-5 py-4">
+                <td className="px-4 py-2.5">
                   <StatusBadge status={chamado.status} />
                   {chamado.atendimento && <div className="mt-1 text-xs text-[#94A3B8]">com {chamado.atendimento.responsavel.nome}</div>}
                 </td>
-                <td className="px-5 py-4"><PrioridadeIndicador prioridade={chamado.prioridade} score={chamado.score} /></td>
-                <td className="px-5 py-4"><PrazoDoChamado chamado={chamado} /></td>
-                <td className="px-5 py-4">
+                <td className="px-4 py-2.5"><PrioridadeIndicador prioridade={chamado.prioridade} score={chamado.score} /></td>
+                <td className="px-4 py-2.5"><PrazoDoChamado chamado={chamado} /></td>
+                <td className="px-4 py-2.5">
                   <div className="flex items-center gap-2" onClick={(evento) => evento.stopPropagation()}>
                     {podeTriar && (chamado.prioridade === null || chamado.triagem.revisaoPendente) ? (
-                      <Link href={`/chamados/${chamado.id}/triagem`} className="text-xs font-semibold text-brand-green hover:underline">{chamado.prioridade === null ? "Classificar" : "Revisar"}</Link>
+                      <Link href={`/chamados/${chamado.id}/triagem`} className="text-xs font-medium text-acao hover:underline">{chamado.prioridade === null ? "Classificar" : "Revisar"}</Link>
                     ) : (
-                      <Link href={`/chamados/${chamado.id}`} className="text-xs font-semibold text-brand-blue hover:underline">Ver</Link>
+                      <Link href={`/chamados/${chamado.id}`} className="text-xs font-medium text-acao hover:underline">Ver</Link>
                     )}
                     {podeAtender && <BotaoDeEscalonamento chamado={chamado} compacto />}
-                    {podeExcluir && <ExclusaoDaLinha chamado={chamado} />}
                   </div>
                 </td>
               </tr>
