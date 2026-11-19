@@ -43,7 +43,7 @@ class AvisoPorEmailTests {
         assertThat(email.html())
                 .contains("Chamado resolvido")
                 .contains("Chamado CH-0042")
-                .contains("#F0FDF4")
+                .contains("#ECFDF3")
                 .contains("Confirme se o chamado CH-0042 foi resolvido.")
                 .contains("href=\"http://localhost:5261/portal/chamados/CH-0042\"")
                 .contains("Acompanhar chamado");
