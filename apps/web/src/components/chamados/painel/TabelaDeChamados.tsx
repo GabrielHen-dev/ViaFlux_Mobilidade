@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import Paginacao from "@/components/ui/Paginacao";
 import type { ChamadoResumo, PaginaChamados, Status } from "@/types/chamado";
 import { APARENCIA_DA_PRIORIDADE, PrioridadeIndicador, StatusBadge } from "@/components/ui/StatusBadge";
 import { SlaResumo } from "@/components/ui/SlaIndicador";
@@ -34,9 +34,13 @@ interface Props {
   podeTriar: boolean;
   podeAtender: boolean;
   aoMudarDePagina: (pagina: number) => void;
+  tamanho: number;
+  aoMudarDeTamanho: (tamanho: number) => void;
 }
 
-export default function TabelaDeChamados({ resultado, pagina, podeTriar, podeAtender, aoMudarDePagina }: Props) {
+export const TAMANHOS_DE_PAGINA = [10, 20, 50] as const;
+
+export default function TabelaDeChamados({ resultado, pagina, podeTriar, podeAtender, aoMudarDePagina, tamanho, aoMudarDeTamanho }: Props) {
   const router = useRouter();
   return (
     <>
@@ -93,13 +97,17 @@ export default function TabelaDeChamados({ resultado, pagina, podeTriar, podeAte
           </tbody>
         </table>
       </div>
-      {resultado.totalPages > 1 && (
-        <div className="flex items-center justify-end gap-2 border-t border-[#F1F5F9] px-5 py-3 text-xs text-slate-500">
-          <button type="button" aria-label="Página anterior" disabled={pagina === 0} onClick={() => aoMudarDePagina(pagina - 1)} className="alvo-toque flex items-center justify-center rounded-lg border border-slate-200 p-1.5 disabled:opacity-40"><ChevronLeft size={14} /></button>
-          Página {pagina + 1} de {resultado.totalPages}
-          <button type="button" aria-label="Próxima página" disabled={pagina + 1 >= resultado.totalPages} onClick={() => aoMudarDePagina(pagina + 1)} className="alvo-toque flex items-center justify-center rounded-lg border border-slate-200 p-1.5 disabled:opacity-40"><ChevronRight size={14} /></button>
-        </div>
-      )}
+      <Paginacao
+        rotulo="Paginação da lista de chamados"
+        pagina={pagina}
+        totalDePaginas={resultado.totalPages}
+        totalDeItens={resultado.totalElements}
+        tamanho={tamanho}
+        opcoesDeTamanho={TAMANHOS_DE_PAGINA}
+        aoMudarDePagina={aoMudarDePagina}
+        aoMudarDeTamanho={aoMudarDeTamanho}
+        className="border-t border-linha px-4 py-3"
+      />
     </>
   );
 }

@@ -93,7 +93,7 @@ test("ciclo completo: cliente abre, atendente tria, central atende, fornecedor a
   await entrarComo(page, USUARIOS.admin);
   await expect(page.getByRole("region", { name: "Atenção" }).getByRole("link", { name: "Analisar" })).toHaveAttribute("href", "/triagem");
   await page.getByRole("navigation", { name: "Menu principal" }).getByRole("link", { name: "Classificação" }).click();
-  await expect(page.getByRole("heading", { name: "Classificação", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Pendentes de análise" })).toBeVisible();
   await page.getByRole("button", { name: "Analisar chamado VF-0000" }).click();
   await expect(page.getByRole("heading", { name: "Classificação · #VF-0000" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Prazo e responsável" }).getByText("Responsável: você")).toBeVisible();
