@@ -5,6 +5,7 @@ import br.com.viaflux.api.chamado.sla.Relogio;
 import br.com.viaflux.api.chamado.sla.RelogioCorrido;
 import br.com.viaflux.api.chamado.sla.RelogioDeHorasUteis;
 import br.com.viaflux.api.devtools.DadosDeExemplo.CenarioDeChamado;
+import br.com.viaflux.api.devtools.DadosDeExemplo.LocalDeExemplo;
 import br.com.viaflux.api.devtools.DadosDeExemplo.OrganizacaoDeExemplo;
 import br.com.viaflux.api.devtools.DadosDeExemplo.UsuarioDeExemplo;
 import org.slf4j.Logger;
@@ -51,6 +52,7 @@ class PopuladorDeDados {
     private static final int MAIOR_FOLGA_DO_PRAZO_EM_MINUTOS = 12;
     private static final int JANELA_DE_BUSCA_DA_ABERTURA_EM_DIAS = 60;
     private static final int HORIZONTE_DO_HISTORICO_EM_MINUTOS = 30;
+    private static final double DESVIO_MAXIMO_DAS_COORDENADAS_EM_GRAUS = 0.015;
     private static final String AUTOR_SISTEMA = "Sistema";
     private static final String ATENDENTE_DE_EXEMPLO = "Paula Atendente";
     private static final String EMAIL_DO_ATENDENTE_DE_EXEMPLO = "atendente" + DadosDeExemplo.DOMINIO_DOS_EMAILS;
@@ -298,13 +300,16 @@ class PopuladorDeDados {
         OffsetDateTime triadoEm = triado ? depoisDaAbertura(abertura, 5, minutosDesdeAbertura) : null;
         OffsetDateTime primeiraResposta = triado && !status.equals("NA_FILA") ? depoisDaAbertura(abertura, 9, minutosDesdeAbertura) : null;
         OffsetDateTime resolvidoEm = status.equals("RESOLVIDO") || status.equals("FECHADO") ? depoisDaAbertura(abertura, 25, minutosDesdeAbertura) : null;
+        LocalDeExemplo local = cenario.temLocal() ? localAleatorio() : null;
         jdbc.update("""
                 INSERT INTO viaflux.chamados
-                    (id, codigo, cliente, telefone, modelo, placa, descricao, localizacao, status, aberto_em, atualizado_em, solicitante_id,
+                    (id, codigo, cliente, telefone, modelo, placa, descricao, localizacao, latitude, longitude, logradouro, bairro, cidade, uf,
+                     status, aberto_em, atualizado_em, solicitante_id,
                      motivo_id, contexto_id, tipo_declarado, urgencia_declarada, triagem_prazo_minutos, triagem_limite,
                      triagem_iniciada_em, triagem_responsavel_id, triagem_responsavel_nome, classificacao_tipo, severidade, urgencia, departamento_codigo,
                      triado_em, triado_por_id, triado_por_nome, primeira_resposta_em, resolvido_em, motivo_aguardando)
-                SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                       ?, ?, ?, ?,
                        m.id, c.id, m.tipo, c.urgencia, ?, ?,
                        ?, ?, ?, CASE WHEN ? THEN m.tipo END, CASE WHEN ? THEN m.severidade END, CASE WHEN ? THEN c.urgencia END,
                        CASE WHEN ? THEN m.tipo END, ?, ?, ?, ?, ?, ?
@@ -312,7 +317,15 @@ class PopuladorDeDados {
                 WHERE m.id = ? AND c.id = ?
                 """,
                 id, codigo, solicitante.nomeDoCliente(), "(11) 90000-0000", cenario.modelo().isBlank() ? "Não se aplica" : cenario.modelo(),
-                cenario.placa(), cenario.descricao(), cenario.localizacao(), status, abertura, agora, solicitante.id(),
+                cenario.placa(), cenario.descricao(),
+                local == null ? "" : local.descricao(),
+                local == null ? null : local.latitude(),
+                local == null ? null : local.longitude(),
+                local == null ? "" : local.logradouro(),
+                local == null ? "" : local.bairro(),
+                local == null ? "" : local.cidade(),
+                local == null ? "" : local.uf(),
+                status, abertura, agora, solicitante.id(),
                 prazoDeTriagem, abertura.plusMinutes(prazoDeTriagem),
                 triagemIniciada ? depoisDaAbertura(abertura, 2, minutosDesdeAbertura) : null,
                 triagemIniciada ? atendenteId : null,
@@ -375,6 +388,14 @@ class PopuladorDeDados {
                 WHERE id = ?
                 """, id, id);
         return codigo;
+    }
+
+    static LocalDeExemplo localAleatorio() {
+        ThreadLocalRandom aleatorio = ThreadLocalRandom.current();
+        LocalDeExemplo base = DadosDeExemplo.LOCAIS.get(aleatorio.nextInt(DadosDeExemplo.LOCAIS.size()));
+        return new LocalDeExemplo(base.logradouro(), base.bairro(), base.cidade(), base.uf(),
+                base.latitude() + aleatorio.nextDouble(-DESVIO_MAXIMO_DAS_COORDENADAS_EM_GRAUS, DESVIO_MAXIMO_DAS_COORDENADAS_EM_GRAUS),
+                base.longitude() + aleatorio.nextDouble(-DESVIO_MAXIMO_DAS_COORDENADAS_EM_GRAUS, DESVIO_MAXIMO_DAS_COORDENADAS_EM_GRAUS));
     }
 
     private static OffsetDateTime depoisDaAbertura(OffsetDateTime abertura, long minutos, long minutosDesdeAbertura) {

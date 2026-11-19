@@ -14,6 +14,7 @@ import { mensagemDeErro } from "@/components/feedback/EstadoDaConsulta";
 import { APARENCIA_DA_PRIORIDADE, PrioridadeIndicador } from "@/components/ui/StatusBadge";
 import { SlaResumo } from "@/components/ui/SlaIndicador";
 import { Dialog, DialogContent } from "@/components/ui/Dialog";
+import { PaginacaoCompacta, fatiarPagina } from "@/components/ui/Paginacao";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/DropdownMenu";
 import { cn } from "@/utils/cn";
 
@@ -28,6 +29,7 @@ const COLUNAS: { status: Status; titulo: string; recebe: boolean }[] = [
 
 const ROTULO_DO_AGUARDANDO: Record<MotivoAguardando, string> = { CLIENTE: "Cliente", FORNECEDOR: "Fornecedor", OUTRO_DEPARTAMENTO: "Outro departamento" };
 const TAMANHO_MINIMO_DO_RESUMO = 10;
+const CARTOES_POR_PAGINA_DA_COLUNA = 5;
 
 function colunaDo(chamado: ChamadoResumo): Status {
   return chamado.status === "Aberto" ? "Em triagem" : chamado.status;
@@ -149,6 +151,7 @@ export default function QuadroKanban({ chamados, podeMover }: { chamados: Chamad
   const clienteDeConsultas = useQueryClient();
   const [pendente, setPendente] = useState<Movimento | null>(null);
   const [alvo, setAlvo] = useState<Status | null>(null);
+  const [paginasDasColunas, setPaginasDasColunas] = useState<Partial<Record<Status, number>>>({});
   const mudanca = useMutation({
     mutationFn: ({ codigo, dados }: { codigo: string; dados: DadosStatus }) => alterarStatus(api, codigo, dados),
     onSuccess: (atualizado) => {
@@ -184,7 +187,8 @@ export default function QuadroKanban({ chamados, podeMover }: { chamados: Chamad
       <div className="overflow-x-auto p-3">
         <div className="grid min-w-[1080px] grid-cols-6 gap-3">
           {COLUNAS.map((coluna) => {
-            const itens = chamados.filter((chamado) => colunaDo(chamado) === coluna.status);
+            const todosDaColuna = chamados.filter((chamado) => colunaDo(chamado) === coluna.status);
+            const { itens, pagina, totalDePaginas } = fatiarPagina(todosDaColuna, paginasDasColunas[coluna.status] ?? 0, CARTOES_POR_PAGINA_DA_COLUNA);
             return (
               <section
                 key={coluna.status}
@@ -196,12 +200,18 @@ export default function QuadroKanban({ chamados, podeMover }: { chamados: Chamad
               >
                 <div className="flex items-center justify-between border-b border-linha px-3 py-2">
                   <h3 className="text-xs font-medium uppercase tracking-wide text-tinta-suave">{coluna.titulo}</h3>
-                  <span className="rounded bg-white px-1.5 text-xs tabular-nums text-tinta-apagada">{itens.length}</span>
+                  <span className="rounded bg-white px-1.5 text-xs tabular-nums text-tinta-apagada">{todosDaColuna.length}</span>
                 </div>
                 <ol className="flex-1 space-y-2 p-2">
                   {itens.map((chamado) => <CartaoDoChamado key={chamado.id} chamado={chamado} podeMover={podeMover} aoMover={(destino) => mover(chamado, destino)} />)}
                   {itens.length === 0 && <li className="py-6 text-center text-xs text-tinta-apagada">Sem chamados</li>}
                 </ol>
+                <PaginacaoCompacta
+                  rotulo={`Paginação da coluna ${coluna.titulo}`}
+                  pagina={pagina}
+                  totalDePaginas={totalDePaginas}
+                  aoMudarDePagina={(novaPagina) => setPaginasDasColunas((atuais) => ({ ...atuais, [coluna.status]: novaPagina }))}
+                />
               </section>
             );
           })}

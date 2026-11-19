@@ -9,7 +9,7 @@ import { useUsuarioAutenticado } from "@/store/AuthContext";
 import { INTERVALO_DO_PAINEL_MS, useListaDeChamados, useResumoDeChamados } from "@/hooks/consultas";
 import { AvisoDeErro, Carregando, FalhaAoCarregar } from "@/components/feedback/EstadoDaConsulta";
 import FiltrosDoPainel, { type FiltrosDoPainel as Filtros } from "@/components/chamados/painel/FiltrosDoPainel";
-import TabelaDeChamados from "@/components/chamados/painel/TabelaDeChamados";
+import TabelaDeChamados, { TAMANHOS_DE_PAGINA } from "@/components/chamados/painel/TabelaDeChamados";
 import QuadroKanban from "@/components/chamados/painel/QuadroKanban";
 import MapaDeOcorrencias from "@/components/chamados/painel/MapaDeOcorrencias";
 import { AlertaDeP1, ContadoresDaOperacao } from "@/components/chamados/painel/AlertasDoPainel";
@@ -20,7 +20,6 @@ import { useAgora } from "@/hooks/useAgora";
 import { cn } from "@/utils/cn";
 import { PERFIS_COM_VISAO_GLOBAL, PERFIS_DE_TRIAGEM, PERFIS_QUE_ATENDEM, usuarioTemPerfil } from "@/utils/perfis";
 
-const TAMANHO_DA_PAGINA = 20;
 const TAMANHO_DO_QUADRO = 100;
 
 type ModoDoPainel = "lista" | "kanban" | "mapa";
@@ -134,6 +133,7 @@ export default function Dashboard({ visaoInicial }: { visaoInicial?: "analise" }
   const { status, etapa, prioridade, sla, responsavel } = visao.recorte;
   const [filtros, setFiltros] = useState<Filtros>({ ordenacao: "fila", departamento: departamentoDoUsuario, busca: buscaDaUrl, status, etapa, prioridade, sla, responsavel });
   const [pagina, setPagina] = useState(0);
+  const [tamanhoDaPagina, setTamanhoDaPagina] = useState<number>(TAMANHOS_DE_PAGINA[1]);
   const [modo, setModo] = useState<ModoDoPainel>("lista");
   const chaveDaUrl = `${visao.id}|${buscaDaUrl ?? ""}`;
   const [chaveAplicada, setChaveAplicada] = useState(chaveDaUrl);
@@ -146,7 +146,7 @@ export default function Dashboard({ visaoInicial }: { visaoInicial?: "analise" }
 
   const { ordenacao } = filtros;
   const filtrosDoResumo = { ...filtros, status: undefined, etapa: undefined, prioridade: undefined, sla: undefined, responsavel: undefined };
-  const lista = useListaDeChamados({ ...filtros, page: pagina, size: TAMANHO_DA_PAGINA }, modo === "lista");
+  const lista = useListaDeChamados({ ...filtros, page: pagina, size: tamanhoDaPagina }, modo === "lista");
   const quadro = useListaDeChamados({ ...filtros, status: undefined, page: 0, size: TAMANHO_DO_QUADRO }, modo !== "lista" && !naAnalise);
   const resumo = useResumoDeChamados(filtrosDoResumo);
 
@@ -158,16 +158,20 @@ export default function Dashboard({ visaoInicial }: { visaoInicial?: "analise" }
   const atualizadoEm = Math.max(lista.dataUpdatedAt, quadro.dataUpdatedAt, resumo.dataUpdatedAt);
   const consultaAtual = modo === "lista" ? lista : quadro;
   const resultado = lista.data;
-  const titulo = naAnalise ? "Classificação" : departamentoDoUsuario ? `Fila · ${NOME_TIPO[departamentoDoUsuario]}` : "Dashboard";
+  const departamentoExibido = !naAnalise && departamentoDoUsuario ? NOME_TIPO[departamentoDoUsuario] : null;
 
   return (
     <main id="conteudo" className="min-w-0 vf-pagina">
       <div className="vf-cabecalho-pagina mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold text-tinta">{titulo}</h1>
+          <h1 className="font-display text-2xl font-bold text-tinta">{visao.rotulo}</h1>
           <p className="mt-0.5 flex items-center gap-2 text-sm text-[#64748B]">
-            <span className="font-medium text-tinta-suave">{visao.rotulo}</span>
-            <span aria-hidden>·</span>
+            {departamentoExibido && (
+              <>
+                <span className="font-medium text-tinta-suave">{departamentoExibido}</span>
+                <span aria-hidden>·</span>
+              </>
+            )}
             {atualizadoEm > 0 ? <AtualizadoHa instante={atualizadoEm} /> : "Carregando…"}
             <span className="hidden sm:inline">· a cada {INTERVALO_DO_PAINEL_MS / 1000} s</span>
           </p>
@@ -219,7 +223,7 @@ export default function Dashboard({ visaoInicial }: { visaoInicial?: "analise" }
                 ) : modo === "kanban" ? (
                   <QuadroKanban chamados={quadro.data?.content ?? []} podeMover={usuarioTemPerfil(usuario, PERFIS_QUE_ATENDEM)} />
                 ) : (
-                  <TabelaDeChamados resultado={lista.data!} pagina={pagina} podeTriar={fazTriagem} podeAtender={usuarioTemPerfil(usuario, PERFIS_QUE_ATENDEM)} aoMudarDePagina={setPagina} />
+                  <TabelaDeChamados resultado={lista.data!} pagina={pagina} podeTriar={fazTriagem} podeAtender={usuarioTemPerfil(usuario, PERFIS_QUE_ATENDEM)} aoMudarDePagina={setPagina} tamanho={tamanhoDaPagina} aoMudarDeTamanho={(tamanho) => { setTamanhoDaPagina(tamanho); setPagina(0); }} />
                 )}
               </section>
             </>

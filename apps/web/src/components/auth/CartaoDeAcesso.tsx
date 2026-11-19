@@ -30,7 +30,7 @@ export default function CartaoDeAcesso({ titulo, subtitulo, children, rodape }: 
   rodape?: ReactNode;
 }) {
   return (
-    <main id="conteudo" className="grid min-h-screen bg-fundo lg:grid-cols-[minmax(0,1fr)_minmax(28rem,36rem)]">
+    <main id="conteudo" className="grid min-h-screen bg-fundo lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
       <aside className="relative hidden overflow-hidden bg-marca p-12 text-white lg:flex lg:flex-col lg:justify-between" aria-hidden>
         <div className="flex items-center gap-3">
           <SimboloViaFlux tamanho="lg" className="ring-1 ring-white/20" />

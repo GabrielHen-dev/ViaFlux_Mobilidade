@@ -47,6 +47,18 @@ class PopuladorDeDadosTests {
         assertThat(limite.atZoneSameInstant(FORTALEZA).toLocalTime()).isBetween(LocalTime.of(8, 2), LocalTime.of(8, 13));
     }
 
+    @RepeatedTest(20)
+    void localDeExemploFicaPertoDeUmaCidadeConhecida() {
+        DadosDeExemplo.LocalDeExemplo local = PopuladorDeDados.localAleatorio();
+
+        assertThat(DadosDeExemplo.LOCAIS).anySatisfy(base -> {
+            assertThat(base.cidade()).isEqualTo(local.cidade());
+            assertThat(Math.abs(base.latitude() - local.latitude())).isLessThanOrEqualTo(0.015);
+            assertThat(Math.abs(base.longitude() - local.longitude())).isLessThanOrEqualTo(0.015);
+        });
+        assertThat(local.descricao()).contains(local.cidade()).contains(local.uf());
+    }
+
     private static double minutosAteVencer(Relogio relogio, OffsetDateTime agora, int prazoEmMinutos) {
         OffsetDateTime abertura = PopuladorDeDados.aberturaQueVenceEmMinutos(relogio, agora, prazoEmMinutos);
         return Duration.between(agora.toInstant(), relogio.somarMinutos(abertura.toInstant(), prazoEmMinutos)).toMillis() / 60_000d;
