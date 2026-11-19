@@ -29,16 +29,17 @@ class AvisoPorEmail {
     private record Aparencia(String titulo, String fundo, String texto) {
     }
 
-    private static final Aparencia APARENCIA_PADRAO = new Aparencia("Atualização do chamado", "#EFF6FF", "#1D4ED8");
+    private static final Aparencia APARENCIA_PADRAO = new Aparencia("Atualização do chamado", "#E8F0F9", "#0F5BA7");
     private static final Map<String, Aparencia> APARENCIA_DO_STATUS = Map.of(
             "aberto", new Aparencia("Chamado registrado", "#FEFCE8", "#A16207"),
             "em triagem", new Aparencia("Chamado em triagem", "#FEFCE8", "#A16207"),
             "na fila", new Aparencia("Chamado na fila de atendimento", "#ECFEFF", "#0E7490"),
-            "em atendimento", new Aparencia("Chamado em atendimento", "#EFF6FF", "#1D4ED8"),
+            "em atendimento", new Aparencia("Chamado em atendimento", "#E8F0F9", "#0F5BA7"),
             "aguardando", new Aparencia("Chamado aguardando retorno", "#F5F3FF", "#6D28D9"),
-            "resolvido", new Aparencia("Chamado resolvido", "#F0FDF4", "#15803D"),
-            "fechado", new Aparencia("Chamado encerrado", "#F1F5F9", "#475569"),
-            "nova mensagem", new Aparencia("Nova mensagem no chamado", "#EFF6FF", "#1D4ED8")
+            "resolvido", new Aparencia("Chamado resolvido", "#ECFDF3", "#15803D"),
+            "fechado", new Aparencia("Chamado encerrado", "#F1F3F5", "#4B5563"),
+            "cancelado", new Aparencia("Chamado cancelado", "#FEF2F2", "#B91C1C"),
+            "nova mensagem", new Aparencia("Nova mensagem no chamado", "#E8F0F9", "#0F5BA7")
     );
 
     private final UsuarioRepository usuarios;

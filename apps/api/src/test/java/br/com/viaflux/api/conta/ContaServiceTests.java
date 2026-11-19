@@ -244,7 +244,7 @@ class ContaServiceTests {
                 .contains("Perfis: ATENDENTE, LIDER_OPERACIONAL")
                 .contains("http://localhost:5261/aceitar-convite?token=")
                 .contains("7 dias");
-        assertThat(convite.html()).contains("Aceitar convite").contains("#0F2C59").contains("Carla Admin");
+        assertThat(convite.html()).contains("Aceitar convite").contains("#0B2545").contains("Carla Admin");
         assertThat(emitidos.getFirst().getFinalidade()).isEqualTo(FinalidadeDoToken.CONVITE);
     }
 
