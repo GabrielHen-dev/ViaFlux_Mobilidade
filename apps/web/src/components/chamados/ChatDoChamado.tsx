@@ -32,49 +32,6 @@ interface Props {
   eventos?: EventoTimeline[];
 }
 
-type ItemDoFeed = { tipo: "mensagem"; quando: string; mensagem: Mensagem } | { tipo: "evento"; quando: string; evento: EventoTimeline };
-
-function iniciais(nome: string) {
-  const partes = nome.trim().split(/\s+/);
-  return ((partes[0]?.[0] ?? "") + (partes.length > 1 ? partes[partes.length - 1][0] : "")).toUpperCase() || "?";
-}
-
-function MensagemNoFeed({ codigo, mensagem, minha, visaoDeCliente, nova }: { codigo: string; mensagem: Mensagem; minha: boolean; visaoDeCliente: boolean; nova: boolean }) {
-  const interna = !mensagem.visivelCliente;
-  return (
-    <li className="flex gap-3">
-      <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium text-white", interna ? "bg-amber-500" : mensagem.origem === "SOLICITANTE" ? "bg-tinta-suave" : "bg-acao")} aria-hidden>
-        {iniciais(mensagem.autor?.nome ?? "Sistema")}
-      </span>
-      <div className={cn("min-w-0 flex-1 rounded border", interna ? "border-amber-200 bg-amber-50" : "border-linha bg-white")}>
-        <div className={cn("flex flex-wrap items-center gap-x-2 gap-y-1 border-b px-3 py-2 text-xs", interna ? "border-amber-200" : "border-linha bg-fundo")}>
-          <span className="font-medium text-tinta">{identificacaoDoAutor(mensagem, minha, visaoDeCliente)}</span>
-          <time dateTime={mensagem.enviadaEm} className="text-tinta-apagada">{formatarDataHora(mensagem.enviadaEm)}</time>
-          {interna && mensagem.visibilidade === "FORNECEDOR" && (
-            <span className="inline-flex items-center gap-1 rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-medium text-sky-800">
-              <Truck size={10} aria-hidden /> Fornecedor
-            </span>
-          )}
-          {interna && mensagem.visibilidade !== "FORNECEDOR" && (
-            <span className="inline-flex items-center gap-1 rounded bg-amber-200/70 px-1.5 py-0.5 text-[10px] font-medium text-amber-900">
-              <EyeOff size={10} aria-hidden /> Interno
-            </span>
-          )}
-          {nova && <span className="rounded bg-acao px-1.5 py-0.5 text-[10px] font-medium text-white">Nova</span>}
-        </div>
-        <div className="px-3 py-2.5 text-sm text-tinta">
-          <p className="whitespace-pre-wrap break-words">{mensagem.texto}</p>
-          {mensagem.anexo && (
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded border border-linha bg-white px-2.5 py-1.5 text-xs text-tinta-suave">
-              <span className="min-w-0 break-all">{mensagem.anexo.nome} · {formatarTamanho(mensagem.anexo.tamanho)}</span>
-              <BotaoDeDownload codigo={codigo} anexo={mensagem.anexo} />
-            </div>
-          )}
-        </div>
-      </div>
-    </li>
-  );
-}
 
 function EventoNoFeed({ evento, visaoDeCliente }: { evento: EventoTimeline; visaoDeCliente: boolean }) {
   return (
@@ -122,7 +79,12 @@ function BalaoDaMensagem({ codigo, mensagem, minha, visaoDeCliente }: { codigo: 
       )}>
         <p className={cn("mb-0.5 flex flex-wrap items-center gap-1.5 text-xs font-semibold", !interna && minha ? "text-white/90" : "text-slate-600")}>
           {identificacaoDoAutor(mensagem, minha, visaoDeCliente)}
-          {interna && (
+          {interna && mensagem.visibilidade === "FORNECEDOR" && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-sky-800">
+              <Truck size={10} aria-hidden /> Fornecedor
+            </span>
+          )}
+          {interna && mensagem.visibilidade !== "FORNECEDOR" && (
             <span className="inline-flex items-center gap-1 rounded-full bg-amber-200/70 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-900">
               <EyeOff size={10} aria-hidden /> Interno
             </span>
@@ -155,12 +117,12 @@ export default function ChatDoChamado({ chamado, visaoDeCliente = false, somente
   const seletorDeArquivo = useRef<HTMLInputElement>(null);
   const acompanhandoOFim = useRef(true);
   const quantidadeAnterior = useRef<number | null>(null);
-  const modoTramites = eventos !== undefined;
-  const [filtrosDoFeed, setFiltrosDoFeed] = useState({ mensagens: true, notas: true, historico: true });
+  const [mostrarNotas, setMostrarNotas] = useState(true);
 
   const dados = conversa.data;
-  const mensagens = dados?.mensagens ?? [];
-  const quantidade = mensagens.length;
+  const todasAsMensagens = dados?.mensagens ?? [];
+  const quantidade = todasAsMensagens.length;
+  const mensagens = visaoDeCliente || mostrarNotas ? todasAsMensagens : todasAsMensagens.filter((mensagem) => mensagem.visivelCliente);
   const fechado = chamado.status === "Fechado";
   const cancelado = chamado.status === "Cancelado";
   const podeEnviar = !somenteLeitura && !fechado && !cancelado;
@@ -184,12 +146,12 @@ export default function ChatDoChamado({ chamado, visaoDeCliente = false, somente
   });
   const lerAte = leitura.mutate;
 
-  const ultimaDeOutros = [...mensagens].reverse().find((mensagem) => mensagem.autor?.id !== usuario.id);
+  const ultimaDeOutros = [...todasAsMensagens].reverse().find((mensagem) => mensagem.autor?.id !== usuario.id);
   const pendenteDeLeitura = ultimaDeOutros && (!dados?.lidoAte || posterior(ultimaDeOutros.enviadaEm, dados.lidoAte)) ? ultimaDeOutros.enviadaEm : null;
   const marcoAnterior = marcoDeLeitura?.lidoAte ?? null;
   const primeiraNova = marcoAnterior === null
     ? undefined
-    : mensagens.find((mensagem) => mensagem.autor?.id !== usuario.id && posterior(mensagem.enviadaEm, marcoAnterior))?.id;
+    : todasAsMensagens.find((mensagem) => mensagem.autor?.id !== usuario.id && posterior(mensagem.enviadaEm, marcoAnterior))?.id;
 
   useEffect(() => {
     if (!pendenteDeLeitura) return;
@@ -227,7 +189,7 @@ export default function ChatDoChamado({ chamado, visaoDeCliente = false, somente
   }
 
   function aoTeclar(evento: KeyboardEvent<HTMLTextAreaElement>) {
-    if (visaoDeCliente && evento.key === "Enter" && !evento.shiftKey && !evento.nativeEvent.isComposing) {
+    if (evento.key === "Enter" && !evento.shiftKey && !evento.nativeEvent.isComposing) {
       evento.preventDefault();
       enviarTexto();
     }
@@ -250,7 +212,7 @@ export default function ChatDoChamado({ chamado, visaoDeCliente = false, somente
   }
 
   const compositor = podeEnviar ? (
-        <div className={cn("mt-4 rounded-xl border p-3", interna ? "border-amber-200 bg-amber-50" : paraFornecedor ? "border-sky-200 bg-sky-50" : "border-linha bg-fundo")}>
+        <div className={cn("border-t p-3", interna ? "border-amber-200 bg-amber-50" : paraFornecedor ? "border-sky-200 bg-sky-50" : "border-linha bg-fundo")}>
           {!visaoDeCliente && (
             <div role="radiogroup" aria-label="Destino da mensagem" className="-mx-3 -mt-3 mb-3 flex border-b border-linha px-2">
               <button type="button" role="radio" aria-checked={!interna && !paraFornecedor} disabled={ocupado} onClick={() => setRascunho((atual) => ({ ...atual, destino: "SOLICITANTE" }))} className="vf-aba alvo-toque px-3 py-2.5">
@@ -318,91 +280,63 @@ export default function ChatDoChamado({ chamado, visaoDeCliente = false, somente
     </>
   );
 
-  if (modoTramites) {
-    const itens: ItemDoFeed[] = [
-      ...mensagens
-        .filter((mensagem) => (mensagem.visivelCliente ? filtrosDoFeed.mensagens : filtrosDoFeed.notas))
-        .map((mensagem) => ({ tipo: "mensagem" as const, quando: mensagem.enviadaEm, mensagem })),
-      ...(filtrosDoFeed.historico ? eventos : []).map((evento) => ({ tipo: "evento" as const, quando: evento.ocorridoEm, evento })),
-    ].sort((a, b) => new Date(b.quando).getTime() - new Date(a.quando).getTime());
-    const comMensagens = itens.some((item) => item.tipo === "mensagem");
-    const opcoesDoFiltro = [
-      { chave: "mensagens" as const, rotulo: "Mensagens" },
-      ...(visaoDeCliente ? [] : [{ chave: "notas" as const, rotulo: "Notas internas" }]),
-      { chave: "historico" as const, rotulo: "Histórico de alterações" },
-    ];
+  const historico = eventos ? [...eventos].sort((a, b) => new Date(b.ocorridoEm).getTime() - new Date(a.ocorridoEm).getTime()) : null;
 
-    return (
-      <section className="vf-cartao" aria-labelledby={`conversa-${chamado.id}`}>
+  return (
+    <>
+      <section className="vf-cartao overflow-hidden" aria-labelledby={`conversa-${chamado.id}`}>
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-linha px-4 py-3">
-          <h2 id={`conversa-${chamado.id}`} className="text-sm font-medium text-tinta">Trâmites</h2>
-          <fieldset className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-tinta-suave">
-            <legend className="sr-only">Mostrar nos trâmites</legend>
-            {opcoesDoFiltro.map(({ chave, rotulo }) => (
-              <label key={chave} className="flex items-center gap-1.5">
-                <input type="checkbox" className="accent-acao" checked={filtrosDoFeed[chave]} onChange={(evento) => { const marcado = evento.target.checked; setFiltrosDoFeed((atuais) => ({ ...atuais, [chave]: marcado })); }} />
-                {rotulo}
-              </label>
-            ))}
-          </fieldset>
+          <h2 id={`conversa-${chamado.id}`} className="text-sm font-medium text-tinta">Conversa</h2>
+          {!visaoDeCliente && (
+            <label className="flex items-center gap-1.5 text-xs text-tinta-suave">
+              <input type="checkbox" className="accent-acao" checked={mostrarNotas} onChange={(evento) => setMostrarNotas(evento.target.checked)} />
+              Mostrar notas internas
+            </label>
+          )}
         </div>
-        <div className="space-y-4 p-4">
-          {compositor && <div className="[&>div]:mt-0">{compositor}</div>}
-          {avisos}
-          {!dados && conversa.isPending && <p className="text-xs text-tinta-apagada">Carregando conversa…</p>}
-          {conversa.isError && <p role="alert" className="text-xs text-red-600">Não foi possível atualizar a conversa. Vamos tentar de novo em instantes.</p>}
-          {itens.length === 0 ? (
-            <p className="rounded bg-fundo p-4 text-center text-xs text-tinta-apagada">Nenhum trâmite para os filtros escolhidos.</p>
-          ) : (
-            <ol role={comMensagens ? "log" : undefined} aria-live={comMensagens ? "polite" : undefined} aria-label={comMensagens ? "Mensagens do chamado" : "Trâmites do chamado"} tabIndex={0} className="max-h-96 space-y-3 overflow-y-auto pr-1">
-              {itens.map((item) => item.tipo === "mensagem" ? (
-                <MensagemNoFeed
-                  key={`m-${item.mensagem.id}`}
-                  codigo={chamado.id}
-                  mensagem={item.mensagem}
-                  minha={item.mensagem.autor?.id === usuario.id}
-                  visaoDeCliente={visaoDeCliente}
-                  nova={marcoAnterior !== null && item.mensagem.autor?.id !== usuario.id && posterior(item.mensagem.enviadaEm, marcoAnterior)}
-                />
-              ) : (
-                <EventoNoFeed key={`e-${item.evento.id}`} evento={item.evento} visaoDeCliente={visaoDeCliente} />
+        <div className="bg-fundo/60 px-4">
+          {!dados && conversa.isPending && <p className="py-4 text-xs text-tinta-apagada">Carregando conversa…</p>}
+          {conversa.isError && <p role="alert" className="pt-3 text-xs text-red-600">Não foi possível atualizar a conversa. Vamos tentar de novo em instantes.</p>}
+          {dados && mensagens.length === 0 && (
+            <p className="py-6 text-center text-xs text-tinta-apagada">
+              {podeEnviar ? "Nenhuma mensagem ainda. Escreva abaixo para começar a conversa." : "Nenhuma mensagem nesta conversa."}
+            </p>
+          )}
+          {mensagens.length > 0 && (
+            <ol ref={lista} onScroll={acompanharRolagem} role="log" aria-live="polite" aria-label="Mensagens do chamado" tabIndex={0} className="max-h-96 space-y-3 overflow-y-auto py-4 pr-1">
+              {mensagens.map((mensagem) => (
+                <Fragment key={mensagem.id}>
+                  {mensagem.id === primeiraNova && (
+                    <li className="flex items-center gap-2 text-[11px] font-medium text-acao">
+                      <span className="h-px flex-1 bg-blue-200" aria-hidden /> Novas mensagens <span className="h-px flex-1 bg-blue-200" aria-hidden />
+                    </li>
+                  )}
+                  <BalaoDaMensagem codigo={chamado.id} mensagem={mensagem} minha={mensagem.autor?.id === usuario.id} visaoDeCliente={visaoDeCliente} />
+                </Fragment>
               ))}
             </ol>
           )}
+          {(fechado || cancelado || somenteLeitura) && <div className="pb-4 [&>p]:mt-0">{avisos}</div>}
         </div>
+        {compositor}
       </section>
-    );
-  }
 
-  return (
-    <section className="rounded-2xl border border-linha bg-white p-5 md:p-6" aria-labelledby={`conversa-${chamado.id}`}>
-      <h2 id={`conversa-${chamado.id}`} className="mb-4 font-display text-sm font-semibold text-tinta">Conversa</h2>
-
-      {!dados && conversa.isPending && <p className="text-xs text-slate-500">Carregando conversa…</p>}
-      {conversa.isError && <p role="alert" className="mb-3 text-xs text-red-600">Não foi possível atualizar a conversa. Vamos tentar de novo em instantes.</p>}
-      {dados && quantidade === 0 && (
-        <p className="rounded-xl bg-slate-50 p-4 text-center text-xs text-slate-500">
-          {podeEnviar ? "Nenhuma mensagem ainda. Escreva abaixo para começar a conversa." : "Nenhuma mensagem nesta conversa."}
-        </p>
+      {historico && (
+        <section className="vf-cartao" aria-labelledby={`historico-${chamado.id}`}>
+          <div className="border-b border-linha px-4 py-3">
+            <h2 id={`historico-${chamado.id}`} className="text-sm font-medium text-tinta">Histórico</h2>
+          </div>
+          <div className="p-4">
+            {historico.length === 0 ? (
+              <p className="rounded bg-fundo p-4 text-center text-xs text-tinta-apagada">Nenhuma alteração registrada.</p>
+            ) : (
+              <ol aria-label="Histórico do chamado" tabIndex={0} className="max-h-96 space-y-3 overflow-y-auto pr-1">
+                {historico.map((evento) => <EventoNoFeed key={`e-${evento.id}`} evento={evento} visaoDeCliente={visaoDeCliente} />)}
+              </ol>
+            )}
+          </div>
+        </section>
       )}
-      {quantidade > 0 && (
-        <ol ref={lista} onScroll={acompanharRolagem} role="log" aria-live="polite" aria-label="Mensagens do chamado" tabIndex={0} className="max-h-96 space-y-3 overflow-y-auto pr-1">
-          {mensagens.map((mensagem) => (
-            <Fragment key={mensagem.id}>
-              {mensagem.id === primeiraNova && (
-                <li className="flex items-center gap-2 text-[11px] font-medium text-acao">
-                  <span className="h-px flex-1 bg-blue-200" aria-hidden /> Novas mensagens <span className="h-px flex-1 bg-blue-200" aria-hidden />
-                </li>
-              )}
-              <BalaoDaMensagem codigo={chamado.id} mensagem={mensagem} minha={mensagem.autor?.id === usuario.id} visaoDeCliente={visaoDeCliente} />
-            </Fragment>
-          ))}
-        </ol>
-      )}
-
-      {avisos}
-
-      {compositor}
-    </section>
+    </>
   );
 }
