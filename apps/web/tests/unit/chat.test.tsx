@@ -120,16 +120,32 @@ describe("conversa do chamado", () => {
     expect(screen.getByRole("radio", { name: "Nota interna" })).toHaveAttribute("aria-checked", "true");
   });
 
-  it("para a equipe, Enter quebra a linha e o envio exige o botão", async () => {
+  it("para a equipe, Enter envia e Shift+Enter quebra a linha", async () => {
     const usuario = userEvent.setup();
     await chamadoNaFila();
     await renderizarComo(USUARIOS.atendente, <DetalhesChamado id={CODIGO} />);
 
     const campo = await screen.findByLabelText("Escrever mensagem");
-    await usuario.type(campo, "primeira{Enter}segunda");
-
+    await usuario.type(campo, "primeira{Shift>}{Enter}{/Shift}segunda");
     expect(campo).toHaveValue("primeira\nsegunda");
-    expect(screen.queryByRole("log", { name: "Mensagens do chamado" })).not.toBeInTheDocument();
+
+    await usuario.keyboard("{Enter}");
+    const conversa = await screen.findByRole("log", { name: "Mensagens do chamado" });
+    expect(await within(conversa).findByText(/primeira\s+segunda/)).toBeInTheDocument();
+    await waitFor(() => expect(campo).toHaveValue(""));
+  });
+
+  it("separa a conversa do histórico e mostra as mensagens da mais antiga para a mais nova", async () => {
+    await chamadoNaFila();
+    await registrarAtualizacao(apiComo(USUARIOS.atendente), CODIGO, { texto: "Primeira mensagem", visivelCliente: true });
+    await registrarAtualizacao(apiComo(USUARIOS.atendente), CODIGO, { texto: "Segunda mensagem", visivelCliente: true });
+    await renderizarComo(USUARIOS.atendente, <DetalhesChamado id={CODIGO} />);
+
+    const conversa = await screen.findByRole("log", { name: "Mensagens do chamado" });
+    const textos = within(conversa).getAllByText(/^(Primeira|Segunda) mensagem$/).map((elemento) => elemento.textContent);
+    expect(textos).toEqual(["Primeira mensagem", "Segunda mensagem"]);
+    const historico = screen.getByRole("list", { name: "Histórico do chamado" });
+    expect(within(historico).queryByText("Primeira mensagem")).not.toBeInTheDocument();
   });
 
   it("enquanto o arquivo é enviado, Enter não duplica a mensagem", async () => {
